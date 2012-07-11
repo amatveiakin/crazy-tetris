@@ -944,9 +944,9 @@ void Player::collapseLine(int row)  // TODO: optimize
        i != disappearingLines.end(); ++i)
     if (i->row > row)
       --(i->row);
-  for (EventSet::iterator event = events.begin(); event != events.end(); ++event)
-    if ((event->type == etLineCollapse) && (event->parameters.lineCollapse.row > row))
-      --event->parameters.lineCollapse.row;
+  for (EventSet::iterator myEvent = events.begin(); myEvent != events.end(); ++myEvent)
+    if ((myEvent->type == etLineCollapse) && (myEvent->parameters.lineCollapse.row > row))
+      --(int&)(myEvent->parameters.lineCollapse.row);
 }
 
 void Player::movePiece(int direction)
