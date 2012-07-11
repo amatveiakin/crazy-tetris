@@ -701,7 +701,7 @@ void CrazyTetrisApp::buildBuffers()
     0
   };
 
-  HR( md3dDevice->CreateBuffer(&bufferDesc, NULL, &cubeInstancesBuffer) )
+  HR( md3dDevice->CreateBuffer(&bufferDesc, NULL, &cubeInstancesBuffer) );
 
 }
 
