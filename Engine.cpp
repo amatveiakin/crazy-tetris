@@ -49,6 +49,7 @@ void Field::clearImageIndices()
 void Game::init()
 {
   loadPieces();
+  loadBonuses();
   loadAccounts();
   loadSettings();
   for (int key = 0; key < N_GLOBAL_KEYS; ++key)
@@ -307,7 +308,7 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
 
 void Game::loadBonuses()
 {
-  for (Bonus bonus = FIRST_BONUS; bonus <= LAST_BONUS; ++bonus)
+  for (Bonus bonus = FIRST_BONUS; bonus <= LAST_REAL_BONUS; ++bonus)
     for (int i = 0; i < BONUS_CHANCES[bonus]; ++i)
       randomBonusTable.push_back(bonus);
 }
@@ -866,8 +867,11 @@ void Player::removeBonuses()
   {
     for (int col = 0; col < FIELD_WIDTH; ++col)
     {
-      field(row, col).bonus = bnNoBonus;
-      lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
+      if (field(row, col).isBlocked())
+      {
+        field(row, col).bonus = bnNoBonus;
+        lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
+      }
     }
   }
 }

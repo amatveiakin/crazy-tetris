@@ -73,8 +73,9 @@ inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
 
 const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
 const Bonus  LAST_BONUS = bnNoBonus;
+const Bonus  LAST_REAL_BONUS = Bonus(bnNoBonus - 1);
 const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
-const int    N_REAL_BONUSES = N_BONUSES - 1;
+const int    N_REAL_BONUSES = LAST_REAL_BONUS - FIRST_BONUS + 1;
 
 const std::wstring BONUS_NAME[N_BONUSES] =
 {
