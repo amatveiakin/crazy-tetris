@@ -214,8 +214,8 @@ union GlobalControls
 
 const int    BONUS_CHANCES[N_REAL_BONUSES] =
 {
-  1, // bnEnlargeHintQueue
-  2, // bnPieceTheft
+  0, // bnEnlargeHintQueue
+  0, // bnPieceTheft
   5, // bnHeal
   2, // bnSlowDown
   1, // bnClearField
@@ -223,9 +223,9 @@ const int    BONUS_CHANCES[N_REAL_BONUSES] =
   2, // bnRotatingScreen
   2, // bnWave
   2, // bnLantern
-  2, // bnCrazyPieces
+  0, // bnCrazyPieces
   2, // bnTruncatedBlocks
-  2, // bnNoHint
+  0, // bnNoHint
   2, // bnSpeedUp
 //  2  // bnFlipField
 };
@@ -236,12 +236,12 @@ const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
 const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
-const Time   BONUS_ROTATING_SCREEN_PERIOD = 7.0f;
+const Time   BONUS_ROTATING_SCREEN_PERIOD = 10.0f;
 const Time   BONUS_WAVE_PERIOD = 2.0f;
 const Time   BONUS_CLEAR_FIELD_DURATION = 1.0f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
-const Time   BONUS_LANTERN_FADING_TIME = 2.0f;
+const Time   BONUS_LANTERN_FADING_TIME = 1.5f;
 const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
 const Time   BONUS_PLAYER_DYING_ANIMATION_TIME = 1.0f;
 

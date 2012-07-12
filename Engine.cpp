@@ -1024,8 +1024,9 @@ void Player::removeBlockImage(vector<BlockImage>& imageArray, FieldCoords positi
 
 void Player::routineSpeedUp()
 {
+  float maxSpeed = myMax(SPEED_LIMIT, speed);
   speed += ROUTINE_SPEED_UP_VALUE;
-  speed = myMin(speed, SPEED_LIMIT);
+  speed = myMin(speed, maxSpeed);
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
 }
 

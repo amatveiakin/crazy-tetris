@@ -159,6 +159,65 @@ class PeriodicalEffectType : public SmoothEffectType
 public:
   float period;
 
+  PeriodicalEffectType() : STOPPING_ACCELERATION_COEFF(0.05f), period(1.0), isStopping_(false) { }
+
+  void enable(float newPeriod) 
+  {
+    active_ = true;
+    isStopping_ = false;
+    period = newPeriod;
+  }
+
+  void disable() 
+  {
+    isStopping_ = true;
+    stoppingAcceleration_ = 0.0;
+  }
+
+  float progress(Time currentTime) 
+  {
+    if (!active_)
+    {
+      lastTime_ = currentTime;
+      return MIN_PROGRESS;
+    }
+
+    float progress_increment = float(currentTime - lastTime_) / period;
+    progress_ += progress_increment;
+    if (isStopping_)
+    {
+      stoppingAcceleration_ += progress_increment * STOPPING_ACCELERATION_COEFF;
+      progress_ += stoppingAcceleration_;
+    }
+
+    while (progress_ > MAX_PROGRESS)
+    {
+      if (isStopping_)
+      {
+        progress_ = MIN_PROGRESS;
+        active_ = false;
+      }
+      else
+        progress_ -= PROGRESS_RANGE;
+    }
+    lastTime_ = currentTime;
+    return progress_;
+  }
+
+protected:
+  const float STOPPING_ACCELERATION_COEFF;
+
+  bool isStopping_;
+  Time stoppingAcceleration_;
+};
+
+
+
+/*class PeriodicalEffectType : public SmoothEffectType 
+{
+public:
+  float period;
+
   PeriodicalEffectType() : period(1.0), stopping_(false) { }
 
   void enable(float newPeriod) 
@@ -197,7 +256,7 @@ public:
 
 protected:
   bool stopping_;
-};
+};*/
 
 
 
@@ -279,10 +338,10 @@ public:
 
   FlashEffectType() : halfDuration(1.0) { }
 
-  void enable(float newHalfDuration)
+  void enable(float newDuration)
   {
     active_ = true;
-    halfDuration = newHalfDuration;
+    halfDuration = newDuration / 2.0f;
   }
 
   void disable()
@@ -310,6 +369,49 @@ public:
 
 
 
+// TODO: Join with FadingEffectType
+
+// Effect fades in and remains fully active until it is resetted
+class PermanentEffectType : public SmoothEffectType   // Name (?)
+{
+public:
+  float duration;
+
+  PermanentEffectType() : duration(1.0) { }
+
+  void enable(float newDuration)
+  {
+    active_ = true;
+    duration = newDuration;
+  }
+
+  void disable()
+  {
+    active_ = false;
+    progress_ = MIN_PROGRESS;
+  }
+
+  void restart(float newDuration)
+  {
+    disable();
+    enable(newDuration);
+  }
+
+  float progress(Time currentTime)
+  {
+    float progressChange = float(currentTime - lastTime_) / duration;
+    if (active_) {
+      progress_ += progressChange;
+      if (progress_ > MAX_PROGRESS)
+        progress_ = MAX_PROGRESS;
+    }
+    lastTime_ = currentTime;
+    return progress_;
+  }
+};
+
+
+
 class DirectedEffectExtraType
 {
 public:
@@ -318,6 +420,8 @@ public:
 };
 
 
+
+typedef PermanentEffectType HintEffect;
 
 typedef SingleEffectType FieldCleaningEffect; // --> FlashEffectType (?)
 
@@ -336,20 +440,7 @@ typedef PeriodicalEffectType WaveEffect; // += FadingEffectType (?)
 
 class LanternEffect : public FadingEffectType, public MovingObject { };
 
-// TODO: try to rewrite to   operator=() = default  when C++0x is out
-class PieceTheftEffect : public SingleEffectType, public DirectedEffectExtraType
-{
-public:
-  /*PieceTheftEffect& operator=(const PieceTheftEffect& a)
-  {
-    progress_ = a.progress_;
-    lastTime_ = a.lastTime_;
-    duration = a.duration;
-    sender = a.sender;
-    target = a.target;
-    return *this;
-  }*/
-};
+class PieceTheftEffect : public SingleEffectType, public DirectedEffectExtraType { };
 
 
 
@@ -364,7 +455,6 @@ public:
   SemicubesEffect semicubes;
   WaveEffect wave;
   LanternEffect lantern;
-//  std::list<PieceTheftEffect>::iterator pieceTheftPtr;
   PieceTheftEffect* pieceTheftPtr; 
 
   void clear()
@@ -409,6 +499,10 @@ public:
   FieldCoords binding;
 //  bool motionBlur;
   
+  using MovingObject::position;
+  using MovingObject::positionX;
+  using MovingObject::positionY;
+
   void placeAt(FieldCoords position)
   {
     binding = position;
@@ -427,20 +521,6 @@ public:
     bonus = bnNoBonus;
     placeAt(position);
   }
-  
-  using MovingObject::position;
-  using MovingObject::positionX;
-  using MovingObject::positionY;
-
-  /*float positionY(Time currentTime)
-  {
-    return MovingObject::positionY(currentTime);
-  }
-  
-  float positionX(Time currentTime)
-  {
-    return MovingObject::positionX(currentTime);
-  }*/
 };
 
 
