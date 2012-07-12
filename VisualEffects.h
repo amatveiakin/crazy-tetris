@@ -128,17 +128,14 @@ public:
     FloatFieldCoords currentPosition = position_;
     for (std::vector<LinearMotion>::iterator motion = motions.begin(); motion != motions.end(); )
     {
+      currentPosition += motion->shiftVector(currentTime);
       if (motion->finished(currentTime))
       {
-        currentPosition += motion->shiftVector(currentTime);
         position_ += motion->shiftVector(currentTime);
         motion = motions.erase(motion);
       }
       else
-      {
-        currentPosition += motion->shiftVector(currentTime);
         ++motion;
-      }
     }
     return currentPosition;
   }
