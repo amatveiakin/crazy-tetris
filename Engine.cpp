@@ -656,7 +656,7 @@ void Player::redraw()
 
 
 
-int Player::highestNonemptyLine() const
+int Player::highestNonemptyRow() const
 {
   for (int row = FIELD_HEIGHT - 1; row >= 0; --row)
     for (int col = 0; col < FIELD_WIDTH; ++col)
@@ -711,7 +711,7 @@ bool Player::bonusIsUseful(Bonus bonus) const
     return speed > STARTING_SPEED * BONUS_SLOW_DOWN_MULTIPLIER;  // (?)
     break;
   case bnClearField:
-    return highestNonemptyLine() > BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL;
+    return highestNonemptyRow() > BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL;
     break;
 
   case bnFlippedScreen:
@@ -1018,19 +1018,27 @@ void Player::rotatePiece(int direction)
 
 bool Player::generateBonus()  // TODO: remake
 {
-  for (int iter = 0; iter < N_BONUS_APPEAR_ATTEMPTS; ++iter)
+  Bonus bonus = randomBonus();  // Is that possible (?)
+  if (bonus == bnNoBonus)
+    return false;
+
+  for (int iter = 0; iter < N_BONUS_GENERATION_ATTEMPTS; ++iter)
   {
-    int row = rand() % FIELD_HEIGHT;
-    int col = rand() % FIELD_WIDTH;
-    if (field(row, col).isBlocked())
+    for (int row = highestNonemptyRow(); row >= 0; --row)
     {
-      Bonus bonus = randomBonus();
-      if (bonus == bnNoBonus)  // Is that posssible?
-        return false;
-      field(row, col).bonus = bonus;
-      lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
-      planBonusDisappearance();
-      return true;
+      if (float(rand()) / RAND_MAX > BONUS_ONE_ROW_CHANCE)
+        continue;
+      for (int colIter = 0; colIter < N_BONUS_ONE_ROW_ATTEMPTS; ++colIter)
+      {
+        int col = rand() % FIELD_WIDTH;
+        if (field(row, col).isBlocked())
+        {
+          field(row, col).bonus = bonus;
+          lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
+          planBonusDisappearance();
+          return true;
+        }
+      }
     }
   }
   return false;
