@@ -77,7 +77,7 @@ void Game::loadDefaultAccounts()
 
 void Game::loadSettings()
 {
-  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "r");
+  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), L"r");
   if (settingsFile.get() == NULL)
   {
       loadDefaultSettings();
@@ -107,7 +107,7 @@ void Game::loadSettings()
 
 void Game::saveSettings()
 {
-  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "w");
+  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), L"w");
   if (settingsFile.get() == NULL)
     throw ERR_FILE_WRITE_ERROR;   // TODO: format
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
@@ -245,7 +245,7 @@ void Game::onTimer(Time currentTime__)
 
 void Game::loadPieces()   // TODO: rewrite it cleaner
 {
-  SmartFileHandler piecesFile(PIECE_TEMPLATES_FILE.c_str(), "r");
+  SmartFileHandler piecesFile(PIECE_TEMPLATES_FILE.c_str(), L"r");
   if (piecesFile.get() == NULL)
     throw ERR_FILE_NOT_FOUND;   // TODO: format
 
@@ -303,6 +303,13 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   for (size_t iPiece = 0; iPiece < pieceTemplates.size(); ++iPiece)
     for (int i = 0; i < pieceTemplates[iPiece].chance; ++i)
       randomPieceTable.push_back(iPiece);
+}
+
+void Game::loadBonuses()
+{
+  for (Bonus bonus = FIRST_BONUS; bonus <= LAST_BONUS; ++bonus)
+    for (int i = 0; i < BONUS_CHANCES[bonus]; ++i)
+      randomBonusTable.push_back(bonus);
 }
 
 
@@ -525,10 +532,11 @@ void Player::onTimer()
       routineSpeedUp();
       break;
     case etBonusAppearance:
-      // ...
+      if (!generateBonus())
+        eventDelayed = true;
       break;
     case etBonusDisappearance:
-      // ...
+      removeBonuses();  // TODO: remove only one (?)
       break;
     }
     if (eventDelayed)
@@ -574,6 +582,11 @@ Piece Player::randomPiece() const
   piece.position.row = FIELD_HEIGHT - piece.currentStructure().bounds.bottom;
   piece.position.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // TODO: modify the formula
   return piece;
+}
+
+Bonus Player::randomBonus() const  // TODO: remake: fo not generate useless bonuses
+{
+  return game->randomBonusTable[rand() % game->randomBonusTable.size()];
 }
 
 void Player::setUpPiece()
@@ -627,7 +640,8 @@ void Player::resizePieceQueue(int newSize)
 void Player::sendNewPiece()
 {
   fallingPiece = nextPieces[0];
-  if (!fallingPiece.empty())    // Is it necessary?
+
+  /*if (!fallingPiece.empty())    // Is it necessary?
   {
     fallingPieceState = psNormal;
     events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
@@ -635,7 +649,13 @@ void Player::sendNewPiece()
       addStandingBlockImage(fallingBlockImages, fallingPiece.color(), fallingPiece.absoluteCoords(i));
   }
   else
-    fallingPieceState = psAbsent;
+    fallingPieceState = psAbsent;*/
+
+  assert(!fallingPiece.empty());
+  fallingPieceState = psNormal;
+  events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
+  for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
+    addStandingBlockImage(fallingBlockImages, fallingPiece.color(), fallingPiece.absoluteCoords(i));
   for (size_t i = 0; i < nextPieces.size() - 1; ++i)
     nextPieces[i] = nextPieces[i + 1];
   nextPieces.back() = randomPiece();
@@ -701,6 +721,8 @@ bool Player::removeFullLines()
       disappearingLines.back().row = row;
       for (int col = 0; col < FIELD_WIDTH; ++col)
       {
+        if (field(row, col).bonus != bnNoBonus)
+          takesBonus(field(row, col).bonus);
         disappearingLines.back().blockColor[col] = field(row, col).color;
         field(row, col).clear();
         removeBlockImage(lyingBlockImages, FieldCoords(row, col));
@@ -815,6 +837,48 @@ void Player::rotatePiece(int direction)
                    PIECE_ROTATING_ANIMATION_TIME);
   }
   applyBlockImagesMovements(fallingBlockImages);
+}
+
+bool Player::generateBonus()  // TODO: remake
+{
+  for (int iter = 0; iter < N_BONUS_APPEAR_ATTEMPS; ++iter)
+  {
+    int row = rand() % FIELD_HEIGHT;
+    int col = rand() % FIELD_WIDTH;
+    if (field(row, col).isBlocked())
+    {
+      Bonus bonus = randomBonus();
+      if (bonus == bnNoBonus)  // Is that posssible?
+        return false;
+      field(row, col).bonus = bonus;
+      lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
+      return true;
+    }
+  }
+  planBonusDisappearance();
+  return false;
+}
+
+void Player::removeBonuses()
+{
+  for (int row = 0; row < FIELD_HEIGHT; ++row)
+  {
+    for (int col = 0; col < FIELD_WIDTH; ++col)
+    {
+      field(row, col).bonus = bnNoBonus;
+      lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
+    }
+  }
+}
+
+void Player::planBonusAppearance()
+{
+  events.push(etBonusAppearance, randomRange(MIN_BONUS_APPEAR_TIME, MAX_BONUS_APPEAR_TIME));
+}
+
+void Player::planBonusDisappearance()
+{
+  events.push(etBonusDisappearance, randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME));
 }
 
 void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)

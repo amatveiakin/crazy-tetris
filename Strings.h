@@ -8,23 +8,25 @@
 // TODO: add ..._NAME to file name constants
 // Hmmm... I hope something will work :-)
 #if defined(_WINDOWS) || defined(WINDOWS) || defined(_WIN32) ||  defined(WIN32) ||  defined(_WIN64) ||  defined(WIN64)
-const std::string  PATH_DELIMITER = "\\";
+const std::wstring  PATH_DELIMITER = L"\\";
 #else
-const std::string  PATH_DELIMITER = "/";
+const std::wstring  PATH_DELIMITER = L"/";
 #endif
-const std::string  RECOURCE_FOLDER = "Resources" + PATH_DELIMITER;
-const std::string  PIECE_TEMPLATES_FILE = RECOURCE_FOLDER + "Pieces";
-const std::string  SETTINGS_FILE = "Settings";
-const std::string  ACCOUNTS_FILE = "Accounts";
+const std::wstring  RECOURCE_FOLDER = L"Resources" + PATH_DELIMITER;
+const std::wstring  PIECE_TEMPLATES_FILE = RECOURCE_FOLDER + L"Pieces";
+const std::wstring  SETTINGS_FILE = L"Settings";
+const std::wstring  ACCOUNTS_FILE = L"Accounts";
+
+const std::wstring  TEXTURES_FOLDER = RECOURCE_FOLDER + L"Textures" + PATH_DELIMITER;
 
 
 
 //=============================== Error messages ===============================
 
-const std::string  ERR_FILE_NOT_FOUND = "Файл \"%s\" не найден.";
-const std::string  ERR_FILE_CORRUPTED = "Файл \"%s\" повреждён.";
-// const std::string  ERR_FILE_READ_ERROR = "Не удаётся прочитать файл \"%s\".";
-const std::string  ERR_FILE_WRITE_ERROR = "Не удаётся записать файл \"%s\".";
-const std::string  ERR_EMPTY_BLOCK = "Пустая фигура в файле \"" + PIECE_TEMPLATES_FILE + "\".";
+const std::wstring  ERR_FILE_NOT_FOUND = L"Файл \"%s\" не найден.";
+const std::wstring  ERR_FILE_CORRUPTED = L"Файл \"%s\" повреждён.";
+// const std::wstring  ERR_FILE_READ_ERROR = L"Не удаётся прочитать файл \"%s\".";
+const std::wstring  ERR_FILE_WRITE_ERROR = L"Не удаётся записать файл \"%s\".";
+const std::wstring  ERR_EMPTY_BLOCK = L"Пустая фигура в файле \"" + PIECE_TEMPLATES_FILE + L"\".";
 
 #endif

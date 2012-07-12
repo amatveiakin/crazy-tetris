@@ -395,6 +395,7 @@ class VisualObject { };
 class BlockImage : public VisualObject, private MovingObject {
 public:
   Color color;
+  Bonus bonus;
   FieldCoords binding;
 //  bool motionBlur;
   

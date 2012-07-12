@@ -37,17 +37,45 @@ const int    MAX_PLAYERS = 4;
 typedef float Time;
 const Time NEVER = -1000.0f;
 
+
+
 #define Color D3DXCOLOR
 const Color COLORLESS = Color(-1.0, -1.0, -1.0, -1.0);
 
 
 
-/*typedef int BlockID;
-
-inline BlockID FieldCoordsToID(FieldCoords coords)
+enum Bonus
 {
-  return coords.row * FIELD_WIDTH + coords.row;
-}*/
+  // buffs
+  bnEnlargeHintQueue,
+  bnPieceTheft,
+
+  // kind sorceries
+  bnHeal,
+  bnSlowDown,
+  bnClearField,
+  
+  // debuffs
+  bnFlippedScreen,
+  bnInverseControls,
+  bnCrazyPieces,
+  bnTruncatedBlocks, // name --> (?)
+  bnNoHint,
+  
+  // evil sorceries
+  bnSpeedUp,
+  bnFlipField,
+  
+  //
+  bnNoBonus
+};
+
+
+
+inline float randomRange(float min__, float max__)
+{
+  return min__ + float(rand()) * (max__ - min__) / RAND_MAX;
+}
 
 
 
@@ -243,10 +271,10 @@ public:
 class SmartFileHandler
 {
 public:
-  SmartFileHandler(const char* path, const char* mode)
+  SmartFileHandler(const wchar_t* path, const wchar_t* mode)
   {
-//    file_handle_ = fopen(path, mode);
-    fopen_s(&file_handle_, path, mode);   // TODO: So, why is it safer?
+//    file_handle_ = wfopen(path, mode);
+    _wfopen_s(&file_handle_, path, mode);   // TODO: So, why is it safer?
   }
   
   ~SmartFileHandler()

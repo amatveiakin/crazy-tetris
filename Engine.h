@@ -1,12 +1,16 @@
+// TODO: abandon events (?)
+
 // TODO: use more throw's instead of assertions
 
-// TODO: reformat switches (?)
+// TODO: reformat switches
 
 // TODO: Add range checking everywhere
 
 // TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
 //       add all events that what to change the field are delayed  (?)
 // No, looks like it's better to check specific conditions before any change
+
+// TODO: change speed up algorithm
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -48,17 +52,7 @@ const Time   LINE_COLLAPSE_TIME = 0.05f;
 const Time   PIECE_LOWERING_ANIMATION_TIME = 0.8f;
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.3f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.4f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.4f;
-
-const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
-const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
-const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
-const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
-
-const int    MAX_PLAYERS = 4;
-const int    MAX_PLAYER_NAME_LENGTH = 16;*/
-
-
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.4f;*/
 
 
 
@@ -79,12 +73,7 @@ const Time   LINE_COLLAPSE_TIME = 0.05f;
 const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.03f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;
-
-const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
-const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
-const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
-const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;*/
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;*/
 
 
 
@@ -101,16 +90,11 @@ const Time   LINE_DISAPPEAR_TIME = 0.6f;
 const Time   LINE_COLLAPSE_TIME = 0.06f;
 
 //const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = AUTO_LOWERING_TIME;
-const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = 0.25f;
+const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = 0.2f;
 const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTIVATION_TIME
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.1f;
-
-const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
-const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
-const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
-const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
 
 
 
@@ -207,32 +191,6 @@ union GlobalControls
 
 //================================== Bonuses ===================================
 
-enum Bonus
-{
-  // buffs
-  bnEnlargeHintQueue,
-  bnPieceTheft,
-
-  // kind sorceries
-  bnHeal,
-  bnSlowDown,
-  bnClearField,
-  
-  // debuffs
-  bnFlippedScreen,
-  bnInverseControls,
-  bnCrazyPieces,
-  bnTruncatedBlocks, // name --> (?)
-  bnNoHint,
-  
-  // evil sorceries
-  bnSpeedUp,
-  bnFlipField,
-  
-  //
-  bnNoBonus
-};
-
 #define SKIP_BUFFS          case bnEnlargeHintQueue:  case bnPieceTheft:
 
 #define SKIP_KIND_SORCERIES case bnHeal:  case bnSlowDown:  case bnClearField:
@@ -282,7 +240,7 @@ const string BONUS_NAME[N_BONUSES] =
   "FlipField"
 };
 
-const int    BONUS_CHANCE[N_BONUSES] =
+const int    BONUS_CHANCES[N_BONUSES] =
 {
   1, // bnEnlargeHintQueue
   2, // bnPieceTheft
@@ -308,6 +266,13 @@ const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
 const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
+
+const Time   MIN_BONUS_APPEAR_TIME = 4.0f;
+const Time   MAX_BONUS_APPEAR_TIME = 6.0f;
+const Time   MIN_BONUS_LIFE_TIME = 15.0;
+const Time   MAX_BONUS_LIFE_TIME = 20.0;
+
+const int    N_BONUS_APPEAR_ATTEMPS = 20;
 
 
 
@@ -721,6 +686,7 @@ struct AccountInfo
   // TODO: other stats
 };
 
+// TODO: make sove variabes private
 // Initialize at:  [N]ever, on [C]reation, new [M]atch, new [R]ound, game [S]ettings change
 class Player
 {
@@ -791,11 +757,12 @@ private:
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   bool          canSendNewPiece() const;
   Piece         randomPiece() const;
+  Bonus         randomBonus() const;
 
   void          setUpPiece();
   void          initPieceQueue(int size);
   void          resizePieceQueue(int newSize);
-  void          sendNewPiece();
+  void          sendNewPiece();   // TODO: combine with canSendNewPiece()
   void          lowerPiece(bool forced);
   bool          removeFullLines();
   void          collapseLine(int row);
@@ -803,6 +770,11 @@ private:
   void          dropPiece();
   void          rotatePiece(int direction);
   
+  bool          generateBonus();
+  void          removeBonuses();
+  void          planBonusAppearance();
+  void          planBonusDisappearance();
+
   void          applyBlockImagesMovements(vector<BlockImage>& imageArray);
   void          addStandingBlockImage(vector<BlockImage>& imageArray, Color color, FieldCoords position);  // name (?)
   void          moveBlockImage(vector<BlockImage>& imageArray, FieldCoords movingFrom,
@@ -832,6 +804,8 @@ public:
   
   vector<PieceTemplate> pieceTemplates;
   vector<int>   randomPieceTable;
+
+  vector<Bonus> randomBonusTable;
   
   Time          currentTime;
   GlobalVisualEffects   globalEffects;
@@ -854,6 +828,7 @@ public:
   
 private:
   void          loadPieces();
+  void          loadBonuses();
   void          loadAccounts();
   void          loadDefaultAccounts();
   void          loadSettings();
