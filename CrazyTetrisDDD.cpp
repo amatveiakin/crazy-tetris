@@ -152,7 +152,8 @@ private:
 
  
   //Textures and texture views
-  ID3D10ShaderResourceView* texBackWallRV;
+  vector<ID3D10ShaderResourceView*> texBackWallRV;
+  
   ID3D10ShaderResourceView* texAimRV;
   ID3D10ShaderResourceView* texSearchLightColorFilterRV;
   ID3D10ShaderResourceView* texBonusesRV;
@@ -222,7 +223,7 @@ CrazyTetrisApp::~CrazyTetrisApp()
   ReleaseCOM(texturedVertexLayout);
   //ReleaseCOM(uncoloredVertexLayout);
 
-  ReleaseCOM(texBackWallRV);
+  for (size_t i = 0; i < texBackWallRV.size(); ++i) ReleaseCOM(texBackWallRV[i]);
   ReleaseCOM(texSearchLightColorFilterRV);
 }
 
@@ -240,7 +241,7 @@ void CrazyTetrisApp::initApp()
              CUBE_SCALE * (FIELD_HEIGHT) * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
              1.0f,  1.0f);
   mAim.init(md3dDevice, CUBE_SCALE, CUBE_SCALE, 1.0f, 1.0f); 
-  //mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
+  mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
   mShadowMap.init(md3dDevice, (int) SMAP_SIZE, (int) SMAP_SIZE, false, DXGI_FORMAT_R32G32B32A32_FLOAT); //change to false!
 
   buildFX();
@@ -382,7 +383,7 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
   drawLyingBlocks(player, true);
   //рисуем убираемые линии
   drawDisappearingLines(player, true);
-  
+  mGlass.draw();
   //упорядочиваем по удаленности и рисуем прозрачные объекты
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
   //рисуем падающую фигуру
@@ -704,10 +705,23 @@ void CrazyTetrisApp::buildBuffers()
 
 void CrazyTetrisApp::buildTextures()
 {
-  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER + L"Wall.dds").c_str(), 0, 0, &texBackWallRV, 0) );
+  //типа пиздатый поиск, обработчик ошибок - нахуй, зато текстуры не в массиве а в векторе - ваще заебок
+  WIN32_FIND_DATA FileData;
+  HANDLE hSearch;
+  BOOL fFinished = FALSE;
+  ID3D10ShaderResourceView* temp;
+  texBackWallRV.clear();
+  hSearch = FindFirstFile((TEXTURES_FOLDER + L"Wall\\*.jpg").c_str(), &FileData);
+  while (!fFinished)
+  {
+    HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER + L"Wall\\" +  FileData.cFileName).c_str(), 0, 0, &temp, 0) );
+    texBackWallRV.push_back(temp);
+    if (!FindNextFile(hSearch, &FileData)) fFinished = TRUE;
+  }
+  FindClose(hSearch); 
+
   HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"SearchLightXuy.jpg").c_str(), 0, 0, &texSearchLightColorFilterRV, 0) );
   HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"Aim.jpg").c_str(), 0, 0, &texAimRV, 0) );
-  //HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"flare.dds").c_str(), 0, 0, &texBonusesRV, 0) );
 
   ID3D10Texture2D* srcTex[N_BONUSES];
   for(UINT i = 0; i < N_BONUSES; ++i)
@@ -1022,7 +1036,7 @@ void CrazyTetrisApp::loadPlayerData(Player* player)
 void CrazyTetrisApp::drawWall(Player* player, bool colored)
 {
   D3DXMATRIX temp;
-  fxDiffuseMapVar->SetResource(texBackWallRV);
+  fxDiffuseMapVar->SetResource(texBackWallRV[player->accountNumber % texBackWallRV.size()]);
   fxWorldVar->SetMatrix((float*) D3DXMatrixTranslation(&temp, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
   if (colored) 

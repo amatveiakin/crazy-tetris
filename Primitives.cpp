@@ -191,7 +191,7 @@ Glass::Glass() {}
 
 Glass::~Glass()
 {
-  //if (mIB) ReleaseCOM(mIB);
+  if (mIB) ReleaseCOM(mIB);
 }
 
 void Glass::init(ID3D10Device* device, float width, float height, float depth)
