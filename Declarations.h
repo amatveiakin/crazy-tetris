@@ -24,6 +24,7 @@ T myMax(T x, T y)
 const int    FIELD_WIDTH = 10;
 const int    FIELD_HEIGHT = 20;
 const int    MAX_BLOCKS = FIELD_WIDTH * FIELD_HEIGHT;
+const int    MAX_BLOCK_IMAGES = MAX_BLOCKS;
 
 
 
@@ -31,10 +32,16 @@ typedef float Time;
 const Time NEVER = -1000.0f;
 
 #define Color D3DXCOLOR
-
-
-
 const Color COLORLESS = Color(-1.0, -1.0, -1.0, -1.0);
+
+
+
+/*typedef int BlockID;
+
+inline BlockID FieldCoordsToID(FieldCoords coords)
+{
+  return coords.row * FIELD_WIDTH + coords.row;
+}*/
 
 
 
@@ -47,6 +54,11 @@ struct Coord2D
   Coord2D() { }
   Coord2D(const Coord2D& a) : row(a.row), col(a.col) { }
   Coord2D(T row__, T col__) : row(row__), col(col__) { }
+
+  bool operator==(const Coord2D& a)
+  {
+    return (row == a.row) && (col == a.col);
+  }
 
   Coord2D& operator=(const Coord2D& a)
   {

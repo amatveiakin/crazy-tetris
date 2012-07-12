@@ -34,6 +34,16 @@ void Field::clear()
       operator()(row, col).clear();
 }
 
+void Field::clearImageIndices()
+{
+  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
+    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
+    {
+      operator()(row, col).iBlockImage = NO_BLOCK_IMAGE;
+      operator()(row, col).iNewBlockImage = NO_CHANGE;
+    }
+}
+
 
 
 //==================================== Game ====================================
@@ -250,6 +260,8 @@ void Player::prepareForNewRound()
   buffs.clear();
   debuffs.clear();
   field.clear();
+  field.clearImageIndices();
+  nBlockImages = 0;
   speed = STARTING_SPEED;
   nextPiece = NULL;
   sendNewPiece();
@@ -258,6 +270,7 @@ void Player::prepareForNewRound()
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
+  visualEffects.clear();
   visualEffects.lantern.setStanding(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
                                                      (FIELD_WIDTH  - 1.0f) / 2.0f));
   // ...
@@ -375,7 +388,7 @@ void Player::onTimer()
       case etLineCollapse:
         collapseLine(events.top().parameters.lineCollapse.row);
         break;
-      case etSpeedUp:   // TODO: why is it called in the very beginning?
+      case etSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
         // ...
         break;
       case etBonusAppearance:
@@ -392,7 +405,7 @@ void Player::onTimer()
 
 void Player::redraw()
 {
-  nBlockImages = 0;
+  /*nBlockImages = 0;
   for (int row = 0; row < FIELD_HEIGHT; ++row)
     for (int col = 0; col < FIELD_WIDTH; ++col)
       if (field(row, col).isBlocked())
@@ -405,12 +418,15 @@ void Player::redraw()
       blockImage[nBlockImages++].setStanding(fallingPiece->color,
           FloatFieldCoords(fallingBlockStructure().block[i] + fallingPiecePosition));
     }
-  }
+  }*/
 
   if (fallingPieceState != psAbsent)
   {
-    visualEffects.lantern.startMovingTo(fallingPiecePosition, currentTime(),
-                                        BONUS_LANTERN_ANIMATION_TIME);
+    // TODO: selfmodifiable  movingFrom  (?)
+    visualEffects.lantern.setMotion(FloatFieldCoords(visualEffects.lantern.positionY(currentTime()),
+                                                     visualEffects.lantern.positionX(currentTime())),
+                                    fallingPiecePosition,
+                                    currentTime(), BONUS_LANTERN_ANIMATION_TIME);
   }
 }
 
@@ -426,7 +442,14 @@ void Player::setUpPiece()
   for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
   {
     FieldCoords cell = fallingPiecePosition + fallingBlockStructure().block[i];
-    field(cell.row, cell.col).setBlock(fallingPiece->color);
+    if (cell.row >= FIELD_HEIGHT)
+    {
+      field.clear();
+      return;
+    } // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
+    field(cell).setBlock(fallingPiece->color);
+    setUpBlockImage(fallingPiece->color, cell);
+    applyBlockImagesChanges();
   }
   removeFullLines();
   sendNewPiece();
@@ -435,7 +458,7 @@ void Player::setUpPiece()
 bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
 {
   for (size_t i = 0; i < piece.block.size(); ++i)
-    if (field(position.row + piece.block[i].row, position.col + piece.block[i].col).isBlocked())
+    if (field(position + piece.block[i]).isBlocked())
       return false;
   return true;
 }
@@ -450,10 +473,15 @@ void Player::sendNewPiece()
     fallingPiecePosition.row = FIELD_HEIGHT + fallingBlockStructure().lowestBlockRow;
     fallingPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // (?)
     events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
+    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    {
+      addStandingBlockImage(fallingPiece->color,
+                            fallingPiecePosition + fallingBlockStructure().block[i]);
+    }
+    applyBlockImagesChanges();
   }
   else
     fallingPieceState = psAbsent;
-//  nextPiece = &game->pieceTemplate[rand() % game->pieceTemplate.size()];
   nextPiece = &game->pieceTemplate[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
   nextPieceRotationState = rand() % N_PIECE_ROTATION_STATES;
 }
@@ -465,6 +493,14 @@ void Player::lowerPiece()
   // field modification. Such pieces should not continue falling.
   if (canDisposePiece(fallingPiecePosition, fallingBlockStructure()) &&
       canDisposePiece(newPosition, fallingBlockStructure())) {
+    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    {
+      moveBlockImage(fallingPiecePosition + fallingBlockStructure().block[i],
+                     newPosition + fallingBlockStructure().block[i],
+                     currentTime(), PIECE_LOWERING_ANIMATION_TIME);
+    }
+    applyBlockImagesChanges();
+
     fallingPiecePosition = newPosition; // animation (!)
     events.push(etPieceLowering,
                 currentTime() +
@@ -497,7 +533,9 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
       {
         disappearingLine[nDisappearingLines].blockColor[col] = field(row, col).color;
         field(row, col).clear();
+        removeBlockImage(FieldCoords(row, col));
       }
+      applyBlockImagesChanges();
       ++nDisappearingLines;
       if (latestLineCollapse < currentTime() + LINE_DISAPPEAR_TIME)
         latestLineCollapse = currentTime() + LINE_DISAPPEAR_TIME;
@@ -513,7 +551,12 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
 {
   for (int curRow = row; curRow < FIELD_HEIGHT; ++curRow)
     for (int col = 0; col < FIELD_WIDTH; ++col)
+    {
       field(curRow, col) = field(curRow + 1, col);
+      moveBlockImage(FieldCoords(curRow + 1, col), FieldCoords(curRow, col),
+                     currentTime(), LINE_COLLAPSE_ANIMATION_TIME);
+    }
+  applyBlockImagesChanges();
   for (int i = 0; i < nDisappearingLines; ++i)
     if (disappearingLine[i].row > row)
       --disappearingLine[i].row;
@@ -528,7 +571,16 @@ void Player::movePiece(int direction)
     return;
   FieldCoords newPosition = fallingPiecePosition + FieldCoords(0, direction);
   if (canDisposePiece(newPosition, fallingBlockStructure()))
+  {
+    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    {
+      moveBlockImage(fallingPiecePosition + fallingBlockStructure().block[i],
+                     newPosition + fallingBlockStructure().block[i],
+                     currentTime(), PIECE_MOVING_ANIMATION_TIME);
+    }
+    applyBlockImagesChanges();
     fallingPiecePosition = newPosition;
+  }
 }
 
 void Player::dropPiece()
@@ -544,6 +596,9 @@ void Player::rotatePiece(int direction)
 {
   if (fallingPieceState != psNormal)
     return;
+
+  FieldCoords oldPosition = fallingPiecePosition;    // animation
+  int oldRotationState = fallingPieceRotationState;    // animation
   int newFallingPieceRotationState = (fallingPieceRotationState + N_PIECE_ROTATION_STATES + direction) %
                                      N_PIECE_ROTATION_STATES;
 
@@ -563,6 +618,86 @@ void Player::rotatePiece(int direction)
     fallingPiecePosition -= FieldCoords(0, 1);
     fallingPieceRotationState = newFallingPieceRotationState;
   }
+
+  for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)    // animation
+  {    // animation
+    moveBlockImage(oldPosition + fallingPiece->structure[oldRotationState].block[i],    // animation
+                   fallingPiecePosition + fallingBlockStructure().block[i],    // animation
+                   currentTime(), PIECE_ROTATING_ANIMATION_TIME);    // animation
+  }    // animation
+  applyBlockImagesChanges();    // animation
+}
+
+void Player::applyBlockImagesChanges()
+{
+  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
+    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
+      if (field(row, col).iNewBlockImage != NO_CHANGE)
+      {
+        field(row, col).iBlockImage = field(row, col).iNewBlockImage;
+        field(row, col).iNewBlockImage = NO_CHANGE;
+      }
+
+
+  FILE* logFile = fopen("debug.log", "w+");
+  for (int row = 0; row < FIELD_HEIGHT; ++row)
+  {
+    for (int col = 0; col < FIELD_WIDTH; ++col)
+      fprintf(logFile, "%d ", field(row, col).iBlockImage);
+    fprintf(logFile, "\n");
+  }
+  fprintf(logFile, "\n\n");
+  fclose(logFile);
+}
+
+void Player::addStandingBlockImage(Color color, FieldCoords position)
+{
+  blockImage[nBlockImages].setStanding(color, position);
+  field(position).iNewBlockImage = nBlockImages;
+  ++nBlockImages;
+}
+
+void Player::addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
+                                 Time movingStartTime, Time movingDuration)
+{
+  blockImage[nBlockImages].setMotion(color, movingFrom, movingTo,
+                                     movingStartTime, movingDuration);
+  field(movingTo).iNewBlockImage = nBlockImages;
+  ++nBlockImages;
+}
+
+void Player::setUpBlockImage(Color color, FieldCoords position)
+{
+  blockImage[field(position).iBlockImage].setStanding(color, position);
+}
+
+void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
+                            Time movingStartTime, Time movingDuration)
+{
+  if (movingFrom == movingTo)
+    return;
+  blockImage[field(movingFrom).iBlockImage].setMotion(
+          blockImage[field(movingFrom).iBlockImage].color, movingFrom, movingTo,
+          movingStartTime, movingDuration);
+  field(movingTo).iNewBlockImage = field(movingFrom).iBlockImage;
+  if (field(movingFrom).iNewBlockImage == NO_CHANGE)
+    field(movingFrom).iNewBlockImage = NO_BLOCK_IMAGE;
+}
+
+void Player::removeBlockImage(FieldCoords position)
+{
+  --nBlockImages;
+  if (field(position).iBlockImage == nBlockImages)
+  {
+    field(position).iNewBlockImage = NO_BLOCK_IMAGE;
+    return;
+  }
+  blockImage[field(position).iBlockImage] = blockImage[nBlockImages];
+  // TODO: change it !!!
+  field((int)(blockImage[nBlockImages].movingTo.row),
+        (int)(blockImage[nBlockImages].movingTo.col)).
+       iNewBlockImage = field(position).iBlockImage;
+  field(position).iNewBlockImage = NO_BLOCK_IMAGE;
 }
 
 void Player::cycleVictim()

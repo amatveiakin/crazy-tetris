@@ -29,11 +29,15 @@ const Time   SPEED_UP_INTERVAL = 0.5f;
 const float SPEED_LIMIT = 5.0f;
 
 const Time   NORMAL_LOWERING_TIME = 1.0f;
-const Time   LOWERING_ANIMATION_TIME = 0.05f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
 const Time   LINE_DISAPPEAR_TIME = 0.1f;
 const Time   LINE_COLLAPSE_TIME = 0.1f;
+
+const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
+const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.05f;
+const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
 
 const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
 const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
@@ -171,14 +175,14 @@ const int    BONUS_CHANCE[N_BONUSES] =
   2  // bnFlipField
 };
 
-const float BONUS_SPEED_UP_MULTIPLIER = 1.4f;
-const float BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
+const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
+const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
 const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
-const Time   BONUS_LANTERN_ANIMATION_TIME = LOWERING_ANIMATION_TIME;
+const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_LOWERING_ANIMATION_TIME;
 
 
 
@@ -230,8 +234,17 @@ const int    CENTRAL_PIECE_COL = MAX_PIECE_SIZE / 2; // (?)
 const int    N_PIECE_ROTATION_STATES = 4;
 
 const int    SKY_HEIGHT = MAX_PIECE_SIZE;
-// MAX_PIECE_SIZE / 2  is enough  WALL_WIDTH  in most cases, but that's safe
+// MAX_PIECE_SIZE / 2  is enough for  WALL_WIDTH  in most cases, but that's safe
 const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;
+
+// TODO: use in Field::Field()
+const int    BORDERED_FIELD_ROW_BEGIN = -WALL_WIDTH;
+const int    BORDERED_FIELD_ROW_END   = FIELD_HEIGHT + SKY_HEIGHT;
+const int    BORDERED_FIELD_COL_BEGIN = -WALL_WIDTH;
+const int    BORDERED_FIELD_COL_END   = FIELD_HEIGHT + SKY_HEIGHT;
+
+const int    NO_BLOCK_IMAGE = -1;
+const int    NO_CHANGE = -2;
 
 struct BlockStructure
 {
@@ -260,6 +273,8 @@ struct FieldCell
   bool blocked;
   Color color;
   Bonus bonus;
+  int iBlockImage;
+  int iNewBlockImage;
   
   void clear()
   {
@@ -288,7 +303,34 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
                                    FIELD_HEIGHT + SKY_HEIGHT, FIELD_WIDTH + WALL_WIDTH>
 {
   Field();
+
+  FieldCell& operator()(int row, int col)
+  {
+    return Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
+                        FIELD_HEIGHT + SKY_HEIGHT, FIELD_WIDTH + WALL_WIDTH>::
+                        operator()(row, col);
+  }
+  
+  const FieldCell& operator()(int row, int col) const
+  {
+    return Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
+                        FIELD_HEIGHT + SKY_HEIGHT, FIELD_WIDTH + WALL_WIDTH>::
+                        operator()(row, col);
+  }
+
+  FieldCell& operator()(FieldCoords position)
+  {
+    return operator()(position.row, position.col);
+  }
+
+  const FieldCell& operator()(FieldCoords position) const
+  {
+    return operator()(position.row, position.col);
+  }
+
   void clear();
+
+  void clearImageIndices();
 };
 
 enum FallingPieceState { psAbsent, psNormal, psDropping };
@@ -459,86 +501,91 @@ public:
   // TODO: other stats
 };
 
+// Initialize at:  [N]ever, on [C]reation, new [M]atch, new [R]ound, game [S]ettings change
 class Player
 {
 public:
-  int number;
-  int accountNumber;  // TODO: changeSystem, use some ID's insted of numbers
-  Game* game;
+  int           number;         // C
+  int           accountNumber;  // S  // TODO: changeSystem, use some ID's instead of numbers
+  Game*         game;           // C
   
-  bool participates;
-  bool active;
-  int score;
-  Controls controls;
+  bool          participates;   // S
+  bool          active;         // R  (in Game::newRound)
+  int           score;          // M
+  Controls      controls;       // S
   
-  float speed;
-  Field field;
-  Time latestLineCollapse;
+  float         speed;          // R
+  Field         field;          // R
+  Time          latestLineCollapse; // R
   
-//   int nextPieceNumber;
-  const PieceTemplate* nextPiece;
-  int nextPieceRotationState;
+  const PieceTemplate* nextPiece;       // R
+  int           nextPieceRotationState; // R
   
-  FallingPieceState fallingPieceState;
-//   int fallingPieceNumber;
-  const PieceTemplate* fallingPiece;
-  int fallingPieceRotationState;
-  // ``center'' coordinates
-  FieldCoords fallingPiecePosition;
+  FallingPieceState fallingPieceState;  // R
+  const PieceTemplate* fallingPiece;    // R
+  int           fallingPieceRotationState; // R
+  FieldCoords   fallingPiecePosition;   // R    [``center'' coordinates]
   
-//   Time nextBonusTime;
+  Buffs         buffs;          // R
+  Debuffs       debuffs;        // R
+  int           victimNumber;   // R
   
-  Buffs buffs;
-  Debuffs debuffs;
-  int victimNumber;
+  EventSet      events;         // R
   
-  EventSet events;
+  int           nBlockImages;                   // R
+  BlockImage    blockImage[MAX_BLOCK_IMAGES];   // N
+  int           nDisappearingLines;             // R
+  DisappearingLine disappearingLine[FIELD_HEIGHT]; // N
+  VisualEffects visualEffects;                  // R
   
-  int nBlockImages;
-  BlockImage blockImage[MAX_BLOCKS];
-  int nDisappearingLines;
-  DisappearingLine disappearingLine[FIELD_HEIGHT];
-  VisualEffects visualEffects;
-  
-  Time nextKeyActivation[N_PLAYER_KEYS];
+  Time          nextKeyActivation[N_PLAYER_KEYS]; // C
 
-  void init(Game* game__, int number__);
-  void loadAccountInfo(int newAccount);
-  AccountInfo* account();
-  void prepareForNewMatch();
-  void prepareForNewRound();
+  void          init(Game* game__, int number__);
+  void          loadAccountInfo(int newAccount);
+  AccountInfo*  account();
+  void          prepareForNewMatch();
+  void          prepareForNewRound();
   
-  Time currentTime();
-  Time pieceLoweringInterval();
+  Time          currentTime();
+  Time          pieceLoweringInterval();
   
-  Player* victim();
+  Player*       victim();
   
-  void takesBonus(Bonus bonus);
-  void applyBonus(Bonus bonus);
-  void heal();
-  void kill();
+  void          takesBonus(Bonus bonus);
+  void          applyBonus(Bonus bonus);
+  void          heal();
+  void          kill();
 
-  void onKeyPress(PlayerKey key);  // (!) private
-  void onTimer();
-  void redraw();  // (!) private
+  void          onKeyPress(PlayerKey key);
+  void          onTimer();
+  void          redraw();
   
 private:
   const BlockStructure& fallingBlockStructure();
-  bool canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
-//   void setUpPiece(FieldCoords position, const BlockStructure& piece, const Color& color)
-  void setUpPiece();
-  void sendNewPiece();
-  void lowerPiece();
-  void removeFullLines();
-  void collapseLine(int row);
-  void movePiece(int direction);
-  void dropPiece();
-  void rotatePiece(int direction);
-  void cycleVictim();
+  bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
+  void          setUpPiece();
+  void          sendNewPiece();
+  void          lowerPiece();
+  void          removeFullLines();
+  void          collapseLine(int row);
+  void          movePiece(int direction);
+  void          dropPiece();
+  void          rotatePiece(int direction);
   
-  void enableBonusEffect(Bonus bonus);
-  void disableBonusEffect(Bonus bonus);
-  void flipBlocks();
+  void          applyBlockImagesChanges();
+  void          addStandingBlockImage(Color color, FieldCoords position);
+  void          addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
+                                    Time movingStartTime, Time movingDuration);
+  void          setUpBlockImage(Color color, FieldCoords position);
+  void          moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
+                               Time movingStartTime, Time movingDuration);
+  void          removeBlockImage(FieldCoords position);
+
+  void          cycleVictim();
+  
+  void          enableBonusEffect(Bonus bonus);
+  void          disableBonusEffect(Bonus bonus);
+  void          flipBlocks();
 };
 
 
@@ -550,37 +597,36 @@ class Game
 public:
   vector<AccountInfo> account;
 
-  Player player[MAX_PLAYERS];
-  int nActivePlayers;
+  Player        player[MAX_PLAYERS];
+  int           nActivePlayers;
   
   vector<PieceTemplate> pieceTemplate;
-  vector<int> randomPieceTable;
+  vector<int>   randomPieceTable;
   
-  Time currentTime;
-//   Time lastSpeedUp;
+  Time          currentTime;
   
-//   Time nextGlobalKeyActivation[N_GLOBAL_KEYS];
-  Time nextGlobalKeyActivation[1];
+//  Time          nextGlobalKeyActivation[N_GLOBAL_KEYS];
+  Time          nextGlobalKeyActivation[1];
   GlobalControls globalControls;
   
-  void init();
+  void          init();
   
-  void saveAccounts();
-  void saveSettings();
+  void          saveAccounts();
+  void          saveSettings();
 
-  void newMatch();
-  void newRound(Time currentTime__);
-  void endRound();
+  void          newMatch();
+  void          newRound(Time currentTime__);
+  void          endRound();
   
-  void onGlobalKeyPress(GlobalKey key);  // (!) private
-  void onTimer(Time currentTime);
+  void          onGlobalKeyPress(GlobalKey key);
+  void          onTimer(Time currentTime);
   
 private:
-  void loadPieces();
-  void loadAccounts();
-  void loadDefaultAccounts();
-  void loadSettings();
-  void loadDefaultSettings();
+  void          loadPieces();
+  void          loadAccounts();
+  void          loadDefaultAccounts();
+  void          loadSettings();
+  void          loadDefaultSettings();
 };
 
 #endif

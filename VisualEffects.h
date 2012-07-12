@@ -90,9 +90,18 @@ protected:
 class SmoothEffectType : public BaseEffectType
 {
 public:
-  SmoothEffectType() : MIN_PROGRESS(0.0), MAX_PROGRESS(1.0), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
-                       progress_(MIN_PROGRESS), lastTime_(0.0) { }
+  SmoothEffectType() : INITIAL_TIME(0.0), MIN_PROGRESS(0.0), MAX_PROGRESS(1.0),
+                       PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
+                       progress_(MIN_PROGRESS), lastTime_(INITIAL_TIME) { }
+
+  void clear()
+  {
+    active_ = false;
+    progress_ = MIN_PROGRESS;
+    lastTime_ = INITIAL_TIME;
+  }
 protected:
+  const float INITIAL_TIME;
   const float MIN_PROGRESS;
   const float MAX_PROGRESS;
   const float PROGRESS_RANGE;
@@ -275,24 +284,7 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect;
 
-class LanternEffect : public BaseEffectType, public MovingObject
-{
-public:
-  void enable()
-  {
-    active_ = true;
-  }
-
-  void disable()
-  {
-    active_ = false;
-  }
-
-  bool isOn()
-  {
-    return active_;
-  }
-};
+class LanternEffect : public FadingEffectType, public MovingObject { };
 
 
 
@@ -307,6 +299,18 @@ public:
   SemicubesEffect semicubes;
   WaveEffect wave;
   LanternEffect lantern;
+
+  void clear()
+  {
+    clearGlass.clear();
+    playerDying.clear();
+    noHint.clear();
+    flippedScreen.clear();
+    rotatingField.clear();
+    semicubes.clear();
+    wave.clear();
+    lantern.clear();
+  }
 };
 
 
@@ -318,22 +322,34 @@ class VisualObject { };
 
 
 
-class BlockImage : public VisualObject, private MovingObject {
+//class BlockImage : public VisualObject, private MovingObject {   // TODO: return
+class BlockImage : public VisualObject, public MovingObject {
 public:
+//  BlockID id;
   Color color;
-  bool motionBlur;
+//  bool motionBlur;
   
-  void setMotion(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
-                 Time movingStartTime__, Time movingDuration__, bool motionBlur__ = false)
+  /*BlockImage(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+             Time movingStartTime__, Time movingDuration__)
   {
-    MovingObject::setMotion(movingFrom__, movingTo__, movingStartTime__, movingDuration__);
+    setMotion(color__, movingFrom__, movingTo__, movingStartTime__, movingDuration__, motionBlur__);
+  }
+
+  BlockImage(BlockID id__, Color color__, FloatFieldCoords position)
+  {
+    setStanding(color__, position);
+  }*/
+
+  void setMotion(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+                 Time movingStartTime__, Time movingDuration__)
+  {
     color = color__;
-    motionBlur = motionBlur__;
+    MovingObject::setMotion(movingFrom__, movingTo__, movingStartTime__, movingDuration__);
   }
   
   void setStanding(Color color__, FloatFieldCoords position)
   {
-    setMotion(color__, position, position, 0.0, 1.0, false);
+    setMotion(color__, position, position, 0.0, 1.0);
   }
   
   float positionY(Time currentTime)
