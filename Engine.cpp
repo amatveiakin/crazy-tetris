@@ -39,8 +39,8 @@ void Field::clear()
 
 void Game::init()
 {
-  for (int key = FIRST_REAL_KEY; key <= LAST_REAL_KEY; ++key)
-    lastKeyTrigger[key] = NEVER;
+//   for (int key = FIRST_REAL_KEY; key <= LAST_REAL_KEY; ++key)
+//     lastKeyTrigger[key] = NEVER;
   loadPieces();
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     player[iPlayer].init(this, iPlayer);
@@ -48,7 +48,6 @@ void Game::init()
 
 void Game::newMatch()
 {
-  buildKeyMap();
   // ...
 }
 
@@ -72,7 +71,7 @@ void Game::endRound()
 
 }
 
-void Game::onGlobalKeyPress(RealKey key)
+void Game::onGlobalKeyPress(GlobalKey key)
 {
   switch (key)
   {
@@ -102,9 +101,13 @@ void Game::onTimer(Time currentTime__)
 {
   currentTime = currentTime__;
   
-  for (int key = FIRST_GLOBAL_KEY; key <= LAST_GLOBAL_KEY; ++key)
-    if (keyPressed(key))
-      onKeyPress(key);
+  // TODO: place reactivation time check somewhere
+  for (int key = 0; key < N_GLOBAL_KEYS; ++key)
+    onGlobalKeyPress(GlobalKey(key));
+  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+    if (player[iPlayer].active)
+      for (int key = 0; key < N_PLAYER_KEYS; ++key)
+        player[iPlayer].onKeyPress(PlayerKey(key));
   
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     player[iPlayer].onTimer();
@@ -281,7 +284,7 @@ void Player::kill()
   active = false;
 }
 
-void Player::onKeyPress(ControlKey key)
+void Player::onKeyPress(PlayerKey key)
 {
   switch (key) {
     case keyLeft:
@@ -305,7 +308,6 @@ void Player::onKeyPress(ControlKey key)
     case keyChangeVictim:
       cycleVictim();
       break;
-    SKIP_NONPLAYER_KEYS;
   }
 }
 
@@ -318,10 +320,10 @@ void Player::onTimer()
       case etPieceLowering:
         lowerPiece();
         break;
-      case etGravityAction:
+      case etLineCollapse:
         // ...
         break;
-      case etLineCollapse:
+      case etSpeedUp:
         // ...
         break;
       case etBonusAppearance:

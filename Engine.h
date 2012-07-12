@@ -1,4 +1,4 @@
-// TODO: Wash out all std::vectors (since we decided to use traditional arrays)
+// TODO: Wash out all std::vectors (since we decided to use traditional arrays)  (?)
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -54,7 +54,7 @@ const Time   DROP_KEY_REACTIVATE_TIME = 0.3;
 // const Time   HEAL_KEY_REACTIVATE_TIME = 0.2;
 const Time   CHANGE_VICTIM_KEY_REACTIVATE_TIME = 0.2;
 
-const string CONTROL_KEY_NAME[N_CONTROL_KEYS] =
+const string PLAYER_KEY_NAME[N_PLAYER_KEYS] =
 {
   "Влево: ",
   "Вправо: ",
@@ -66,7 +66,7 @@ const string CONTROL_KEY_NAME[N_CONTROL_KEYS] =
   "Менять цель: "
 };
 
-const Time   KEY_REACTIVATE_TIME[N_CONTROL_KEYS] =
+const Time   PLAYER_KEY_REACTIVATE_TIME[N_PLAYER_KEYS] =
 {
   MOVE_KEY_REACTIVATE_TIME,
   MOVE_KEY_REACTIVATE_TIME,
@@ -287,7 +287,6 @@ const char   PIECE_TEMPLATE_FREE_CHAR  = '.';
 enum EventType
 {
   etPieceLowering,
-//   etGravityAction,
   etLineCollapse,
   etSpeedUp,
   etBonusAppearance,
@@ -373,7 +372,7 @@ private:
 
 //================================== Controls ==================================
 
-struct ControlKeyList
+struct PlayerKeyList
 {
   RealKey keyLeft;
   RealKey keyRight;
@@ -387,14 +386,8 @@ struct ControlKeyList
 
 union Controls    // (?) Is this union necessary?
 {
-  ControlKeyList keyList;
-  RealKey keyArray[N_CONTROL_KEYS];
-};
-
-struct KeyMapping
-{
-  ControlKey controlKey;
-  int iPlayer;
+  PlayerKeyList keyList;
+  RealKey keyArray[N_PLAYER_KEYS];
 };
 
 
@@ -468,7 +461,7 @@ public:
   void heal();
   void kill();
 
-  void onKeyPress(ControlKey key);
+  void onKeyPress(PlayerKey key);
   void onTimer();
   
 private:
@@ -507,8 +500,7 @@ public:
   std::vector<PieceTemplate> pieceTemplate;
 //   int nPieceTemplates;
   
-  KeyMapping keyMap[N_REAL_KEYS];
-  Time lastKeyTrigger[N_REAL_KEYS];
+//   Time lastKeyTrigger[N_REAL_KEYS];
   
   void init();
   
@@ -516,7 +508,7 @@ public:
   void newRound(Time currentTime__);
   void endRound();
   
-  void onKeyPress(RealKey key);
+  void onGlobalKeyPress(GlobalKey key);
   void onTimer(Time currentTime);
   
 private:

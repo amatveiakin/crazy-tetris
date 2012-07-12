@@ -41,37 +41,12 @@ const Color COLORLESS  = { -1.0, -1.0, -1.0, -1.0 };
 
 
 
-const int N_CONTROL_KEYS = 7;
-enum ControlKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop,
-                  keyChangeVictim, keyUnassigned };
+const int N_PLAYER_KEYS = 7;
+enum PlayerKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop, keyChangeVictim };
 
+const int N_GLOBAL_KEYS = 7;
+enum GlobalKey { };
 
-const ControlKey FIRST_PLAYER_KEY = keyLeft;
-const ControlKey LAST_PLAYER_KEY = keyChangeVictim;
-
-const ControlKey FIRST_GLOBAL_KEY = ControlKey(keyUnassigned + 1);
-const ControlKey LAST_GLOBAL_KEY = keyUnassigned;
-
-// To remove warnings in switches
-#define SKIP_PLAYER_KEYS  case keyLeft:  case keyRight:  case keyRotateCW: case keyRotateCCW: \
-                          case keyDown:  case keyDrop:  case keyChangeVictim:
-
-#define SKIP_GLOBAL_KEYS
-
-#define SKIP_NONPLAYER_KEYS  SKIP_GLOBAL_KEYS  case keyUnassigned:
-
-#define SKIP_NONGLOBAL_KEYS  SKIP_PLAYER_KEYS  case keyUnassigned:
-
-
-inline bool playerKey(ControlKey key)
-{
-  return (key >= FIRST_PLAYER_KEY) && (key <= LAST_PLAYER_KEY);
-}
-
-inline bool globalKey(ControlKey key)
-{
-  return (key >= FIRST_GLOBAL_KEY) && (key <= LAST_GLOBAL_KEY);
-}
 
 
 
