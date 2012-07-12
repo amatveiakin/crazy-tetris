@@ -224,11 +224,13 @@ CrazyTetrisApp::~CrazyTetrisApp()
   //ReleaseCOM(uncoloredVertexLayout);
 
   for (size_t i = 0; i < texBackWallRV.size(); ++i) ReleaseCOM(texBackWallRV[i]);
-  ReleaseCOM(texSearchLightColorFilterRV);
+  //ReleaseCOM(texSearchLightColorFilterRV);
 }
 
 void CrazyTetrisApp::initApp()
 {
+  srand(GetTickCount());
+
   mGame.init();
   mGame.newMatch();
 
@@ -383,7 +385,7 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
   drawLyingBlocks(player, true);
   //рисуем убираемые линии
   drawDisappearingLines(player, true);
-  mGlass.draw();
+  //mGlass.draw();
   //упорядочиваем по удаленности и рисуем прозрачные объекты
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
   //рисуем падающую фигуру
@@ -513,8 +515,8 @@ void CrazyTetrisApp::setConstantBuffers()
 {
   fxCUBE_SCALE->SetFloat(CUBE_SCALE);
   fxCUBE_SCALE_INVERTED->SetFloat(2.0f / CUBE_SCALE);
-  fxColorFilterVar->SetResource(texSearchLightColorFilterRV);
-  fxShadowMapVar->SetResource(texSearchLightColorFilterRV);
+  //fxColorFilterVar->SetResource(texSearchLightColorFilterRV);
+  //fxShadowMapVar->SetResource(texSearchLightColorFilterRV);
   fxTexBonusesVar->SetResource(texBonusesRV);
 
   D3DXCOLOR diffuse  = 5.f * BLUE;
@@ -720,7 +722,7 @@ void CrazyTetrisApp::buildTextures()
   }
   FindClose(hSearch); 
 
-  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"SearchLightXuy.jpg").c_str(), 0, 0, &texSearchLightColorFilterRV, 0) );
+  //HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"SearchLightXuy.jpg").c_str(), 0, 0, &texSearchLightColorFilterRV, 0) );
   HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"Aim.jpg").c_str(), 0, 0, &texAimRV, 0) );
 
   ID3D10Texture2D* srcTex[N_BONUSES];
@@ -1036,7 +1038,7 @@ void CrazyTetrisApp::loadPlayerData(Player* player)
 void CrazyTetrisApp::drawWall(Player* player, bool colored)
 {
   D3DXMATRIX temp;
-  fxDiffuseMapVar->SetResource(texBackWallRV[player->accountNumber % texBackWallRV.size()]);
+  fxDiffuseMapVar->SetResource(texBackWallRV[player->backgroundSeed % texBackWallRV.size()]);
   fxWorldVar->SetMatrix((float*) D3DXMatrixTranslation(&temp, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
   if (colored) 

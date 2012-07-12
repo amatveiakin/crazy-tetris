@@ -127,9 +127,7 @@ D3DX10INLINE T Clamp(const T& x, const T& low, const T& high)
 //*****************************************************************************
 
 const float INFINITY = FLT_MAX;
-const float PI       = 3.14159265358979323f;
-const float TWO_PI       = 2 * 3.14159265358979323f;
-const float MATH_EPS = 0.0001f;
+
 
 const D3DXCOLOR WHITE(1.0f, 1.0f, 1.0f, 1.0f);
 const D3DXCOLOR BLACK(0.0f, 0.0f, 0.0f, 1.0f);

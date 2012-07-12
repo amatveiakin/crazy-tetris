@@ -49,8 +49,8 @@ D3DApp::D3DApp(HINSTANCE hInstance)
 	mMainWndCaption = L"Is's crazy!";
 	md3dDriverType  = D3D10_DRIVER_TYPE_HARDWARE;
   mClearColor     = BLACK;
-	mClientWidth    = 800;
-	mClientHeight   = 600;
+	mClientWidth    = 1024;
+	mClientHeight   = 768;
 }
 
 D3DApp::~D3DApp()
@@ -75,32 +75,48 @@ HWND D3DApp::getMainWnd()
 
 int D3DApp::run()
 {
-	MSG msg = {0};
+#ifndef NDEBUG
+  FILE* timerLogFile = fopen("timer.log", "w");
+  if (timerLogFile == NULL)
+    throw "Can't open file \"timer.log\"!";
+#endif
+
+    MSG msg = {0};
  
-	mTimer.reset();
+    mTimer.reset();
 
-	while(msg.message != WM_QUIT)
-	{
-		// If there are Window messages then process them.
-		if(PeekMessage( &msg, 0, 0, 0, PM_REMOVE ))
-		{
-            TranslateMessage( &msg );
-            DispatchMessage( &msg );
-		}
-		// Otherwise, do animation/game stuff.
-		else
-        {	
-			mTimer.tick();
-
-			if( !mAppPaused )
-				updateScene(mTimer.getDeltaTime());	
-			else
-				Sleep(50);
-
-			drawScene();
+    while (msg.message != WM_QUIT)
+    {
+        // If there are Window messages then process them.
+        if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+        {
+      TranslateMessage(&msg);
+      DispatchMessage(&msg);
         }
+        // Otherwise, do game stuff.
+        else
+    {    
+          mTimer.tick();
+
+          if (!mAppPaused)
+      {
+#ifndef NDEBUG
+
+     fprintf(timerLogFile, "%f\n", mTimer.getGameTime());
+#endif
+              updateScene(mTimer.getDeltaTime());
+      }
+          else
+              Sleep(50);
+
+          drawScene();
     }
-	return (int)msg.wParam;
+  }
+    return (int)msg.wParam;
+
+#ifndef NDEBUG
+  fclose(timerLogFile);
+#endif
 }
 
 void D3DApp::initApp()
@@ -110,15 +126,15 @@ void D3DApp::initApp()
 
 	D3DX10_FONT_DESC fontDesc;
 	fontDesc.Height          = 24;
-    fontDesc.Width           = 0;
-    fontDesc.Weight          = 0;
-    fontDesc.MipLevels       = 1;
-    fontDesc.Italic          = false;
-    fontDesc.CharSet         = DEFAULT_CHARSET;
-    fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
-    fontDesc.Quality         = DEFAULT_QUALITY;
-    fontDesc.PitchAndFamily  = DEFAULT_PITCH | FF_DONTCARE;
-    wcscpy(fontDesc.FaceName, L"Times New Roman");
+  fontDesc.Width           = 0;
+  fontDesc.Weight          = 0;
+  fontDesc.MipLevels       = 1;
+  fontDesc.Italic          = false;
+  fontDesc.CharSet         = DEFAULT_CHARSET;
+  fontDesc.OutputPrecision = OUT_DEFAULT_PRECIS;
+  fontDesc.Quality         = DEFAULT_QUALITY;
+  fontDesc.PitchAndFamily  = DEFAULT_PITCH | FF_DONTCARE;
+  wcscpy(fontDesc.FaceName, L"Comic Sans MS");
 
 	D3DX10CreateFontIndirect(md3dDevice, &fontDesc, &mFont);
 }
@@ -151,7 +167,7 @@ void D3DApp::onResize()
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.ArraySize = 1;
 	depthStencilDesc.Format    = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.SampleDesc.Count   = 4; // multisampling must match
+	depthStencilDesc.SampleDesc.Count   = 8; // multisampling must match
 	depthStencilDesc.SampleDesc.Quality = 0; // swap chain values.
 	depthStencilDesc.Usage          = D3D10_USAGE_DEFAULT;
 	depthStencilDesc.BindFlags      = D3D10_BIND_DEPTH_STENCIL;
@@ -168,8 +184,8 @@ void D3DApp::onResize()
 	
 
 	// Set the viewport transform.
- 
-	D3D10_VIEWPORT vp;
+  /*
+  D3D10_VIEWPORT vp;
 	vp.TopLeftX = 0;
 	vp.TopLeftY = 0;
 	vp.Width    = mClientWidth;
@@ -177,7 +193,7 @@ void D3DApp::onResize()
 	vp.MinDepth = 0.0f;
 	vp.MaxDepth = 1.0f;
 
-	md3dDevice->RSSetViewports(1, &vp);
+	md3dDevice->RSSetViewports(1, &vp);*/
 }
 
 void D3DApp::updateScene(float dt)
@@ -380,8 +396,8 @@ void D3DApp::initDirect3D()
 	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 
-	// No multisampling.
-	sd.SampleDesc.Count   = 4;
+	// Multisampling.
+	sd.SampleDesc.Count   = 8;
 	sd.SampleDesc.Quality = 0;
 
 	sd.BufferUsage  = DXGI_USAGE_RENDER_TARGET_OUTPUT;

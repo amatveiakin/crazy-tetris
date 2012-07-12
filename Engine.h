@@ -65,27 +65,6 @@ const Time   PLAYER_DYING_ANIMATION_TIME = 1.0f;*/
 
 
 
-// Discrete mode  [ OLD! ]
-
-/*const float  STARTING_SPEED = 1.0;
-const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
-const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
-// Speed limit can be excedeed via bonus (?)
-const float  SPEED_LIMIT = 5.0;
-
-const Time   AUTO_LOWERING_TIME = 0.8f;
-// Time necessary for a dropping piece to move one line down
-const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
-const Time   LINE_DISAPPEAR_TIME = 0.5f;
-const Time   LINE_COLLAPSE_TIME = 0.05f;
-
-const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
-const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.03f;
-const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;*/
-
-
-
 const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_VALUE = 0.007f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;

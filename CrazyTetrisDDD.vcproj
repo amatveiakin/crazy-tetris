@@ -175,10 +175,6 @@
 				RelativePath=".\CrazyTetrisDDD.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\VisualEffects.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -212,6 +208,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\d3dapp\DrawableTex2D.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\d3dapp\DrawableTex2D.h"
+				>
+			</File>
+			<File
 				RelativePath=".\d3dapp\GameTimer.cpp"
 				>
 			</File>
@@ -221,14 +225,14 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Box"
+			Name="Primitives"
 			>
 			<File
-				RelativePath=".\Box.cpp"
+				RelativePath=".\Primitives.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Box.h"
+				RelativePath=".\Primitives.h"
 				>
 			</File>
 		</Filter>
@@ -255,17 +259,37 @@
 				RelativePath=".\Strings.h"
 				>
 			</File>
+			<File
+				RelativePath=".\VisualEffects.h"
+				>
+			</File>
 		</Filter>
 		<File
-			RelativePath=".\effects.fx"
+			RelativePath=".\Definitions.fx"
 			>
 		</File>
 		<File
-			RelativePath=".\lighthelper.fx"
+			RelativePath=".\DirectXConstants.h"
 			>
 		</File>
 		<File
-			RelativePath=".\readme and TODO.txt"
+			RelativePath=".\Effects.fx"
+			>
+		</File>
+		<File
+			RelativePath=".\Lighthelper.fx"
+			>
+		</File>
+		<File
+			RelativePath=".\Samplers.fx"
+			>
+		</File>
+		<File
+			RelativePath=".\Shadows.fx"
+			>
+		</File>
+		<File
+			RelativePath=".\States.fx"
 			>
 		</File>
 	</Files>

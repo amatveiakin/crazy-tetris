@@ -144,7 +144,7 @@ public:
   }
 };
 
-//TODO: make bonus, changing player's name to "fat bitch"!!!
+
 
 class MagnetObject : public AffixmentPointObject
 {
@@ -200,6 +200,7 @@ class BaseEffectType
 {
 public:
   BaseEffectType() : active_(false) { }
+  
 protected:
   bool active_;
 };
