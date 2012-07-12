@@ -33,7 +33,7 @@ const int   FALLING_PIECE_INSTANCES_OFFSET     = DISAPPEARING_LINE_INSTANCES_OFF
 const int   HINT_INSTANCES_OFFSET              = FALLING_PIECE_INSTANCES_OFFSET + MAX_BLOCKS_IN_PIECE;
 const int   MAX_CUBE_INSTANCES                 = HINT_INSTANCES_OFFSET + MAX_BLOCKS_IN_PIECE;
 
-//переделать в класс, добавить шлюх и блекджек
+//РїРµСЂРµРґРµР»Р°С‚СЊ РІ РєР»Р°СЃСЃ, РґРѕР±Р°РІРёС‚СЊ С€Р»СЋС… Рё Р±Р»РµРєРґР¶РµРє
 struct PlayerScreen
 {
   D3D10_VIEWPORT viewport;
@@ -372,25 +372,25 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
   md3dDevice->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
   md3dDevice->RSSetViewports(1, &screen.viewport);
 
-  //рисуем непрозрачные объекты
+  //СЂРёСЃСѓРµРј РЅРµРїСЂРѕР·СЂР°С‡РЅС‹Рµ РѕР±СЉРµРєС‚С‹
   md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);
-  //рисуем поле
+  //СЂРёСЃСѓРµРј РїРѕР»Рµ
   installLights(player, true);
-  //Рисуем стенку
+  //Р РёСЃСѓРµРј СЃС‚РµРЅРєСѓ
   drawWall(player, true);
-  //рисуем всякие разные кубики
+  //СЂРёСЃСѓРµРј РІСЃСЏРєРёРµ СЂР°Р·РЅС‹Рµ РєСѓР±РёРєРё
   md3dDevice->IASetInputLayout(cubesVertexLayout);
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
-  //рисуем (полу)кубики, которые уже упали
+  //СЂРёСЃСѓРµРј (РїРѕР»Сѓ)РєСѓР±РёРєРё, РєРѕС‚РѕСЂС‹Рµ СѓР¶Рµ СѓРїР°Р»Рё
   drawLyingBlocks(player, true);
-  //рисуем убираемые линии
+  //СЂРёСЃСѓРµРј СѓР±РёСЂР°РµРјС‹Рµ Р»РёРЅРёРё
   drawDisappearingLines(player, true);
   //mGlass.draw();
-  //упорядочиваем по удаленности и рисуем прозрачные объекты
+  //СѓРїРѕСЂСЏРґРѕС‡РёРІР°РµРј РїРѕ СѓРґР°Р»РµРЅРЅРѕСЃС‚Рё Рё СЂРёСЃСѓРµРј РїСЂРѕР·СЂР°С‡РЅС‹Рµ РѕР±СЉРµРєС‚С‹
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);
-  //рисуем падающую фигуру
+  //СЂРёСЃСѓРµРј РїР°РґР°СЋС‰СѓСЋ С„РёРіСѓСЂСѓ
   drawFallingPiece(player, true);
-  //рисуем интерфейс
+  //СЂРёСЃСѓРµРј РёРЅС‚РµСЂС„РµР№СЃ
   installLights(player, false);
   //bla-bla
   drawHint(player);
@@ -600,7 +600,7 @@ void CrazyTetrisApp::buildRasterizerStates()
   ZeroMemory(&rsDesc, sizeof(D3D10_RASTERIZER_DESC));
   rsDesc.FillMode = D3D10_FILL_SOLID;
   rsDesc.CullMode = D3D10_CULL_NONE;
-  rsDesc.MultisampleEnable = true;  //иначе будут артефакты
+  rsDesc.MultisampleEnable = true;  //РёРЅР°С‡Рµ Р±СѓРґСѓС‚ Р°СЂС‚РµС„Р°РєС‚С‹
   rsDesc.AntialiasedLineEnable = true;
   HR(md3dDevice->CreateRasterizerState(&rsDesc, &rsForSemicubes));
 
@@ -707,7 +707,7 @@ void CrazyTetrisApp::buildBuffers()
 
 void CrazyTetrisApp::buildTextures()
 {
-  //типа пиздатый поиск, обработчик ошибок - нахуй, зато текстуры не в массиве а в векторе - ваще заебок
+  //С‚РёРїР° РїРёР·РґР°С‚С‹Р№ РїРѕРёСЃРє, РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС€РёР±РѕРє - РЅР°С…СѓР№, Р·Р°С‚Рѕ С‚РµРєСЃС‚СѓСЂС‹ РЅРµ РІ РјР°СЃСЃРёРІРµ Р° РІ РІРµРєС‚РѕСЂРµ - РІР°С‰Рµ Р·Р°РµР±РѕРє
   WIN32_FIND_DATA FileData;
   HANDLE hSearch;
   BOOL fFinished = FALSE;
