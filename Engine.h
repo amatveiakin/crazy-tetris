@@ -1,5 +1,8 @@
 // TODO: Add range checking everywhere
 
+// TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
+//       add all events that what to change the field are delayed  (?)
+
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
 
@@ -52,7 +55,7 @@ const int    MAX_PLAYER_NAME_LENGTH = 16;*/
 
 
 
-//================================== General ===================================
+//================================ Time & speed ================================
 
 const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
@@ -76,16 +79,22 @@ const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
 const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
 const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
 
-const int    MAX_PLAYERS = 4;
-const int    MAX_PLAYER_NAME_LENGTH = 16;
-
 
 
 //================================== Keyboard ==================================
 
 const int N_PLAYER_KEYS = 7;
 
-enum PlayerKey { keyLeft, keyRight, keyRotateCCW, keyRotateCW, keyDown, keyDrop, keyChangeVictim };
+enum PlayerKey
+{
+  keyLeft,
+  keyRight,
+  keyRotateCCW,
+  keyRotateCW,
+  keyDown,
+  keyDrop,
+  keyChangeVictim
+};
 
 // TODO: find optimal value for KEY_REACTIVATION_TIMEs
 const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
@@ -167,7 +176,8 @@ union GlobalControls
 enum Bonus
 {
   // buffs
-  
+  bnEnlargeHintQueue,
+
   // kind sorceries
   bnHeal,
   bnSlowDown,
@@ -188,7 +198,7 @@ enum Bonus
   bnNoBonus
 };
 
-#define SKIP_BUFFS
+#define SKIP_BUFFS          case bnEnlargeHintQueue:
 
 #define SKIP_KIND_SORCERIES case bnHeal:  case bnSlowDown:  case bnClearField:
 
@@ -197,7 +207,18 @@ enum Bonus
 
 #define SKIP_EVIL_SORCERIES case bnSpeedUp:  case bnFlipField:
 
-#define SKIP_ALL_BUT_SORCERIES  SKIP_BUFFS  SKIP_DEBUFFS  case bnNoBonus:
+#define SKIP_ENCHANTMENTS  SKIP_BUFFS  SKIP_DEBUFFS
+
+#define SKIP_SORCERIES  SKIP_KIND_SORCERIES  SKIP_EVIL_SORCERIES
+
+#define SKIP_ALL_BUT_SORCERIES  SKIP_ENCHANTMENTS  case bnNoBonus:
+
+#define SKIP_ALL_BUT_ENCHANTMENTS  SKIP_SORCERIES  case bnNoBonus:
+
+#define SKIP_ALL_BUT_BUFFS  SKIP_ALL_BUT_ENCHANTMENTS  SKIP_DEBUFFS
+
+#define SKIP_ALL_BUT_DEBUFFS  SKIP_ALL_BUT_ENCHANTMENTS  SKIP_BUFFS
+
 
 
 inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
@@ -206,12 +227,13 @@ inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
   return bonus;
 }
 
-const Bonus  FIRST_BONUS = bnHeal;
+const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
 const Bonus  LAST_BONUS = bnFlipField;
 const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
 
 const string BONUS_NAME[N_BONUSES] =
 {
+  "EnlargeHintQueue",
   "Heal",
   "SlowDown",
   "ClearField",
@@ -226,6 +248,7 @@ const string BONUS_NAME[N_BONUSES] =
 
 const int    BONUS_CHANCE[N_BONUSES] =
 {
+  1, // bnEnlargeHintQueue
   5, // bnHeal
   2, // bnSlowDown
   1, // bnClearField
@@ -238,6 +261,8 @@ const int    BONUS_CHANCE[N_BONUSES] =
   2  // bnFlipField
 };
 
+const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
+
 const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
 const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
@@ -249,19 +274,19 @@ const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_LOWERING_ANIMATION_TIME;
 
 
 
-const Bonus  FIRST_KIND_BONUS   = bnFlippedScreen;
-const Bonus  LAST_KIND_BONUS    = bnClearField;
-
-const Bonus  FIRST_EVIL_BONUS   = bnFlippedScreen;
-const Bonus  LAST_EVIl_BONUS    = bnFlipField;
-
-const Bonus  FIRST_BUFF         = Bonus(bnHeal + 1);
-const Bonus  LAST_BUFF          = bnHeal;
+const Bonus  FIRST_BUFF         = bnEnlargeHintQueue;
+const Bonus  LAST_BUFF          = bnEnlargeHintQueue;
 const int    N_BUFFS            = LAST_BUFF - FIRST_BUFF + 1;
 
 const Bonus  FIRST_DEBUFF       = bnFlippedScreen;
 const Bonus  LAST_DEBUFF        = bnFlipField;
 const int    N_DEBUFFS          = LAST_DEBUFF - FIRST_DEBUFF + 1;
+
+const Bonus  FIRST_KIND_BONUS   = FIRST_BUFF;
+const Bonus  LAST_KIND_BONUS    = bnClearField;
+
+const Bonus  FIRST_EVIL_BONUS   = FIRST_DEBUFF;
+const Bonus  LAST_EVIl_BONUS    = bnFlipField;
 
 inline bool isKind(Bonus bonus)
 {
@@ -281,6 +306,11 @@ inline bool isBuff(Bonus bonus)
 inline bool isDebuff(Bonus bonus)
 {
   return (FIRST_DEBUFF <= bonus) && (bonus <= LAST_DEBUFF);
+}
+
+inline bool isEnchantment(Bonus bonus)  // (?) Is it necessary?
+{
+  return isBuff(bonus) || isDebuff(bonus);
 }
 
 typedef ShiftedBitSet<N_BUFFS, FIRST_BUFF> Buffs;
@@ -308,20 +338,46 @@ const int    BORDERED_FIELD_COL_END   = FIELD_WIDTH + WALL_WIDTH;
 const int    NO_BLOCK_IMAGE = -1;
 const int    NO_CHANGE = -2;
 
+
+
+struct Bounds
+{
+  int bottom;
+  int top;
+  int left;
+  int right;
+};
+
+
+
 struct BlockStructure
 {
   vector<FieldCoords> blocks;
-  int lowestBlockRow;
-  void afterRead()  // (!) change name
+  Bounds bounds;
+
+  void setBounds()
   {
     if (blocks.empty())
       throw ERR_EMPTY_BLOCK;
-    lowestBlockRow = blocks[0].row;
-    for (size_t i = 1; i < blocks.size(); ++i)
-      if (blocks[i].row < lowestBlockRow)
-        lowestBlockRow = blocks[i].row;
+    bounds.bottom = blocks[0].row;
+    bounds.top = blocks[0].row;
+    bounds.left = blocks[0].col;
+    bounds.bottom = blocks[0].col;
+    for (vector<FieldCoords>::iterator i = blocks.begin(); i != blocks.end(); ++i)
+    {
+      if (i->row < bounds.bottom)
+        bounds.bottom = i->row;
+      if (i->row > bounds.top)
+        bounds.top = i->row;
+      if (i->col < bounds.left)
+        bounds.left = i->col;
+      if (i->col > bounds.right)
+        bounds.right = i->col;
+    }
   }
 };
+
+
 
 struct PieceTemplate
 {
@@ -330,13 +386,66 @@ struct PieceTemplate
   BlockStructure structure[N_PIECE_ROTATION_STATES];
 };
 
+
+
+struct Piece
+{
+  PieceTemplate* pieceTemplate;
+  int rotationState;
+  FieldCoords position;   // ``center'' coordinates
+
+  void clear()
+  {
+    pieceTemplate = NULL;
+  }
+
+  /*void setPiece(PieceTemplate* pieceTemplate__, int rotationState__, FieldCoords position__)
+  {
+    pieceTemplate = pieceTemplate__;
+    rotationState = rotationState__;
+    position = position__;
+  }*/
+
+  bool empty()
+  {
+    return pieceTemplate == NULL;
+  }
+
+  Color color()
+  {
+    return pieceTemplate->color;
+  }
+
+  const BlockStructure& currentStructure()
+  {
+    return pieceTemplate->structure[rotationState];
+  }
+
+  size_t nBlocks()
+  {
+    return currentStructure().blocks.size();
+  }
+
+  FieldCoords relativeCoords(int index)
+  {
+    return currentStructure().blocks[index];
+  }
+
+  FieldCoords absoluteCoords(int index)
+  {
+    return relativeCoords(index) + position;
+  }
+};
+
+
+
 struct FieldCell
 {
   bool blocked;
   Color color;
   Bonus bonus;
-  int iBlockImage;
-  int iNewBlockImage;
+  int iBlockImage;   // TODO: store an iterator (or a pointer) to indicate array too
+  int iNewBlockImage;   // TODO:  ------//------
   
   void assign(const FieldCell& a)
   {
@@ -372,6 +481,8 @@ private:
   FieldCell& operator=(const FieldCell& a);
 };
 
+
+
 struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
                                    FIELD_HEIGHT + SKY_HEIGHT, FIELD_WIDTH + WALL_WIDTH>
 {
@@ -405,6 +516,8 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
 
   void clearImageIndices();
 };
+
+
 
 enum FallingPieceState { psAbsent, psNormal, psDropping };
 
@@ -531,6 +644,9 @@ private:
 
 //=================================== Player ===================================
 
+const int    MAX_PLAYER_NAME_LENGTH = 16;
+const int    NORMAL_HINT_QUEUE_SIZE = 1;
+
 class Game;
 
 struct Statistics
@@ -568,14 +684,17 @@ public:
   Field         field;          // C (boders) / R (content)
   Time          latestLineCollapse; // R
   
-  FallingPieceState     fallingPieceState;        // R
-  const PieceTemplate*  fallingPiece;             // R
-  int                   fallingPieceRotationState; // R
-  FieldCoords           fallingPiecePosition;     // R    [``center'' coordinates]
+//  const PieceTemplate*  fallingPiece;             // R
+//  int                   fallingPieceRotationState; // R
+//  FieldCoords           fallingPiecePosition;     // R    [``center'' coordinates]
   
-  const PieceTemplate*  nextPiece;                // R
-  int                   nextPieceRotationState;   // R
-  FieldCoords           nextPiecePosition;        // R    [``center'' coordinates]
+//  const PieceTemplate*  nextPiece;                // R
+//  int                   nextPieceRotationState;   // R
+//  FieldCoords           nextPiecePosition;        // R    [``center'' coordinates]
+  
+  FallingPieceState     fallingPieceState;  // R
+  Piece                 fallingPiece;       // R
+  vector<const Piece>   nextPieces;         // R
   
   Buffs         buffs;          // R
   Debuffs       debuffs;        // R
@@ -583,7 +702,8 @@ public:
   
   EventSet      events;         // R
   
-  vector<BlockImage>        blockImages;          // N
+  vector<BlockImage>        lyingBlockImages;     // N
+  vector<BlockImage>        fallingBlockImages;   // N
   vector<DisappearingLine>  disappearingLines;    // R
   VisualEffects             visualEffects;        // R
   
@@ -600,8 +720,10 @@ public:
   
   Player*       victim();
   
+  // TODO: standardize terminology:  fantasy  OR  formal
   void          takesBonus(Bonus bonus);
   void          applyBonus(Bonus bonus);
+  void          disenchant(Bonus bonus);
   void          heal();
   void          kill();
 
@@ -610,10 +732,11 @@ public:
   void          redraw();
   
 private:
-  const BlockStructure& fallingBlockStructure();
-  const BlockStructure& nextBlockStructure();
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   void          setUpPiece();
+  Piece         randomPiece();
+  void          initPieceQueue(int size);
+  void          resizePieceQueue(int newSize);
   void          sendNewPiece();
   void          lowerPiece();
   bool          removeFullLines();
@@ -622,19 +745,17 @@ private:
   void          dropPiece();
   void          rotatePiece(int direction);
   
-  void          applyBlockImagesMovements();
-  void          addStandingBlockImage(Color color, FieldCoords position);  // name (?)
-//  void          addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
-//                                    Time movingStartTime, Time movingDuration); // XXX
-//  void          setUpBlockImage(FieldCoords position);
-  void          moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo, Time movingDuration);
-  void          removeBlockImage(FieldCoords position);
+  void          applyBlockImagesMovements(vector<BlockImage>& imageArray);
+  void          addStandingBlockImage(vector<BlockImage>& imageArray, Color color, FieldCoords position);  // name (?)
+  void          moveBlockImage(vector<BlockImage>& imageArray, FieldCoords movingFrom,
+                               FieldCoords movingTo, Time movingDuration);
+  void          removeBlockImage(vector<BlockImage>& imageArray, FieldCoords position);
 
   void          routineSpeedUp();
   void          cycleVictim();
   
-  void          enableBonusEffect(Bonus bonus);
-  void          disableBonusEffect(Bonus bonus);
+  void          enableBonusVisualEffect(Bonus bonus);
+  void          disableBonusVisualEffect(Bonus bonus);
   void          flipBlocks();
 };
 

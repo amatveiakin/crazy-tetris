@@ -7,6 +7,10 @@
 
 
 
+//#define blockImages lyingBlockImages
+#define blockImages fallingBlockImages
+
+
 template<typename T>
 T myMin(T x, T y)
 {
@@ -25,6 +29,8 @@ const int    FIELD_WIDTH = 10;
 const int    FIELD_HEIGHT = 20;
 const int    MAX_BLOCKS = FIELD_WIDTH * FIELD_HEIGHT;
 const int    MAX_BLOCK_IMAGES = MAX_BLOCKS;
+
+const int    MAX_PLAYERS = 4;
 
 
 
