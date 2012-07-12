@@ -14,15 +14,19 @@ float sgn(float t)
   return 0.0f;
 }
 
+Primitive::Primitive() : nVertices(0), nFaces(0), mVB(0), md3dDevice(0) {}
+
+Primitive::~Primitive()
+{
+  ReleaseCOM(mVB);
+}
 
 
-Box::Box()
-: nVertices(0), nFaces(0), md3dDevice(0), mVB(0), mIB(0)
-{}
+
+Box::Box() : mIB(0) {}
  
 Box::~Box()
 {
-	ReleaseCOM(mVB);
 	ReleaseCOM(mIB);
 }
 
@@ -145,17 +149,14 @@ void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstanc
 }
 
 
-Wall::Wall()
-  : nVertices(4), nFaces(2), md3dDevice(0), mVB(0)
-{}
+Wall::Wall() {}
 
-Wall::~Wall()
-{
-	ReleaseCOM(mVB);
-}
+Wall::~Wall() {}
 
 void Wall::init(ID3D10Device* device, float worldWidth, float worldHeight, float texWidth, float texHeight)
 {
+  nVertices = 4;
+  nFaces = 2;
   md3dDevice = device;
   TexturedVertex vertices[] = 
   {

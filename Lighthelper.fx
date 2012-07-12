@@ -1,3 +1,4 @@
+#include "DirectXConstants.h"
 
 struct Light
 {
@@ -128,6 +129,27 @@ float3 Spotlight(SurfaceInfo v, Light L, float3 eyePos)
 	return litColor*s;
 }
 
+float3 SearchLight(SurfaceInfo v, Light L, float3 eyePos)
+{
+	float3 litColor = PointLight(v, L, eyePos);
+	
+	// The vector from the surface to the light.
+	float3 lightVec = normalize(L.pos - v.pos);
+	
+	float angle = acos(dot(-lightVec, normalize(L.dir)));
+  float s;
+  if (angle < searchAlpha)
+  {
+    s = 1;
+  } 
+  else if (angle > searchBeta)
+  {
+    s = 0;
+  } else
+    s = cos (PI / 2 * (angle - searchAlpha)/(searchBeta-searchAlpha));
+
+  return litColor*s;
+}
 
 float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
 {
@@ -144,6 +166,10 @@ float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
     else if (L.lightType == 3)// Spot
     {
       return Spotlight(v, L, eyePos);
+    }  if (L.lightType == 4)// Searchlight
+    {
+      return 
+        SearchLight(v, L, eyePos);
     }  
   }
   return float3(0.0f, 0.0f, 0.0f);

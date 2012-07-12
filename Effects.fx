@@ -64,6 +64,7 @@ cbuffer cbPerFrame
 cbuffer cbPerObject
 {
 	float4x4 gWorld;
+  float4 gClippingPlane;
 
 };
 
@@ -157,7 +158,7 @@ float4 psCubes(StandardVS_OUT pIn) : SV_Target
   
   for (int i = 0; i < MAX_LIGHTS; ++i)
     litCol += litColor(v, gLight[i], gEyePosW);
-     
+  
   return float4(litCol, pIn.diffuse.a);
 }
 
@@ -194,6 +195,25 @@ float4 psSemicubes(StandardVS_OUT pIn) : SV_Target
   return float4(litCol, pIn.diffuse.a);
 }
 
+float4 psDisappearingLine(StandardVS_OUT pIn) : SV_Target
+{
+  clip(dot(float4(pIn.posL, 1.0f), gClippingPlane));
+
+  //Interpolating normal can make it not be of unit length so normalize it.
+  pIn.normalW = normalize(pIn.normalW);
+  
+  if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
+
+  SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
+  float3 litCol = float3(0., 0., 0.);
+  
+  for (int i = 0; i < MAX_LIGHTS; ++i)
+    litCol += litColor(v, gLight[i], gEyePosW);
+     
+  return float4(litCol, pIn.diffuse.a);
+  //return float4(1., 1., 1., 1.);
+}
+
 technique10 techCubes
 {
     pass P0
@@ -203,17 +223,18 @@ technique10 techCubes
         SetPixelShader( CompileShader( ps_4_0, psCubes() ) );
     }
 }
-/*
-technique10 techDisapearingLine
+
+technique10 techDisappearingLine
 {
-    pass P0
-    {
-        SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
-        SetGeometryShader( NULL );
-        SetPixelShader( CompileShader( ps_4_0, psDissapearingLine() ) );
-    }
+  pass P0
+  {
+    SetRasterizerState(rsSemicubes);
+    SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
+    SetGeometryShader( NULL );
+    SetPixelShader( CompileShader( ps_4_0, psDisappearingLine() ) );
+  }
 }
-*/
+
 technique10 techSemicubes
 {
     pass P0
