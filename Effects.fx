@@ -5,8 +5,9 @@
 
 cbuffer cbRare
 {
+  float CUBE_SCALE;
   float CUBE_SCALE_INVERTED;
-  float3 globalOffset;
+  //float3 globalOffset;
 }
 
 cbuffer cbPerFrame
@@ -44,7 +45,7 @@ StandardVS_OUT vsGlass(UncoloredVS_IN vIn)
   //Make wave effect
   //vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
-  vOut.posW    = mul(float4(vIn.posL, 0.0f), gGlobalRotation) + globalOffset;
+  vOut.posW    = mul(float4(vIn.posL, 0.0f), gGlobalRotation);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
   // Transform to homogeneous clip space.
 	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
@@ -60,7 +61,7 @@ TexturedVS_OUT vsTextured(TexturedVS_IN vIn)
 	TexturedVS_OUT vOut;
 	
 	// Transform to world space space.  
-  vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld) + globalOffset;
+  vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gWorld);
   
   // Transform to homogeneous clip space.
@@ -105,7 +106,7 @@ StandardVS_OUT vsCubes(CubesVS_IN vIn)
   //Make wave effect
   vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
-  vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation) + globalOffset;
+  vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
   // Transform to homogeneous clip space.
 	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
@@ -145,9 +146,8 @@ RasterizerState rsSemicubes
   FillMode = Solid; 
   CullMode = None;
   AntiAliasedLineEnable = true;
-  MultisampleEnable = false;
+  MultisampleEnable = true;
 };
-
 
 float4 psSemicubes(StandardVS_OUT pIn) : SV_Target
 {
@@ -191,7 +191,9 @@ float4 psDisappearingLine(StandardVS_OUT pIn) : SV_Target
 
 float4 psFallingPiece(StandardVS_OUT pIn) : SV_Target
 {
-  clip(dot(float4(pIn.posW - globalOffset, 1.0f), gClippingPlane));
+  float3 distToGrid = (pIn.posL / CUBE_SCALE + 1 + 0.125) % 0.25 - 0.2;
+  clip(max(max(max(distToGrid.x, distToGrid.y), distToGrid.z), dot(float4(pIn.posW, 1.0f), gClippingPlane)));
+
 
   //Interpolating normal can make it not be of unit length so normalize it.
   pIn.normalW = normalize(pIn.normalW);
@@ -222,6 +224,7 @@ technique10 techFallingPiece
 {
     pass P0
     {
+        SetRasterizerState(rsSemicubes);
         SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
         SetGeometryShader( NULL );
         SetPixelShader( CompileShader( ps_4_0, psFallingPiece() ) );

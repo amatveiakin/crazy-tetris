@@ -11,11 +11,11 @@
 //Move to Hud.h?
 const float MAX_WORLD_FIELD_WIDTH  = 2.0f;
 const float MAX_WORLD_FIELD_HEIGHT = 4.0f;
-const float FIELD_INDENT_LEFT = 0.5f;
-const float FIELD_INDENT_RIGHT = 0.5f;
+const float FIELD_INDENT_LEFT = 0.0f;
+const float FIELD_INDENT_RIGHT = 0.0f;
 const float FIELD_INDENT_BOTTOM = 0.0f;
 const float FIELD_INDENT_TOP = 0.0f;
-const float HUD_HEIGHT = 1.0f;
+const float HUD_HEIGHT = 0.0f;
 const float VP_WORLD_WIDTH  = FIELD_INDENT_LEFT + MAX_WORLD_FIELD_WIDTH + FIELD_INDENT_RIGHT;
 const float VP_WORLD_HEIGHT = HUD_HEIGHT + FIELD_INDENT_BOTTOM + MAX_WORLD_FIELD_HEIGHT + FIELD_INDENT_TOP;
 
@@ -87,11 +87,12 @@ private:
 	ID3D10EffectScalarVariable* fxLightTypeVar;
   ID3D10EffectScalarVariable* fxWaveProgressVar;
   ID3D10EffectScalarVariable* fxSemicubesProgressVar;
+  ID3D10EffectScalarVariable* fxCUBE_SCALE;
   ID3D10EffectScalarVariable* fxCUBE_SCALE_INVERTED;
 
   ID3D10EffectVariable*       fxLightVar;
 	ID3D10EffectVariable*       fxEyePosVar;
-  ID3D10EffectVariable*       fxGlobalOffsetVar;
+  //ID3D10EffectVariable*       fxGlobalOffsetVar;
   ID3D10EffectVariable*       fxColorDiffuseVar;
   ID3D10EffectVariable*       fxColorSpecularVar;
   ID3D10EffectVariable*       fxClippingPlaneVar;
@@ -184,8 +185,8 @@ void CrazyTetrisApp::initApp()
 	
   mBox.init(md3dDevice, CUBE_SCALE / 2.0f, 0.5f, 5);
   mWall.init(md3dDevice, 
-             CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_WIDTH / 2.0f + 0.5f) / EYE_TO_FIELD), 
-             CUBE_SCALE * FIELD_HEIGHT * (1.0f + CUBE_SCALE * (FIELD_WIDTH / 2.0f + 0.5f) / EYE_TO_FIELD), 
+             CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
+             CUBE_SCALE * FIELD_HEIGHT * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
              1.0f,  1.0f);
   mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
   
@@ -215,8 +216,8 @@ void CrazyTetrisApp::updateScene(float dt)
 
   
 	// Update angles based on input to orbit camera around box.
-	//if(GetAsyncKeyState('A') & 0x8000)	EYE_TO_FIELD -= 2.0f*dt;
-	//if(GetAsyncKeyState('D') & 0x8000)	EYE_TO_FIELD += 2.0f*dt;
+	if(GetAsyncKeyState('A') & 0x8000)	mTheta -= 2.0f*dt;
+	if(GetAsyncKeyState('D') & 0x8000)	mTheta += 2.0f*dt;
 	if(GetAsyncKeyState('W') & 0x8000)	mPhi -= 2.0f*dt;
 	if(GetAsyncKeyState('S') & 0x8000)	mPhi += 2.0f*dt; 
 
@@ -248,11 +249,10 @@ void CrazyTetrisApp::updateScene(float dt)
 
   // Convert Spherical to Cartesian coordinates: mPhi measured from +y
 	// and mTheta measured counterclockwise from -z.
-	eyePosW.x =  (EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*sinf(mTheta);
-	eyePosW.z = -(EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*cosf(mTheta);
+	eyePosW.x =  (EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*sinf(mTheta) - (FIELD_INDENT_LEFT - FIELD_INDENT_RIGHT);
+	eyePosW.z = -(EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*cosf(mTheta) - (HUD_HEIGHT / 2.0f + FIELD_INDENT_BOTTOM - FIELD_INDENT_TOP);
 	eyePosW.y =  (EYE_TO_FIELD + CUBE_SCALE / 2)*cosf(mPhi);
-
-	// Build the view matrix.
+  
 	D3DXVECTOR3 target(0.0f, 0.0f, 0.0f);
 	D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
 	D3DXMatrixLookAtLH(&mView, &eyePosW, &target, &up);
@@ -346,10 +346,10 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
 
   //рисуем стенку
   fxWorldVar->SetMatrix((float*) 
-    D3DXMatrixTranslation(&tempX, 0.0f, 0.0f, CUBE_SCALE * FIELD_WIDTH / 2));
+    D3DXMatrixTranslation(&tempX, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
   techTextured->GetPassByIndex( 0 )->Apply(0);
-  mWall.draw();
+  //mWall.draw();
   
   //рисуем (полу)кубики, которые уже упали
   md3dDevice->IASetInputLayout(cubesVertexLayout);
@@ -375,9 +375,9 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   
   //рисуем падающую фигуру (пока плохо)
 
-    D3DXVECTOR4 clippingPlane = D3DXVECTOR4(0.0, -1.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2.0f);
-	  D3DXVec4Transform(&clippingPlane, &clippingPlane, &mGlobalRotation);
-    fxClippingPlaneVar->SetRawValue(&clippingPlane,0,sizeof(D3DXVECTOR4));
+  D3DXVECTOR4 clippingPlane = D3DXVECTOR4(0.0, -1.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2.0f);
+	D3DXVec4Transform(&clippingPlane, &clippingPlane, &mGlobalRotation);
+  fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
   cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
   for (size_t i = 0; i < player->fallingBlockImages.size(); ++i)
@@ -458,6 +458,7 @@ void CrazyTetrisApp::buildFX()
   techFallingPiece      = FX->GetTechniqueByName("techFallingPiece");
   
   //Constants
+  fxCUBE_SCALE = FX->GetVariableByName("CUBE_SCALE")->AsScalar();
   fxCUBE_SCALE_INVERTED = FX->GetVariableByName("CUBE_SCALE_INVERTED")->AsScalar();
   
   //Matrix variables
@@ -469,7 +470,7 @@ void CrazyTetrisApp::buildFX()
 	//Lights and camera position
   fxLightVar = FX->GetVariableByName("gLight");
 	fxEyePosVar = FX->GetVariableByName("gEyePosW");
-  fxGlobalOffsetVar = FX->GetVariableByName("globalOffset");
+  //fxGlobalOffsetVar = FX->GetVariableByName("globalOffset");
 
   //Colors
   fxColorDiffuseVar  = FX->GetVariableByName("gColorDiffuse");
@@ -491,14 +492,15 @@ void CrazyTetrisApp::buildFX()
 
 void CrazyTetrisApp::setConstantBuffers()
 {
-  fxCUBE_SCALE_INVERTED->SetFloat(2.0f/CUBE_SCALE);
+  fxCUBE_SCALE->SetFloat(CUBE_SCALE);
+  fxCUBE_SCALE_INVERTED->SetFloat(2.0f / CUBE_SCALE);
 
   fxDiffuseMapVar->SetResource(texBackWallRV);
   fxColorFilterVar->SetResource(texSearchLightColorFilterRV);
-  D3DXVECTOR3 offs(FIELD_INDENT_LEFT - FIELD_INDENT_RIGHT,
-                   HUD_HEIGHT / 2.0f + FIELD_INDENT_BOTTOM - FIELD_INDENT_TOP,
-                   0.0f);
-  fxGlobalOffsetVar->SetRawValue(&offs, 0, sizeof(D3DXVECTOR3));
+  //D3DXVECTOR3 offs(FIELD_INDENT_LEFT - FIELD_INDENT_RIGHT,
+  //                 HUD_HEIGHT / 2.0f + FIELD_INDENT_BOTTOM - FIELD_INDENT_TOP,
+  //                 0.0f);
+  //fxGlobalOffsetVar->SetRawValue(&offs, 0, sizeof(D3DXVECTOR3));
 
   D3DXCOLOR diffuse  = 5.f * BLUE;
   D3DXCOLOR specular = 5.f * (BLUE * 0.5f + WHITE * 0.5f);
