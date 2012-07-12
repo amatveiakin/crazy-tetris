@@ -8,10 +8,10 @@ public:
   Primitive();
   ~Primitive();
 protected:
-	DWORD nVertices;
-	DWORD nFaces;
+  DWORD nVertices;
+  DWORD nFaces;
 
-	ID3D10Device* md3dDevice;
+  ID3D10Device* md3dDevice;
   ID3D10Buffer* mVB;
 };
 
@@ -20,11 +20,11 @@ class Box : public Primitive
 
 public:
 
-	Box();
-	~Box();
+  Box();
+  ~Box();
 
-	void init(ID3D10Device* device, float scale, float smoothnessRadius, int angleSteps);
-	void setVB_AndIB_AsCurrent(ID3D10Device* device,  ID3D10Buffer* cubeInstancesBuffer);
+  void init(ID3D10Device* device, float scale, float smoothnessRadius, int angleSteps);
+  void setVB_AndIB_AsCurrent(ID3D10Device* device,  ID3D10Buffer* cubeInstancesBuffer);
   void draw(int nInstances, int instancesOffset);
 
 private:
@@ -37,8 +37,8 @@ class TexturedQuad : public Primitive
 {
 public:
 
-	TexturedQuad();
-	~TexturedQuad();
+  TexturedQuad();
+  ~TexturedQuad();
   void init(ID3D10Device* device, float worldWidth, float worldHeight, float texWidth, float texHeight);
   void draw();
 

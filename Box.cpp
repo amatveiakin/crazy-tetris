@@ -23,8 +23,8 @@ Box::Box()
 
 Box::~Box()
 {
-	ReleaseCOM(mVB);
-	ReleaseCOM(mIB);
+  ReleaseCOM(mVB);
+  ReleaseCOM(mIB);
 }
 
 
@@ -40,7 +40,7 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
 
   md3dDevice = device;
 
-	nVertices = 8 * angleSteps * angleSteps;
+  nVertices = 8 * angleSteps * angleSteps;
   nFaces    = (2 * angleSteps - 1) * (8 * angleSteps + 4) ;
 
   UncoloredVertex* vertices = new UncoloredVertex[nVertices];
@@ -77,7 +77,7 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
 
   // Create the index buffer
 
-	DWORD* indices = new DWORD[3 * nFaces];
+  DWORD* indices = new DWORD[3 * nFaces];
 
   for (i = 0; i < 2 * angleSteps - 1; ++i)
     for (j = 0; j < 4 * angleSteps; ++j)
@@ -135,7 +135,7 @@ void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstanc
 
   UINT offset[2] = {0, 0};
 
-	ID3D10Buffer* curVB[2];
+  ID3D10Buffer* curVB[2];
   curVB[0] = mVB;
   curVB[1] = cubeInstancesBuffer;
 

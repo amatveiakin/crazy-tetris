@@ -11,17 +11,17 @@
 
 TexturedVS_OUT vsTextured(TexturedVS_IN vIn)
 {
-	TexturedVS_OUT vOut;
+  TexturedVS_OUT vOut;
 
-	// Transform to world space space.
+  // Transform to world space space.
   vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gWorld);
 
   // Transform to homogeneous clip space.
-	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
+  vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
 
   vOut.texC     = vIn.texC;
-	vOut.projTexC = mul(float4(vOut.posW, 1.0f), gLightWVP);
+  vOut.projTexC = mul(float4(vOut.posW, 1.0f), gLightWVP);
   return vOut;
 }
 
@@ -52,11 +52,11 @@ float4 psTextured(TexturedVS_OUT pIn) : SV_Target
 
 StandardVS_OUT vsCubes(CubesVS_IN vIn)
 {
-	StandardVS_OUT vOut;
+  StandardVS_OUT vOut;
 
   vOut.posL = vIn.posL;
-	// Translate to world space space.
-	vOut.posW    = mul(float4(vIn.posL, 1.0), vIn.gWorld);
+  // Translate to world space space.
+  vOut.posW    = mul(float4(vIn.posL, 1.0), vIn.gWorld);
   //Make wave effect
   vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
@@ -64,13 +64,13 @@ StandardVS_OUT vsCubes(CubesVS_IN vIn)
   //vOut.normalW = mul(float4(vIn.normalL, 0.0f), vIn.gWorld);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
   // Transform to homogeneous clip space.
-	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
+  vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
   // Output vertex attributes for interpolation across triangle.
-	vOut.diffuse  = vIn.diffuseColor;
-	vOut.spec     = vIn.specularColor;
+  vOut.diffuse  = vIn.diffuseColor;
+  vOut.spec     = vIn.specularColor;
   vOut.projTexC = mul(float4(vOut.posW, 1.0f), gLightWVP);
   vOut.texC     = float3(vIn.posL.x * CUBE_SCALE_INVERTED / 2 + 0.5, -vIn.posL.y * CUBE_SCALE_INVERTED / 2 + 0.5, vIn.texIndex);
-	return vOut;
+  return vOut;
 }
 
 

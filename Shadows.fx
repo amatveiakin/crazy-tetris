@@ -6,12 +6,12 @@
 
 ShadowVS_OUT vsSMTextured(TexturedVS_IN vIn)
 {
-	ShadowVS_OUT vOut;
+  ShadowVS_OUT vOut;
 
-	// Transform to world space space.
+  // Transform to world space space.
   vOut.posW = mul(float4(vIn.posL, 1.0f), gWorld);
   // Transform to homogeneous clip space.
-	vOut.posH = mul(float4(vOut.posW, 1.0f), gLightWVP);
+  vOut.posH = mul(float4(vOut.posW, 1.0f), gLightWVP);
   vOut.posL = vIn.posL;
   vOut.texC = float3(vIn.texC, 0.0f);
 
@@ -22,20 +22,20 @@ ShadowVS_OUT vsSMTextured(TexturedVS_IN vIn)
 
 ShadowVS_OUT vsSMCubes(CubesVS_IN vIn)
 {
-	ShadowVS_OUT vOut;
+  ShadowVS_OUT vOut;
 
   vOut.posL = vIn.posL;
-	// Translate to world space space.
-	vOut.posW    = mul(float4(vIn.posL, 1.0), vIn.gWorld);
+  // Translate to world space space.
+  vOut.posW    = mul(float4(vIn.posL, 1.0), vIn.gWorld);
   //Make wave effect
   vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
   vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation);
   // Transform to homogeneous clip space.
-	vOut.posH = mul(float4(vOut.posW, 1.0f), gLightWVP);
+  vOut.posH = mul(float4(vOut.posW, 1.0f), gLightWVP);
   // Output vertex attributes for interpolation across triangle.
   vOut.texC     = float3(vIn.posL.x * CUBE_SCALE_INVERTED / 2 + 0.5, -vIn.posL.y * CUBE_SCALE_INVERTED / 2 + 0.5, vIn.texIndex);
-	return vOut;
+  return vOut;
 }
 
 

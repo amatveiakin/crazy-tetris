@@ -73,7 +73,7 @@ VS_OUTPUT RenderSceneVS( float4 vPos : POSITION,
 
     // Animation the vertex based on time and the vertex's object space position
     if( bAnimate )
-		vAnimatedPos += float4(vNormal, 0) * (sin(g_fTime+5.5)+0.5)*5;
+    vAnimatedPos += float4(vNormal, 0) * (sin(g_fTime+5.5)+0.5)*5;
 
     // Transform the position from object space to homogeneous projection space
     Output.Position = mul(vAnimatedPos, g_mWorldViewProjection);

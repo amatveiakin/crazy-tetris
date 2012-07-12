@@ -16,9 +16,9 @@
 // This makes D3D objects work well in the debugger watch window, but slows down
 // performance slightly.
 #if defined(DEBUG) || defined(_DEBUG)
-	#ifndef D3D_DEBUG_INFO
-	#define D3D_DEBUG_INFO
-	#endif
+  #ifndef D3D_DEBUG_INFO
+  #define D3D_DEBUG_INFO
+  #endif
 #endif
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -37,21 +37,21 @@
 //*****************************************************************************
 
 #if defined(DEBUG) | defined(_DEBUG)
-	#ifndef HR
-	#define HR(x)                                              \
-	{                                                          \
-		HRESULT hr = (x);                                      \
-		if(FAILED(hr))                                         \
-		{                                                      \
-			DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
-		}                                                      \
-	}
-	#endif
+  #ifndef HR
+  #define HR(x)                                              \
+  {                                                          \
+    HRESULT hr = (x);                                      \
+    if(FAILED(hr))                                         \
+    {                                                      \
+      DXTrace(__FILE__, (DWORD)__LINE__, hr, L#x, true); \
+    }                                                      \
+  }
+  #endif
 
 #else
-	#ifndef HR
-	#define HR(x) (x)
-	#endif
+  #ifndef HR
+  #define HR(x) (x)
+  #endif
 #endif
 
 
@@ -69,56 +69,56 @@
 // Converts ARGB 32-bit color format to ABGR 32-bit color format.
 D3DX10INLINE UINT ARGB2ABGR(UINT argb)
 {
-	BYTE A = (argb >> 24) & 0xff;
-	BYTE R = (argb >> 16) & 0xff;
-	BYTE G = (argb >>  8) & 0xff;
-	BYTE B = (argb >>  0) & 0xff;
+  BYTE A = (argb >> 24) & 0xff;
+  BYTE R = (argb >> 16) & 0xff;
+  BYTE G = (argb >>  8) & 0xff;
+  BYTE B = (argb >>  0) & 0xff;
 
-	return (A << 24) | (B << 16) | (G << 8) | (R << 0);
+  return (A << 24) | (B << 16) | (G << 8) | (R << 0);
 }
 
 // Returns random float in [0, 1).
 D3DX10INLINE float RandF()
 {
-	return (float)(rand()) / (float)RAND_MAX;
+  return (float)(rand()) / (float)RAND_MAX;
 }
 
 // Returns random float in [a, b).
 D3DX10INLINE float RandF(float a, float b)
 {
-	return a + RandF()*(b-a);
+  return a + RandF()*(b-a);
 }
 
 // Returns random vector on the unit sphere.
 D3DX10INLINE D3DXVECTOR3 RandUnitVec3()
 {
-	D3DXVECTOR3 v(RandF(), RandF(), RandF());
-	D3DXVec3Normalize(&v, &v);
-	return v;
+  D3DXVECTOR3 v(RandF(), RandF(), RandF());
+  D3DXVec3Normalize(&v, &v);
+  return v;
 }
 
 template<typename T>
 D3DX10INLINE T Min(const T& a, const T& b)
 {
-	return a < b ? a : b;
+  return a < b ? a : b;
 }
 
 template<typename T>
 D3DX10INLINE T Max(const T& a, const T& b)
 {
-	return a > b ? a : b;
+  return a > b ? a : b;
 }
 
 template<typename T>
 D3DX10INLINE T Lerp(const T& a, const T& b, float t)
 {
-	return a + (b-a)*t;
+  return a + (b-a)*t;
 }
 
 template<typename T>
 D3DX10INLINE T Clamp(const T& x, const T& low, const T& high)
 {
-	return x < low ? low : (x > high ? high : x);
+  return x < low ? low : (x > high ? high : x);
 }
 
 
