@@ -210,7 +210,7 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   }
 
   randomPieceTable.clear();
-  for (int iPiece = 0; iPiece < pieceTemplate.size(); ++iPiece)
+  for (size_t iPiece = 0; iPiece < pieceTemplate.size(); ++iPiece)
     for (int i = 0; i < pieceTemplate[iPiece].chance; ++i)
       randomPieceTable.push_back(iPiece);
 }
@@ -258,8 +258,8 @@ void Player::prepareForNewRound()
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
-  visualEffects.lantern.lanternPosition = FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
-                                                           (FIELD_WIDTH  - 1.0f) / 2.0f);
+  visualEffects.lantern.setStanding(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
+                                                     (FIELD_WIDTH  - 1.0f) / 2.0f));
   // ...
 }
 
@@ -400,7 +400,7 @@ void Player::redraw()
   
   if (fallingPieceState != psAbsent)
   {
-    for (int i = 0; i < fallingBlockStructure().block.size(); ++i)
+    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
     {
       blockImage[nBlockImages++].setStanding(fallingPiece->color,
           FloatFieldCoords(fallingBlockStructure().block[i] + fallingPiecePosition));
@@ -409,11 +409,9 @@ void Player::redraw()
 
   if (fallingPieceState != psAbsent)
   {
-    visualEffects.lantern.lanternPosition = fallingPiecePosition;
-    visualEffects.lantern.powerOn();
+    visualEffects.lantern.startMovingTo(fallingPiecePosition, currentTime(),
+                                        BONUS_LANTERN_ANIMATION_TIME);
   }
-  else
-    visualEffects.lantern.powerOff();
 }
 
 

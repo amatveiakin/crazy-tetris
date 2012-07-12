@@ -7,8 +7,6 @@
 
 
 
-typedef float MyReal;
-
 template<typename T>
 T myMin(T x, T y)
 {
@@ -84,9 +82,9 @@ struct Coord2D
 
 typedef Coord2D<int> FieldCoords;
 
-//typedef Coord2D<MyReal> FloatFieldCoords;
+//typedef Coord2D<float> FloatFieldCoords;
 
-struct FloatFieldCoords : public Coord2D<MyReal> // (?) What's happening here?!!
+struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
 {
   FloatFieldCoords() { }
 
@@ -96,17 +94,23 @@ struct FloatFieldCoords : public Coord2D<MyReal> // (?) What's happening here?!!
     col = a.col;
   }
 
-  FloatFieldCoords(MyReal row__, MyReal col__)
+//  FloatFieldCoords(const FieldCoords a) : row(a.row), col(a.col) { }   //  TODO: find out why this is wrong
+  FloatFieldCoords(const FieldCoords& a)
+  {
+    row = float(a.row);
+    col = float(a.col);
+  }
+
+  FloatFieldCoords(float row__, float col__)
   {
     row = row__;
     col = col__;
   }
 
-//  FloatFieldCoords(const FieldCoords a) : row(a.row), col(a.col) { }   //  TODO: find out why this is wrong
-  FloatFieldCoords(const FieldCoords& a)
+  FloatFieldCoords(int row__, int col__)
   {
-    row = a.row;
-    col = a.col;
+    row = float(row__);
+    col = float(col__);
   }
 };
 

@@ -22,13 +22,11 @@ using std::set;
 
 //================================== General ===================================
 
-const MyReal STARTING_SPEED = 1.0f;
-// const MyReal SPEED_UP_MULTIPLIER = 1.004f;
-// const Time   SPEED_UP_INTERVAL = 0.5f;
-const MyReal SPEED_UP_MULTIPLIER = 1.0f;
-const Time   SPEED_UP_INTERVAL = 50.0f;
+const float STARTING_SPEED = 1.0f;
+const float SPEED_UP_MULTIPLIER = 1.004f;
+const Time   SPEED_UP_INTERVAL = 0.5f;
 // Speed limit can be excedeed via bonus
-const MyReal SPEED_LIMIT = 5.0f;
+const float SPEED_LIMIT = 5.0f;
 
 const Time   NORMAL_LOWERING_TIME = 1.0f;
 const Time   LOWERING_ANIMATION_TIME = 0.05f;
@@ -173,13 +171,14 @@ const int    BONUS_CHANCE[N_BONUSES] =
   2  // bnFlipField
 };
 
-const MyReal BONUS_SPEED_UP_MULTIPLIER = 1.4f;
-const MyReal BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
+const float BONUS_SPEED_UP_MULTIPLIER = 1.4f;
+const float BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
 const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
+const Time   BONUS_LANTERN_ANIMATION_TIME = LOWERING_ANIMATION_TIME;
 
 
 
@@ -472,7 +471,7 @@ public:
   int score;
   Controls controls;
   
-  MyReal speed;
+  float speed;
   Field field;
   Time latestLineCollapse;
   

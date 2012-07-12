@@ -4,6 +4,76 @@
 #include <map>
 #include "Declarations.h"
 
+//================================= General ===================================
+
+class MovingObject {
+public:
+  FloatFieldCoords movingFrom;
+  FloatFieldCoords movingTo;
+  Time movingStartTime;
+  Time movingDuration;
+  
+  void setMotion(FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+                 Time movingStartTime__, Time movingDuration__)
+  {
+    movingFrom = movingFrom__;
+    movingTo = movingTo__;
+    movingStartTime = movingStartTime__;
+    movingDuration = movingDuration__;
+  }
+  
+  void startMovingTo(FloatFieldCoords movingTo__,
+                     Time movingStartTime__, Time movingDuration__)
+  {
+    movingTo = movingTo__;
+    movingStartTime = movingStartTime__;
+    movingDuration = movingDuration__;
+  }
+  
+  void setStanding(FloatFieldCoords position)
+  {
+    setMotion(position, position, 0.0, 1.0);
+  }
+  
+  float positionY(Time currentTime)
+  {
+    if (currentTime < movingStartTime)
+    {
+      return movingFrom.row;
+    }
+    else if (currentTime < movingStartTime + movingDuration)
+    {
+      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
+              movingTo.row   * (currentTime - movingStartTime)) /
+             movingDuration;
+    }
+    else
+    {
+      return movingTo.row;
+    }
+  }
+  
+  float positionX(Time currentTime)
+  {
+    if (currentTime < movingStartTime)
+    {
+      return movingFrom.col;
+    }
+    else if (currentTime < movingStartTime + movingDuration)
+    {
+      return (movingFrom.col * (movingStartTime + movingDuration - currentTime) +
+              movingTo.col   * (currentTime - movingStartTime)) /
+             movingDuration;
+    }
+    else
+    {
+      return movingTo.col;
+    }
+  }
+};
+
+
+
 //================================== Effects ===================================
 
 // Base effect type, do not use directly
@@ -205,11 +275,9 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect;
 
-class LanternEffect : public BaseEffectType
+class LanternEffect : public BaseEffectType, public MovingObject
 {
 public:
-  FloatFieldCoords lanternPosition;
-
   void enable()
   {
     active_ = true;
@@ -220,23 +288,10 @@ public:
     active_ = false;
   }
 
-  void powerOn()
-  {
-    isPowered_ = true;
-  }
-
-  void powerOff()
-  {
-    isPowered_ = false;
-  }
-
   bool isOn()
   {
-    return active_ && isPowered_;
+    return active_;
   }
-
-protected:
-  bool isPowered_;
 };
 
 
@@ -263,23 +318,16 @@ class VisualObject { };
 
 
 
-class BlockImage : public VisualObject {
+class BlockImage : public VisualObject, private MovingObject {
 public:
   Color color;
-  FloatFieldCoords movingFrom;
-  FloatFieldCoords movingTo;
-  Time movingStartTime;
-  Time movingDuration;
   bool motionBlur;
   
   void setMotion(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
                  Time movingStartTime__, Time movingDuration__, bool motionBlur__ = false)
   {
+    MovingObject::setMotion(movingFrom__, movingTo__, movingStartTime__, movingDuration__);
     color = color__;
-    movingFrom = movingFrom__;
-    movingTo = movingTo__;
-    movingStartTime = movingStartTime__;
-    movingDuration = movingDuration__;
     motionBlur = motionBlur__;
   }
   
@@ -290,26 +338,12 @@ public:
   
   float positionY(Time currentTime)
   {
-    if (currentTime < movingStartTime + movingDuration) // (?)
-    {
-      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
-              movingTo.row   * (currentTime - movingStartTime)) /
-             movingDuration;
-    }
-    else
-      return movingTo.row;
+    return MovingObject::positionY(currentTime);
   }
   
   float positionX(Time currentTime)
   {
-    if (currentTime < movingStartTime + movingDuration) // (?)
-    {
-      return (movingFrom.col * (movingStartTime + movingDuration - currentTime) +
-              movingTo.col   * (currentTime - movingStartTime)) /
-             movingDuration;
-    }
-    else
-      return movingTo.col;
+    return MovingObject::positionX(currentTime);
   }
 };
 
