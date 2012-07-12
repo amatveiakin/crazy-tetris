@@ -1,3 +1,5 @@
+// TODO: make more animations nonlinear
+
 // TODO: change active player list
 
 // TODO: use more throw's instead of assertions
@@ -232,7 +234,7 @@ const int    BONUS_CHANCES[N_BONUSES] =
 };
 
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
-const Time   BONUS_FADING_DURATION = 0.3f;
+const Time   BONUS_FADING_DURATION = 0.5f;
 
 const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
 const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
@@ -768,7 +770,7 @@ private:
   bool          generateBonus();
   void          removeBonuses();
   void          planBonusAppearance();
-  void          planBonusDisappearance();
+  void          planBonusDisappearance(FieldCoords bonusCoords);
 
   void          applyBlockImagesMovements(vector<BlockImage>& imageArray);
   void          addStandingBlockImage(vector<BlockImage>& imageArray, Color color, FieldCoords position);  // name (?)

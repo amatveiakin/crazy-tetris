@@ -486,7 +486,7 @@ void Player::heal()
 
 void Player::beginClearField()
 {
-  //  TODO: also handle a case when the bonus is taken somehow but the pieces is still falling
+  //  TODO: also handle a case when the bonus is taken somehow but a piece is still falling (?)
   fieldLocks.isBeingCleared = true;
   field.clear();
   visualEffects.fieldCleaning.enable(BONUS_CLEAR_FIELD_DURATION);
@@ -1036,7 +1036,7 @@ bool Player::generateBonus()  // TODO: remake
           field(row, col).bonus = bonus;
           lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
           lyingBlockImages[field(row, col).iBlockImage].bonusImage.enable(BONUS_FADING_DURATION);
-          planBonusDisappearance();
+          planBonusDisappearance(FieldCoords(row, col));
           return true;
         }
       }
@@ -1067,9 +1067,12 @@ void Player::planBonusAppearance()
   events.push(etBonusAppearance, currentTime() + randomRange(MIN_BONUS_APPEAR_TIME, MAX_BONUS_APPEAR_TIME));
 }
 
-void Player::planBonusDisappearance()
+void Player::planBonusDisappearance(FieldCoords bonusCoords)
 {
-  events.push(etBonusDisappearance, currentTime() + randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME));
+  Time bonusDisappearTime = currentTime() + randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME);
+  events.push(etBonusDisappearance, bonusDisappearTime);
+  lyingBlockImages[field(bonusCoords).iBlockImage].bonusImage.setFadeOutStartTime(
+          bonusDisappearTime - BONUS_FADING_DURATION);
 }
 
 void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)
@@ -1165,7 +1168,7 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     // no effect
     break;
   case bnClearField:
-    // (!) It is enabled in clearField().  May be the conceptions needs changing
+    // (!) It is enabled in beginClearField().  May be the conceptions needs changing
     //visualEffects.fieldCleaning.enable(BONUS_CLEAR_FIELD_DURATION / 2);  // (!) Change if effect type is changed
     break;
   case bnFlippedScreen:

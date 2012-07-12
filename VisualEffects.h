@@ -276,14 +276,6 @@ public:
 
   FadingEffectType() : duration(1.0) { }
 
-  FadingEffectType& operator=(const FadingEffectType& a)
-  {
-    progress_ = a.progress_;
-    lastTime_ = a.lastTime_;
-    duration = a.duration;
-    return *this;
-  }
-
   void enable(float newDuration)
   {
     active_ = true;
@@ -304,6 +296,37 @@ public:
       progress_ = myMax(progress_ - progressChange, MIN_PROGRESS);
     lastTime_ = currentTime;
     return progress_;
+  }
+};
+
+
+
+// An effects that fades out automatically at a specified time
+class FiniteFadingEffectType : public FadingEffectType
+{
+public:
+  float fadeOutStartTime;
+
+  FiniteFadingEffectType& operator=(const FiniteFadingEffectType& a)
+  {
+    active_ = a.active_;
+    progress_ = a.progress_;
+    lastTime_ = a.lastTime_;
+    duration = a.duration;
+    fadeOutStartTime = a.fadeOutStartTime;
+    return *this;
+  }
+
+  void setFadeOutStartTime(float newFadeOutStartTime)
+  {
+    fadeOutStartTime = newFadeOutStartTime;
+  }
+
+  float progress(Time currentTime)
+  {
+    if (currentTime > fadeOutStartTime)
+      disable();
+    return FadingEffectType::progress(currentTime);
   }
 };
 
@@ -516,7 +539,7 @@ class BlockImage : public VisualObject, private MovingObject {
 public:
   Color color;
   Bonus bonus;
-  FadingEffectType bonusImage;
+  FiniteFadingEffectType bonusImage;
   FieldCoords binding;
 //  bool motionBlur;
   
