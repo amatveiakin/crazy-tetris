@@ -45,6 +45,9 @@ const Color COLORLESS = Color(-1.0, -1.0, -1.0, -1.0);
 
 enum Bonus
 {
+  //
+  bnNoBonus,
+
   // buffs
   bnEnlargeHintQueue,
   bnPieceTheft,
@@ -64,11 +67,8 @@ enum Bonus
   bnNoHint,
   
   // evil sorceries
-  bnSpeedUp,
-//  bnFlipField,
-  
-  //
-  bnNoBonus
+  bnSpeedUp
+//  bnFlipField
 };
 
 inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
@@ -77,14 +77,16 @@ inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
   return bonus;
 }
 
-const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
-const Bonus  LAST_BONUS = bnNoBonus;
-const Bonus  LAST_REAL_BONUS = Bonus(bnNoBonus - 1);
+const Bonus  FIRST_BONUS = bnNoBonus;
+const Bonus  FIRST_REAL_BONUS = bnEnlargeHintQueue;
+const Bonus  LAST_BONUS = bnSpeedUp;
+const Bonus  LAST_REAL_BONUS = bnSpeedUp;
 const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
-const int    N_REAL_BONUSES = LAST_REAL_BONUS - FIRST_BONUS + 1;
+const int    N_REAL_BONUSES = LAST_REAL_BONUS - FIRST_REAL_BONUS + 1;
 
 const std::wstring BONUS_NAME[N_BONUSES] =
 {
+  L"NoBonus",
   L"EnlargeHintQueue",
   L"PieceTheft",
   L"Heal",
@@ -97,9 +99,8 @@ const std::wstring BONUS_NAME[N_BONUSES] =
   L"CrazyPieces",
   L"TruncatedBlocks",
   L"NoHint",
-  L"SpeedUp",
-//  L"FlipField",
-  L"NoBonus"
+  L"SpeedUp"
+//  L"FlipField"
 };
 
 

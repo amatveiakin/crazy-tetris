@@ -276,6 +276,14 @@ public:
 
   FadingEffectType() : duration(1.0) { }
 
+  FadingEffectType& operator=(const FadingEffectType& a)
+  {
+    progress_ = a.progress_;
+    lastTime_ = a.lastTime_;
+    duration = a.duration;
+    return *this;
+  }
+
   void enable(float newDuration)
   {
     active_ = true;
@@ -508,6 +516,7 @@ class BlockImage : public VisualObject, private MovingObject {
 public:
   Color color;
   Bonus bonus;
+  FadingEffectType bonusImage;
   FieldCoords binding;
 //  bool motionBlur;
   
@@ -531,6 +540,7 @@ public:
   {
     color = color__;
     bonus = bnNoBonus;
+    bonusImage.clear();
     placeAt(position);
   }
 };

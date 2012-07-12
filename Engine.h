@@ -1,10 +1,6 @@
 // TODO: change active player list
 
-// TODO: abandon events (?)
-
 // TODO: use more throw's instead of assertions
-
-// TODO: Add range checking everywhere
 
 // TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
 //       add all events that what to change the field are delayed  (?)
@@ -216,8 +212,9 @@ union GlobalControls
 
 
 
-const int    BONUS_CHANCES[N_REAL_BONUSES] =
+const int    BONUS_CHANCES[N_BONUSES] =
 {
+  0, // bnNoBonus
   0, // bnEnlargeHintQueue
   0, // bnPieceTheft
   5, // bnHeal
@@ -230,11 +227,12 @@ const int    BONUS_CHANCES[N_REAL_BONUSES] =
   0, // bnCrazyPieces
   2, // bnTruncatedBlocks
   0, // bnNoHint
-  2, // bnSpeedUp
+  2  // bnSpeedUp
 //  2  // bnFlipField
 };
 
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
+const Time   BONUS_FADING_DURATION = 0.3f;
 
 const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
 const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
@@ -713,8 +711,8 @@ public:
   
   EventSet      events;         // R
   
-  vector<BlockImage>        lyingBlockImages;     // N
-  vector<BlockImage>        fallingBlockImages;   // N
+  vector<BlockImage>        lyingBlockImages;     // R
+  vector<BlockImage>        fallingBlockImages;   // R
   vector<DisappearingLine>  disappearingLines;    // R
   PlayerVisualEffects       visualEffects;        // R
   

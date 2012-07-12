@@ -312,7 +312,7 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
 
 void Game::loadBonuses()
 {
-  for (Bonus bonus = FIRST_BONUS; bonus <= LAST_REAL_BONUS; ++bonus)
+  for (Bonus bonus = FIRST_REAL_BONUS; bonus <= LAST_REAL_BONUS; ++bonus)
     for (int i = 0; i < BONUS_CHANCES[bonus]; ++i)
       randomBonusTable.push_back(bonus);
 }
@@ -1035,6 +1035,7 @@ bool Player::generateBonus()  // TODO: remake
         {
           field(row, col).bonus = bonus;
           lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
+          lyingBlockImages[field(row, col).iBlockImage].bonusImage.enable(BONUS_FADING_DURATION);
           planBonusDisappearance();
           return true;
         }
@@ -1053,7 +1054,8 @@ void Player::removeBonuses()
       if (field(row, col).isBlocked())
       {
         field(row, col).bonus = bnNoBonus;
-        lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
+        //lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
+        lyingBlockImages[field(row, col).iBlockImage].bonusImage.disable();
       }
     }
   }
