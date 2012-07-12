@@ -707,16 +707,13 @@ void Player::setUpPiece()
     addStandingBlockImage(lyingBlockImages, fallingPiece.color(), cell);
   }
   fallingPieceState = psAbsent;
-
-  removeFullLines();
-  events.pushWithUniquenessCheck(etNewPiece, currentTime() + HINT_MATERIALIZATION_TIME);
+  
+  bool fullLinesFound = removeFullLines();
+  Time newPieceDelay = fullLinesFound ? myMax(HINT_MATERIALIZATION_TIME, LINE_DISAPPEAR_TIME) :
+                                        HINT_MATERIALIZATION_TIME;
+  events.pushWithUniquenessCheck(etNewPiece, currentTime() + newPieceDelay);
+  visualEffects.hintMaterialization.enable(newPieceDelay);
   visualEffects.hint.enable(HINT_APPERAING_TIME);
-  visualEffects.hintMaterialization.enable(HINT_MATERIALIZATION_TIME);
-
-  /*if (!removeFullLines())  // There was it least one full line
-    sendNewPiece();
-  else  // There were no full lines
-    events.push(etNewPiece, currentTime() + LINE_DISAPPEAR_TIME);*/
 }
 
 void Player::initPieceQueue(int size)

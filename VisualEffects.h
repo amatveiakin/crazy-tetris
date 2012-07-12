@@ -429,7 +429,7 @@ public:
 
 typedef PermanentEffectType HintEffect;
 
-typedef SingleEffectType HintMaterializationEffect;
+typedef PermanentEffectType HintMaterializationEffect;
 
 typedef SingleEffectType FieldCleaningEffect; // --> FlashEffectType (?)
 
