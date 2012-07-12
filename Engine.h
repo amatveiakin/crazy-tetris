@@ -773,6 +773,7 @@ class Game
 public:
   vector<AccountInfo> accounts;
 
+  // TODO: participants array (to speed up booting)
   FixedZeroBasedArray<Player, MAX_PLAYERS> players;
   vector<Player*> activePlayers;
   

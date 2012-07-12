@@ -414,6 +414,7 @@ public:
   void placeNewImageAt(Color color__, FieldCoords position)
   {
     color = color__;
+    bonus = bnNoBonus;
     placeAt(position);
   }
   
