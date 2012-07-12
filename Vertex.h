@@ -4,17 +4,18 @@
 #define VERTEX_H
 
 #include "d3dapp/d3dUtil.h"
-
-struct ColoredVertex
-{
-	D3DXVECTOR3 pos;
-	D3DXVECTOR3 normal;
-};
  
 struct UncoloredVertex
 {
 	D3DXVECTOR3 pos;
 	D3DXVECTOR3 normal;
+};
+
+struct TexturedVertex
+{
+	D3DXVECTOR3 pos;
+	D3DXVECTOR3 normal;
+  D3DXVECTOR2 texC;
 };
 
 struct CubeInstance

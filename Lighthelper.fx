@@ -1,8 +1,8 @@
 
 struct Light
 {
-	float3 pos;
-	float3 dir;
+	float4 pos;
+	float4 dir;
 	float4 ambient;
 	float4 diffuse;
 	float4 spec;
@@ -10,15 +10,15 @@ struct Light
 	float  spotPower;
 	float  range;
   int    lightType;  //0 - off, 1 - parallel, 2 - point, 3 - spot
-  int    active;
+  float  brightness;
 };
 
 struct SurfaceInfo
 {
 	float3 pos;
-    float3 normal;
-    float4 diffuse;
-    float4 spec;
+  float3 normal;
+  float4 diffuse;
+  float4 spec;
 };
 
 float DiscreetSpecFactor(float specFactor)
@@ -48,7 +48,7 @@ float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)
 	float3 lightVec = -normalize(L.dir);
 	
 	// Add the ambient term.
-	litColor += v.diffuse * L.ambient;	
+	litColor += v.diffuse * L.brightness * L.ambient ;	
 	
 	// Add diffuse and specular term, provided the surface is in 
 	// the line of site of the light.
@@ -66,8 +66,8 @@ float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)
 		//specFactor = DiscreetSpecFactor(specFactor); 
 		
 		// diffuse and specular terms
-		litColor += diffuseFactor * v.diffuse * L.diffuse;
-		litColor += specFactor * v.spec * L.spec;
+		litColor += diffuseFactor * v.diffuse * L.brightness * L.diffuse;
+		litColor += specFactor * v.spec * L.brightness * L.spec;
 	}
 	
 	return litColor;
@@ -89,7 +89,7 @@ float3 PointLight(SurfaceInfo v, Light L, float3 eyePos)
 	lightVec /= d; 
 	
 	// Add the ambient light term.
-	litColor += v.diffuse * L.ambient;	
+	litColor += v.diffuse * L.brightness * L.ambient;	
 	
 	// Add diffuse and specular term, provided the surface is in 
 	// the line of site of the light.
@@ -107,8 +107,8 @@ float3 PointLight(SurfaceInfo v, Light L, float3 eyePos)
 		//specFactor = DiscreetSpecFactor(specFactor); 
 	
 		// diffuse and specular terms
-		litColor += diffuseFactor * v.diffuse * L.diffuse;
-		litColor += specFactor * v.spec * L.spec;
+		litColor += diffuseFactor * v.diffuse * L.brightness * L.diffuse;
+		litColor += specFactor * v.spec * L.brightness * L.spec;
 	}
 	
 	// attenuate

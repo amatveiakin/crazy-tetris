@@ -15,17 +15,18 @@ struct Light
 	}
 
 
-  D3DXVECTOR3 pos;
-	float pad1;      // not used
-	D3DXVECTOR3 dir;
-	float pad2;      // not used
+  D3DXVECTOR4 pos;
+	D3DXVECTOR4 dir;
 	D3DXCOLOR ambient;
 	D3DXCOLOR diffuse;
 	D3DXCOLOR specular;
 	D3DXVECTOR3 att;
 	float spotPow;
 	float range;
-  int lightType;
+  __int32 lightType; //0 - off, 1 - parallel, 2 - point, 3 - spot
+ 	float brightness;    
+  float pad4;      // not used
+  
 };
 
 #endif // LIGHT_H
