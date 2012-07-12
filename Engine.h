@@ -545,8 +545,7 @@ public:
   
   int           nBlockImages;                   // R
   BlockImage    blockImage[MAX_BLOCK_IMAGES];   // N
-  int           nDisappearingLines;             // R
-  DisappearingLine disappearingLine[FIELD_HEIGHT]; // N
+  vector<DisappearingLine> disappearingLine;    // R
   VisualEffects visualEffects;                  // R
   
   Time          nextKeyActivation[N_PLAYER_KEYS]; // C

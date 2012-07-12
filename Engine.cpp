@@ -161,9 +161,9 @@ void Game::endRound()
 
 void Game::onGlobalKeyPress(GlobalKey key)
 {
-  switch (key)
+  /*switch (key)
   {
-  }
+  }*/
 }
 
 void Game::onTimer(Time currentTime__)
@@ -211,14 +211,14 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   pieceTemplate.clear();
   char pieceBlock[MAX_PIECE_SIZE][MAX_PIECE_SIZE + 1];
   int nPieceTemplates;
-  fscanf(piecesFile.get(), "%d", &nPieceTemplates);
+  fscanf_s(piecesFile.get(), "%d", &nPieceTemplates);
   pieceTemplate.resize(nPieceTemplates);
 
   for (int iPiece = 0; iPiece < nPieceTemplates; ++iPiece)
   {
-    fscanf(piecesFile.get(), "%d", &pieceTemplate[iPiece].chance);
+    fscanf_s(piecesFile.get(), "%d", &pieceTemplate[iPiece].chance);
     skipWhitespace(piecesFile.get());
-    fscanf(piecesFile.get(), "(%f,%f,%f)", &pieceTemplate[iPiece].color.r,
+    fscanf_s(piecesFile.get(), "(%f,%f,%f)", &pieceTemplate[iPiece].color.r,
           &pieceTemplate[iPiece].color.g, &pieceTemplate[iPiece].color.b);
     pieceTemplate[iPiece].color.a = 1.0;
 
@@ -305,13 +305,13 @@ void Player::prepareForNewRound()
   nextPiece = NULL;
   sendNewPiece();
   sendNewPiece();
-  nDisappearingLines = 0;
+  disappearingLine.clear();
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
   visualEffects.clear();
-  visualEffects.lantern.setStanding(FieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
-                                                (FIELD_WIDTH  - 1.0f) / 2.0f));
+  visualEffects.lantern.setStanding(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
+                                                     (FIELD_WIDTH  - 1.0f) / 2.0f));
   // ...
 }
 
@@ -563,16 +563,16 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
     }
     if (rowIsFull)
     {
-      disappearingLine[nDisappearingLines].startTime = currentTime();
-      disappearingLine[nDisappearingLines].duration = LINE_DISAPPEAR_TIME;
-      disappearingLine[nDisappearingLines].row = row;
+      disappearingLine.resize(disappearingLine.size() + 1);
+      disappearingLine.back().startTime = currentTime();
+      disappearingLine.back().duration = LINE_DISAPPEAR_TIME;
+      disappearingLine.back().row = row;
       for (int col = 0; col < FIELD_WIDTH; ++col)
       {
-        disappearingLine[nDisappearingLines].blockColor[col] = field(row, col).color;
+        disappearingLine.back().blockColor[col] = field(row, col).color;
         field(row, col).clear();
         removeBlockImage(FieldCoords(row, col));
       }
-      ++nDisappearingLines;
       if (latestLineCollapse < currentTime() + LINE_DISAPPEAR_TIME)
         latestLineCollapse = currentTime() + LINE_DISAPPEAR_TIME;
       latestLineCollapse += LINE_COLLAPSE_TIME;
@@ -598,9 +598,20 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
     }
   }
   applyBlockImagesMovements();
-  for (int i = 0; i < nDisappearingLines; ++i)
-    if (disappearingLine[i].row > row)
-      --disappearingLine[i].row;
+
+  for (vector<DisappearingLine>::iterator i = disappearingLine.begin();
+       i != disappearingLine.end(); ++i)
+  {
+    if (i->row == row)
+    {
+      disappearingLine.erase(i);
+      break;
+    }
+  }
+  for (vector<DisappearingLine>::iterator i = disappearingLine.begin();
+       i != disappearingLine.end(); ++i)
+    if (i->row > row)
+      --(i->row);
   for (EventSet::iterator event = events.begin(); event != events.end(); ++event)
     if ((event->type == etLineCollapse) && (event->parameters.lineCollapse.row > row))
       --event->parameters.lineCollapse.row;

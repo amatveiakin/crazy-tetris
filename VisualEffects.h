@@ -31,7 +31,7 @@ public:
     movingDuration = movingDuration__;
   }
   
-  void setStanding(FieldCoords position)
+  void setStanding(CoordT position)
   {
     setMotion(position, position, 0.0, 1.0);
   }
@@ -40,7 +40,7 @@ public:
   {
     if (currentTime < movingStartTime)
     {
-      return movingFrom.row;
+      return float(movingFrom.row);
     }
     else if (currentTime < movingStartTime + movingDuration)
     {
@@ -50,7 +50,7 @@ public:
     }
     else
     {
-      return movingTo.row;
+      return float(movingTo.row);
     }
   }
   
@@ -58,7 +58,7 @@ public:
   {
     if (currentTime < movingStartTime)
     {
-      return movingFrom.col;
+      return float(movingFrom.col);
     }
     else if (currentTime < movingStartTime + movingDuration)
     {
@@ -68,7 +68,7 @@ public:
     }
     else
     {
-      return movingTo.col;
+      return float(movingTo.col);
     }
   }
 };
@@ -283,7 +283,7 @@ typedef PeriodicalEffectType RotatingFieldEffect;
 
 typedef FadingEffectType SemicubesEffect;
 
-typedef PeriodicalEffectType WaveEffect;
+typedef PeriodicalEffectType WaveEffect; // += FadingEffectType (?)
 
 class LanternEffect : public FadingEffectType, public MovingObject<FloatFieldCoords> { };
 
@@ -372,6 +372,17 @@ public:
   int row;
   Time startTime;
   Time duration;
+
+  // TODO: declare constants
+  float progress(Time currentTime)
+  {
+    if (currentTime <= startTime)
+      return 0.0f;
+    else if (currentTime < startTime + duration)
+      return (currentTime - startTime) / duration;
+    else
+      return 1.0f;
+  }
 };
 
 #endif

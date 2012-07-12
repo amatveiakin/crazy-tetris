@@ -164,16 +164,22 @@ class ShiftedBitSet : private std::bitset<nElements>
 public:
   void add(size_t position)
   {
+    assert(firstElementsNumber <= position);
+    assert(position < nElements + firstElementsNumber);
     std::bitset<nElements>::operator[](position - firstElementsNumber) = true;
   }
   
   bool check(size_t position) const
   {
+    assert(firstElementsNumber <= position);
+    assert(position < nElements + firstElementsNumber);
     return std::bitset<nElements>::operator[](position - firstElementsNumber);
   }
   
   void remove(size_t position)
   {
+    assert(firstElementsNumber <= position);
+    assert(position < nElements + firstElementsNumber);
     std::bitset<nElements>::operator[](position - firstElementsNumber) = false;
   }
   
