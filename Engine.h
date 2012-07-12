@@ -31,7 +31,7 @@ const float  SPEED_LIMIT = 5.0;
 const Time   NORMAL_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
-const Time   LINE_DISAPPEAR_TIME = 0.7f;
+const Time   LINE_DISAPPEAR_TIME = 0.5f;
 const Time   LINE_COLLAPSE_TIME = 0.05f;
 
 const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
@@ -387,6 +387,7 @@ enum EventType
 {
   etPieceLowering,
   etLineCollapse,
+  etNewPiece,
   etRoutineSpeedUp,
   etBonusAppearance,
   etBonusDisappearance
@@ -573,7 +574,7 @@ private:
   void          setUpPiece();
   void          sendNewPiece();
   void          lowerPiece();
-  void          removeFullLines();
+  bool          removeFullLines();
   void          collapseLine(int row);
   void          movePiece(int direction);
   void          dropPiece();

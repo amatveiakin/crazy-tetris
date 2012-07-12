@@ -435,6 +435,9 @@ void Player::onTimer()
       case etLineCollapse:
         collapseLine(events.top().parameters.lineCollapse.row);
         break;
+      case etNewPiece:
+        sendNewPiece();
+        break;
       case etRoutineSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
         routineSpeedUp();
         break;
@@ -503,8 +506,12 @@ void Player::setUpPiece()
     field(cell).setBlock(fallingPiece->color);
     setUpBlockImage(fallingPiece->color, cell);
   }
-  removeFullLines();
-  sendNewPiece();
+  fallingPieceState = psAbsent;
+
+  if (!removeFullLines())  // There was it least one full line
+    sendNewPiece();
+  else  // There were no full lines
+    events.push(etNewPiece, currentTime() + LINE_DISAPPEAR_TIME);
 }
 
 bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
@@ -539,6 +546,9 @@ void Player::sendNewPiece()
 
 void Player::lowerPiece()
 {
+  if (fallingPieceState == psAbsent)
+    return;
+
   FieldCoords newPosition = fallingPiecePosition + FieldCoords(-1, 0);
   // We should not forget about the case when a piece gets stuck as the result of
   // field modification. Such pieces should not continue falling.
@@ -562,8 +572,10 @@ void Player::lowerPiece()
     setUpPiece();
 }
 
-void Player::removeFullLines() // TODO: optimize: don't check all lines
+bool Player::removeFullLines() // TODO: optimize: don't check all lines
 {
+  bool fullLinesExisted = false;
+
   for (int row = 0; row < FIELD_HEIGHT; ++row)
   {
     bool rowIsFull = true;
@@ -575,8 +587,11 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
         break;
       } 
     }
+
     if (rowIsFull)
     {
+      fullLinesExisted = true;
+
       disappearingLines.resize(disappearingLines.size() + 1);
       disappearingLines.back().startTime = currentTime();
       disappearingLines.back().duration = LINE_DISAPPEAR_TIME;
@@ -587,6 +602,7 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
         field(row, col).clear();
         removeBlockImage(FieldCoords(row, col));
       }
+
       if (latestLineCollapse < currentTime() + LINE_DISAPPEAR_TIME)
         latestLineCollapse = currentTime() + LINE_DISAPPEAR_TIME;
       latestLineCollapse += LINE_COLLAPSE_TIME;
@@ -595,6 +611,8 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
       events.push(event);
     }
   }
+
+  return fullLinesExisted;
 }
 
 void Player::collapseLine(int row) // TODO: optimize  AND  animate
@@ -759,7 +777,7 @@ void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
 {
   if (movingFrom == movingTo)
     return;
-  blockImages[field(movingFrom).iBlockImage].setMotion(  // add version that doesn't change color
+  blockImages[field(movingFrom).iBlockImage].setMotion(  // TODO: add version that doesn't change color
           blockImages[field(movingFrom).iBlockImage].color, movingFrom, movingTo,
           movingStartTime, movingDuration);
   field(movingTo).iNewBlockImage = field(movingFrom).iBlockImage;
