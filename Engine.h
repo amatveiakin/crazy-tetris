@@ -691,7 +691,8 @@ public:
   int           number;         // C
   int           accountNumber;  // S  // TODO: changeSystem, use some ID's instead of numbers
   Game*         game;           // C
-  
+  int           backgroundSeed; // R
+
   bool          participates;   // S
   bool          active;         // R (in Game::newRound)
   int           score;          // M

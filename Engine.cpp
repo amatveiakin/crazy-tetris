@@ -350,6 +350,7 @@ void Player::prepareForNewRound()
   statistics.clear();
   events.clear();
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+  backgroundSeed = rand();
   fieldLocks.clear();
   planBonusAppearance();
   buffs.clear();
