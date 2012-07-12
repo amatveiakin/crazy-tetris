@@ -70,6 +70,23 @@ enum Bonus
   bnNoBonus
 };
 
+const wstring BONUS_NAME[N_BONUSES] =
+{
+  L"EnlargeHintQueue",
+  L"PieceTheft",
+  L"Heal",
+  L"SlowDown",
+  L"ClearField",
+  L"FlippedScreen",
+  L"InverseControls",
+  L"CrazyPieces",
+  L"TruncatedBlocks",
+  L"NoHint",
+  L"SpeedUp",
+  L"FlipField"
+};
+
+
 
 
 inline float randomRange(float min__, float max__)

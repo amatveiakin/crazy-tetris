@@ -25,7 +25,8 @@
 #include "IOFunctions.h"
 #include "VisualEffects.h"
 
-using std::string;
+using std::string;  // TODO: remove
+using std::wstring;
 using std::vector;
 using std::bitset;
 using std::set;
@@ -223,22 +224,6 @@ inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
 const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
 const Bonus  LAST_BONUS = bnFlipField;
 const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
-
-const string BONUS_NAME[N_BONUSES] =
-{
-  "EnlargeHintQueue",
-  "PieceTheft",
-  "Heal",
-  "SlowDown",
-  "ClearField",
-  "FlippedScreen",
-  "InverseControls",
-  "CrazyPieces",
-  "TruncatedBlocks",
-  "NoHint",
-  "SpeedUp",
-  "FlipField"
-};
 
 const int    BONUS_CHANCES[N_BONUSES] =
 {
