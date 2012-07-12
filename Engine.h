@@ -6,6 +6,7 @@
 
 // TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
 //       add all events that what to change the field are delayed  (?)
+// No, looks like it's better to check specific conditions before any change
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -35,10 +36,10 @@ using std::set;
 /*const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
-// Speed limit can be excedeed via bonus
+// Speed limit can be excedeed via bonus (?)
 const float  SPEED_LIMIT = 5.0;
 
-const Time   NORMAL_LOWERING_TIME = 0.8f;
+const Time   AUTO_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.1f;
 const Time   LINE_DISAPPEAR_TIME = 1.0f;
@@ -69,7 +70,7 @@ const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
 // Speed limit can be excedeed via bonus (?)
 const float  SPEED_LIMIT = 5.0;
 
-const Time   NORMAL_LOWERING_TIME = 0.8f;
+const Time   AUTO_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
 const Time   LINE_DISAPPEAR_TIME = 0.5f;
@@ -93,16 +94,18 @@ const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
 // Speed limit can be excedeed via bonus (?)
 const float  SPEED_LIMIT = 5.0;
 
-const Time   NORMAL_LOWERING_TIME = 0.8f;
+const Time   AUTO_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.02f;
 const Time   LINE_DISAPPEAR_TIME = 0.6f;
 const Time   LINE_COLLAPSE_TIME = 0.06f;
 
-const Time   PIECE_LOWERING_ANIMATION_TIME = 0.1f;
+//const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = AUTO_LOWERING_TIME;
+const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = 0.25f;
+const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTIVATION_TIME
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.08f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.1f;
 
 const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
 const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
@@ -130,7 +133,7 @@ enum PlayerKey
 const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
 const Time   ROTATE_KEY_REACTIVATION_TIME = 0.18f;
 //const Time   DOWN_KEY_REACTIVATION_TIME = 0.08f;
-const Time   DOWN_KEY_REACTIVATION_TIME = 0.1f;
+const Time   DOWN_KEY_REACTIVATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;
 const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
 const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
@@ -304,7 +307,7 @@ const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
 const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
-const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_LOWERING_ANIMATION_TIME;
+const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
 
 
 
@@ -793,7 +796,7 @@ private:
   void          initPieceQueue(int size);
   void          resizePieceQueue(int newSize);
   void          sendNewPiece();
-  void          lowerPiece();
+  void          lowerPiece(bool forced);
   bool          removeFullLines();
   void          collapseLine(int row);
   void          movePiece(int direction);

@@ -88,7 +88,7 @@ void Game::loadSettings()
     fscanf_s(settingsFile.get(), "%d\n", &players[iPlayer].accountNumber);
 //    fscanf_s(settingsFile.get(), "%d\n", &players[iPlayer].participates);
     int tmp;
-    fscanf(settingsFile.get(), "%d\n", &tmp);
+    fscanf_s(settingsFile.get(), "%d\n", &tmp);
     switch (tmp)
     {
     case 0:
@@ -363,7 +363,7 @@ Time Player::currentTime()
 
 Time Player::pieceLoweringInterval()
 {
-  return NORMAL_LOWERING_TIME / speed;
+  return AUTO_LOWERING_TIME / speed;
 }
 
 Player* Player::victim()
@@ -490,7 +490,7 @@ void Player::onKeyPress(PlayerKey key)
       break;
     case keyDown:
       events.eraseEventType(etPieceLowering);
-      lowerPiece();
+      lowerPiece(true /* forced */);
       break;
     case keyDrop:
       dropPiece();
@@ -510,7 +510,7 @@ void Player::onTimer()
     switch (events.top().type)
     {
     case etPieceLowering:
-      lowerPiece();
+      lowerPiece(false /* auto */);
       break;
     case etLineCollapse:
       collapseLine(events.top().parameters.lineCollapse.row);
@@ -641,7 +641,7 @@ void Player::sendNewPiece()
   nextPieces.back() = randomPiece();
 }
 
-void Player::lowerPiece()
+void Player::lowerPiece(bool forced)
 {
   if (fallingPieceState == psAbsent)
     return;
@@ -654,11 +654,11 @@ void Player::lowerPiece()
   {
     for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
     {
-      moveBlockImage(fallingBlockImages,
-                     fallingPiece.absoluteCoords(i),
-                     newPosition + fallingPiece.relativeCoords(i),
-                     (fallingPieceState == psDropping) ?
-                     DROPPING_PIECE_LOWERING_TIME : PIECE_LOWERING_ANIMATION_TIME);
+      Time loweringTime = (fallingPieceState == psDropping) ? DROPPING_PIECE_LOWERING_TIME :
+                          (forced ? PIECE_FORCED_LOWERING_ANIMATION_TIME :
+                                    PIECE_AUTO_LOWERING_ANIMATION_TIME);
+      moveBlockImage(fallingBlockImages, fallingPiece.absoluteCoords(i),
+                     newPosition + fallingPiece.relativeCoords(i), loweringTime);
     }
     applyBlockImagesMovements(fallingBlockImages);
 
@@ -672,7 +672,7 @@ void Player::lowerPiece()
     setUpPiece();
 }
 
-// TODO: Pptimize Player::removeFullLines: don't check all lines
+// TODO: Optimize Player::removeFullLines: don't check all lines
 // TODO: Does Player::removeFullLines have to return a bool any more?
 bool Player::removeFullLines()
 {
