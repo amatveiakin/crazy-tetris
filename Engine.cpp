@@ -1,5 +1,6 @@
 // TODO: apply effects in the end or middle of animation, not in the beggining
 
+#include <windows.h>
 #include <cstdio>
 #include "IOFunctions.h"
 #include "Engine.h"
@@ -28,8 +29,8 @@ Field::Field()
 
 void Field::clear()
 {
-  for (int row = 0; row < FIELD_WIDTH; ++row)
-    for (int col = 0; col < FIELD_HEIGHT; ++col)
+  for (int row = 0; row < FIELD_HEIGHT; ++row)
+    for (int col = 0; col < FIELD_WIDTH; ++col)
       operator()(row, col).clear();
 }
 
@@ -39,11 +40,65 @@ void Field::clear()
 
 void Game::init()
 {
-//   for (int key = FIRST_REAL_KEY; key <= LAST_REAL_KEY; ++key)
-//     lastKeyTrigger[key] = NEVER;
   loadPieces();
+  loadAccounts();
+  loadSettings();
+  for (int key = 0; key < N_GLOBAL_KEYS; ++key)
+    nextGlobalKeyActivation[key] = 0.0;
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     player[iPlayer].init(this, iPlayer);
+}
+
+void Game::loadAccounts()
+{
+  // ...
+  loadDefaultSettings();
+}
+
+void Game::saveAccounts()
+{
+  // ...
+}
+
+void Game::loadDefaultAccounts()
+{
+  account.resize(MAX_PLAYERS);
+  for (size_t iAccount = 0; iAccount < account.size(); ++iAccount)
+    account[iAccount].name = "Player " + char(iAccount + '1');  // TODO: rewrite
+}
+
+void Game::loadSettings()
+{
+  // ...
+  loadDefaultSettings();
+}
+
+void Game::saveSettings()
+{
+  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "w");
+  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+  {
+    fprintf(settingsFile.get(), "%d\n", player[iPlayer].accountNumber);
+    fprintf(settingsFile.get(), "%d\n", player[iPlayer].participates ? 1 : 0);
+    for (int key = 0; key < N_PLAYER_KEYS; ++key)
+      fprintf(settingsFile.get(), "%d\n", player[iPlayer].controls.keyArray[key]);
+  }
+}
+
+void Game::loadDefaultSettings()
+{
+  player[0].participates = true;
+  player[0].accountNumber = 0;
+  player[0].controls.keyByName.keyLeft = VK_LEFT;
+  player[0].controls.keyByName.keyRight = VK_RIGHT;
+  player[0].controls.keyByName.keyRotateCCW = VK_UP;
+  player[0].controls.keyByName.keyRotateCW = VK_DELETE;
+  player[0].controls.keyByName.keyDown = VK_DOWN;
+  player[0].controls.keyByName.keyDrop = VK_RSHIFT;
+  player[0].controls.keyByName.keyChangeVictim = VK_RCONTROL;
+  player[1].participates = false;
+  player[2].participates = false;
+  player[3].participates = false;
 }
 
 void Game::newMatch()
@@ -78,39 +133,38 @@ void Game::onGlobalKeyPress(GlobalKey key)
   }
 }
 
-// void Game::onKeyPress(RealKey key)
-// {
-//   ControlKey controlKey = keyMap[key].controlKey;
-//   if (controlKey == keyUnassigned)
-//     return;
-//   if (playerKey(controlKey))
-//   {
-//     int iPlayer = keyMap[key].iPlayer;
-//     if (player[iPlayer].active)
-//       player[iPlayer].onKeyPress(controlKey);
-//   }
-//   else
-//   {
-//     switch (key)
-//     {
-//     }
-//   }
-// }
-
 void Game::onTimer(Time currentTime__)
 {
   currentTime = currentTime__;
   
-  // TODO: place reactivation time check somewhere
   for (int key = 0; key < N_GLOBAL_KEYS; ++key)
-    onGlobalKeyPress(GlobalKey(key));
+  {
+    if (keyPressed(globalControls.keyArray[key] &&
+        (currentTime >= nextGlobalKeyActivation[key])))
+    {
+      onGlobalKeyPress(GlobalKey(key));
+      nextGlobalKeyActivation[key] = currentTime + GLOBAL_KEY_REACTIVATION_TIME[key];
+    }
+  }
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+  {
     if (player[iPlayer].active)
+    {
       for (int key = 0; key < N_PLAYER_KEYS; ++key)
-        player[iPlayer].onKeyPress(PlayerKey(key));
+      {
+        if (keyPressed(player[iPlayer].controls.keyArray[key]) &&
+            (currentTime >= player[iPlayer].nextKeyActivation[key]))
+        {
+          player[iPlayer].onKeyPress(PlayerKey(key));
+          player[iPlayer].nextKeyActivation[key] = currentTime + PLAYER_KEY_REACTIVATION_TIME[key];
+        }
+      }
+    }
+  }
   
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-    player[iPlayer].onTimer();
+    if (player[iPlayer].active)
+      player[iPlayer].onTimer();
 }
 
 
@@ -155,25 +209,6 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   } 
 }
 
-// void Game::buildKeyMap()
-// {
-//   for (RealKey realKey = FIRST_REAL_KEY; realKey <= LAST_REAL_KEY; ++realKey)
-//   {
-//     keyMap[realKey].controlKey = keyUnassigned;
-//     keyMap[realKey].iPlayer = -1;
-//   }
-//   
-//   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-//     if (player[iPlayer].participates)
-//       for (int controlKey = 0; controlKey < N_CONTROL_KEYS; ++controlKey)
-//       {
-//         RealKey realKey = player[iPlayer].controls.keyArray[controlKey];
-//         keyMap[realKey].controlKey = ControlKey(controlKey);
-//         keyMap[realKey].iPlayer = iPlayer;
-//       }
-// }
-
-
 
 
 //=================================== Player ===================================
@@ -182,12 +217,18 @@ void Player::init(Game* game__, int number__)
 {
   game = game__;
   number = number__;
-  score = 0;
+  for (int key = 0; key < N_PLAYER_KEYS; ++key)
+    nextKeyActivation[key] = 0.0;
 }
 
-void Player::loadPlayerInfo(PlayerInfo* newInfo)
+void Player::loadAccountInfo(int newAccount)
 {
-  info = newInfo;
+  accountNumber = newAccount;
+}
+
+AccountInfo* Player::account()
+{
+  return &game->account[accountNumber];
 }
 
 void Player::prepareForNewMatch()
@@ -198,15 +239,16 @@ void Player::prepareForNewMatch()
 
 void Player::prepareForNewRound()
 {
+  events.clear();
+  events.push(etSpeedUp, currentTime() + SPEED_UP_INTERVAL);
   buffs.clear();
   debuffs.clear();
   field.clear();
+  speed = STARTING_SPEED;
   nextPiece = NULL;
   sendNewPiece();
   sendNewPiece();
   nDisappearingLines = 0;
-  events.clear();
-  events.push(etSpeedUp, currentTime() + SPEED_UP_INTERVAL);
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
@@ -300,6 +342,7 @@ void Player::onKeyPress(PlayerKey key)
       rotatePiece(1);
       break;
     case keyDown:
+      events.eraseEventType(etPieceLowering);
       lowerPiece();
       break;
     case keyDrop:
@@ -313,17 +356,18 @@ void Player::onKeyPress(PlayerKey key)
 
 void Player::onTimer()
 {
-  while (currentTime() >= events.top().activationTime)
+  while ((!events.empty()) && (currentTime() >= events.top().activationTime))
   {
+    EventSet::iterator curentEvent = events.topIterator();
     switch (events.top().type)
     {
       case etPieceLowering:
         lowerPiece();
         break;
       case etLineCollapse:
-        // ...
+        collapseLine(events.top().parameters.lineCollapse.row);
         break;
-      case etSpeedUp:
+      case etSpeedUp:   // TODO: why is it called in the very beginning?
         // ...
         break;
       case etBonusAppearance:
@@ -333,13 +377,28 @@ void Player::onTimer()
         // ...
         break;
     }
-    events.pop();
+    events.erase(curentEvent);
   }
+  redraw();
+}
+
+void Player::redraw()
+{
+  nBlockImages = 0;
+  for (int row = 0; row < FIELD_HEIGHT; ++row)
+    for (int col = 0; col < FIELD_WIDTH; ++col)
+      if (field(row, col).isBlocked())
+        blockImage[nBlockImages++].setStanding(field(row, col).color, FloatFieldCoords(row, col));
+  if (fallingPieceState != psAbsent)
+    for (int i = 0; i < fallingBlockStructure().block.size(); ++i)
+      blockImage[nBlockImages++].setStanding(fallingPiece->color,
+          FloatFieldCoords(fallingBlockStructure().block[i].row + fallingPiecePosition.row,
+                           fallingBlockStructure().block[i].col + fallingPiecePosition.col));
 }
 
 
 
-const BlockStructre& Player::fallingBlockStructure()
+const BlockStructure& Player::fallingBlockStructure()
 {
   return fallingPiece->structure[fallingPieceRotationState];
 }
@@ -349,15 +408,16 @@ void Player::setUpPiece()
   for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
   {
     FieldCoords cell = fallingPiecePosition + fallingBlockStructure().block[i];
-    field(cell.col, cell.row).setBlock(fallingPiece->color);
+    field(cell.row, cell.col).setBlock(fallingPiece->color);
   }
   removeFullLines();
+  sendNewPiece();
 }
 
-bool Player::canDisposePiece(FieldCoords position, const BlockStructre& piece) const
+bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
 {
   for (size_t i = 0; i < piece.block.size(); ++i)
-    if (field(position.col + piece.block[i].col, position.row + piece.block[i].row).isBlocked())
+    if (field(position.row + piece.block[i].row, position.col + piece.block[i].col).isBlocked())
       return false;
   return true;
 }
@@ -369,27 +429,29 @@ void Player::sendNewPiece()
   {
     fallingPieceState = psNormal;
     fallingPieceRotationState = nextPieceRotationState;
-    fallingPiecePosition.row = FIELD_HEIGHT - fallingBlockStructure().lowestBlockRow;
+    fallingPiecePosition.row = FIELD_HEIGHT + fallingBlockStructure().lowestBlockRow;
     fallingPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // (?)
-    events.push(etPieceLowering, currentTime() + NORMAL_LOWERING_TIME);
+    events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
   }
   else
     fallingPieceState = psAbsent;
-  nextPiece = &game->pieceTemplate[rand() % game->pieceTemplate.size()];
+  //nextPiece = &game->pieceTemplate[rand() % game->pieceTemplate.size()];
+  nextPiece = &game->pieceTemplate[0];
   nextPieceRotationState = rand() % N_PIECE_ROTATION_STATES;
 }
 
 void Player::lowerPiece()
 {
-  FieldCoords newPosition = fallingPiecePosition - FieldCoords(-1, 0);
+  FieldCoords newPosition = fallingPiecePosition + FieldCoords(-1, 0);
   // We should not forget about the case when a piece gets stuck as the result of
   // field modification. Such pieces should not continue falling.
   if (canDisposePiece(fallingPiecePosition, fallingBlockStructure()) &&
       canDisposePiece(newPosition, fallingBlockStructure())) {
     fallingPiecePosition = newPosition; // animation (!)
     events.push(etPieceLowering,
-                currentTime() + (fallingPieceState == psDropping) ?
-                DROPPING_PIECE_LOWERING_TIME : pieceLoweringInterval());
+                currentTime() +
+                ((fallingPieceState == psDropping) ?
+                 DROPPING_PIECE_LOWERING_TIME : pieceLoweringInterval()));
   }
   else
     setUpPiece();
@@ -441,13 +503,17 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
 
 void Player::movePiece(int direction)
 {
-  FieldCoords newPosition = fallingPiecePosition - FieldCoords(0, direction);
+  if (fallingPieceState != psNormal)
+    return;
+  FieldCoords newPosition = fallingPiecePosition + FieldCoords(0, direction);
   if (canDisposePiece(newPosition, fallingBlockStructure()))
     fallingPiecePosition = newPosition;
 }
 
 void Player::dropPiece()
 {
+  if (fallingPieceState != psNormal)
+    return;
   fallingPieceState = psDropping;
   events.eraseEventType(etPieceLowering);
   events.push(etPieceLowering, currentTime() + DROPPING_PIECE_LOWERING_TIME);
@@ -455,10 +521,27 @@ void Player::dropPiece()
 
 void Player::rotatePiece(int direction)
 {
+  if (fallingPieceState != psNormal)
+    return;
   int newFallingPieceRotationState = (fallingPieceRotationState + N_PIECE_ROTATION_STATES + direction) %
                                      N_PIECE_ROTATION_STATES;
+
   if (canDisposePiece(fallingPiecePosition, fallingPiece->structure[newFallingPieceRotationState]))
+  {
     fallingPieceRotationState = newFallingPieceRotationState;
+  }
+  else if (canDisposePiece(fallingPiecePosition + FieldCoords(0, 1), // TODO: optimize
+           fallingPiece->structure[newFallingPieceRotationState]))
+  {
+    fallingPiecePosition += FieldCoords(0, 1);
+    fallingPieceRotationState = newFallingPieceRotationState;
+  }
+  else if (canDisposePiece(fallingPiecePosition - FieldCoords(0, 1), // TODO: optimize
+           fallingPiece->structure[newFallingPieceRotationState]))
+  {
+    fallingPiecePosition -= FieldCoords(0, 1);
+    fallingPieceRotationState = newFallingPieceRotationState;
+  }
 }
 
 void Player::cycleVictim()

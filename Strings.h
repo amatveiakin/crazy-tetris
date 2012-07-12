@@ -14,6 +14,7 @@ const std::string  PATH_DELIMITER = "/";
 const std::string  RECOURCE_FOLDER = "Resources" + PATH_DELIMITER;
 const std::string  PIECE_TEMPLATES_FILE = RECOURCE_FOLDER + "Pieces";
 const std::string  SETTINGS_FILE = "Settings";
+const std::string  ACCOUNTS_FILE = "Accounts";
 
 
 

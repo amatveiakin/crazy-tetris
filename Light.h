@@ -5,7 +5,7 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include "d3dUtil.h"
+#include "d3dApp/d3dUtil.h"
 
 struct Light
 {
@@ -14,7 +14,8 @@ struct Light
 		ZeroMemory(this, sizeof(Light));
 	}
 
-	D3DXVECTOR3 pos;
+
+  D3DXVECTOR3 pos;
 	float pad1;      // not used
 	D3DXVECTOR3 dir;
 	float pad2;      // not used
@@ -24,6 +25,7 @@ struct Light
 	D3DXVECTOR3 att;
 	float spotPow;
 	float range;
+  int lightType;
 };
 
 #endif // LIGHT_H

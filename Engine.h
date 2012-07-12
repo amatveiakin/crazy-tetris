@@ -22,23 +22,25 @@ using std::set;
 
 //================================== General ===================================
 
-const MyReal STARTING_SPEED = 1.0;
-const MyReal SPEED_UP_MULTIPLIER = 1.004;
-const Time   SPEED_UP_INTERVAL = 0.5;
+const MyReal STARTING_SPEED = 1.0f;
+// const MyReal SPEED_UP_MULTIPLIER = 1.004f;
+// const Time   SPEED_UP_INTERVAL = 0.5f;
+const MyReal SPEED_UP_MULTIPLIER = 1.0f;
+const Time   SPEED_UP_INTERVAL = 50.0f;
 // Speed limit can be excedeed via bonus
-const MyReal SPEED_LIMIT = 5.0;
+const MyReal SPEED_LIMIT = 5.0f;
 
-const Time   NORMAL_LOWERING_TIME = 1.0;
-const Time   LOWERING_ANIMATION_TIME = 0.05;
+const Time   NORMAL_LOWERING_TIME = 1.0f;
+const Time   LOWERING_ANIMATION_TIME = 0.05f;
 // Time necessary for a dropping piece to move one line down
-const Time   DROPPING_PIECE_LOWERING_TIME = 0.01;
-const Time   LINE_DISAPPEAR_TIME = 0.1;
-const Time   LINE_COLLAPSE_TIME = 0.1;
+const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
+const Time   LINE_DISAPPEAR_TIME = 0.1f;
+const Time   LINE_COLLAPSE_TIME = 0.1f;
 
-const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0;
-const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0;
-const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0;
-const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0;
+const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
+const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
+const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
+const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
 
 const int    MAX_PLAYERS = 4;
 const int    MAX_PLAYER_NAME_LENGTH = 16;
@@ -47,12 +49,15 @@ const int    MAX_PLAYER_NAME_LENGTH = 16;
 
 //================================== Keyboard ==================================
 
-const Time   MOVE_KEY_REACTIVATE_TIME = 0.12;
-const Time   ROTATE_KEY_REACTIVATE_TIME = 0.18;
-const Time   DOWN_KEY_REACTIVATE_TIME = 0.1;
-const Time   DROP_KEY_REACTIVATE_TIME = 0.3;
-// const Time   HEAL_KEY_REACTIVATE_TIME = 0.2;
-const Time   CHANGE_VICTIM_KEY_REACTIVATE_TIME = 0.2;
+const int N_PLAYER_KEYS = 7;
+
+enum PlayerKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop, keyChangeVictim };
+
+const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
+const Time   ROTATE_KEY_REACTIVATION_TIME = 0.18f;
+const Time   DOWN_KEY_REACTIVATION_TIME = 0.1f;
+const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
+const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
 const string PLAYER_KEY_NAME[N_PLAYER_KEYS] =
 {
@@ -62,21 +67,33 @@ const string PLAYER_KEY_NAME[N_PLAYER_KEYS] =
   "Вращать пр. ч.: ",
   "Вниз: ",
   "Бросить: ",
-//   "Лечиться: ",
   "Менять цель: "
 };
 
-const Time   PLAYER_KEY_REACTIVATE_TIME[N_PLAYER_KEYS] =
+const Time   PLAYER_KEY_REACTIVATION_TIME[N_PLAYER_KEYS] =
 {
-  MOVE_KEY_REACTIVATE_TIME,
-  MOVE_KEY_REACTIVATE_TIME,
-  ROTATE_KEY_REACTIVATE_TIME,
-  ROTATE_KEY_REACTIVATE_TIME,
-  DOWN_KEY_REACTIVATE_TIME,
-  DROP_KEY_REACTIVATE_TIME,
-//   HEAL_KEY_REACTIVATE_TIME,
-  CHANGE_VICTIM_KEY_REACTIVATE_TIME
+  MOVE_KEY_REACTIVATION_TIME,
+  MOVE_KEY_REACTIVATION_TIME,
+  ROTATE_KEY_REACTIVATION_TIME,
+  ROTATE_KEY_REACTIVATION_TIME,
+  DOWN_KEY_REACTIVATION_TIME,
+  DROP_KEY_REACTIVATION_TIME,
+  CHANGE_VICTIM_KEY_REACTIVATION_TIME
 };
+
+
+
+const int N_GLOBAL_KEYS = 0;
+
+enum GlobalKey { };
+
+// const string GLOBAL_KEY_NAME[N_GLOBAL_KEYS] = { };
+
+// const Time   GLOBAL_KEY_REACTIVATION_TIME[N_GLOBAL_KEYS] = { };
+
+const string GLOBAL_KEY_NAME[1] = { "qwerty" };
+
+const Time   GLOBAL_KEY_REACTIVATION_TIME[1] = { 123.0 };
 
 
 
@@ -156,13 +173,13 @@ const int    BONUS_CHANCE[N_BONUSES] =
   2  // bnFlipField
 };
 
-const MyReal BONUS_SPEED_UP_MULTIPLIER = 1.4;
-const MyReal BONUS_SLOW_DOWN_MULTIPLIER = 0.7;
+const MyReal BONUS_SPEED_UP_MULTIPLIER = 1.4f;
+const MyReal BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
-const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8;
-const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5;
-const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5;
-const Time   BONUS_REMOVING_HINT_DURATION = 1.0;
+const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
+const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
+const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
+const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
 
 
 
@@ -217,7 +234,7 @@ const int    SKY_HEIGHT = MAX_PIECE_SIZE;
 // MAX_PIECE_SIZE / 2  is enough  WALL_WIDTH  in most cases, but that's safe
 const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;
 
-struct BlockStructre
+struct BlockStructure
 {
   vector<FieldCoords> block;
   int lowestBlockRow;
@@ -236,7 +253,7 @@ struct PieceTemplate
 {
   Color color;
   int chance;
-  BlockStructre structure[N_PIECE_ROTATION_STATES];
+  BlockStructure structure[N_PIECE_ROTATION_STATES];
 };
 
 struct FieldCell
@@ -314,7 +331,8 @@ struct Event
   EventParameters parameters;
   
   Event() { }
-  Event(const Event& otherEvent) : type(otherEvent.type), activationTime(otherEvent.activationTime) { }
+  Event(const Event& otherEvent) : type(otherEvent.type), activationTime(otherEvent.activationTime),
+                                   parameters(otherEvent.parameters) { }
   Event(EventType type__, Time activationTime__) : type(type__), activationTime(activationTime__) { }
   
   bool operator<(const Event& otherEvent) const
@@ -328,6 +346,8 @@ struct Event
 class EventSet
 {
 public:
+  typedef set<Event>::iterator iterator;
+
   void push(const Event& event)
   {
     events_.insert(event);
@@ -343,9 +363,19 @@ public:
     return *events_.begin();
   }
   
+  iterator topIterator()
+  {
+    return events_.begin();
+  }
+  
   void pop()
   {
     events_.erase(events_.begin());
+  }
+  
+  void erase(iterator it)
+  {
+    events_.erase(it);
   }
   
   void eraseEventType(EventType eventType)
@@ -353,7 +383,7 @@ public:
     for (set<Event>::iterator i = events_.begin(); i != events_.end(); )
     {
       if (i->type == eventType)
-        events_.erase(i);
+        events_.erase(i++);
       else
         ++i;
     }
@@ -362,6 +392,11 @@ public:
   void clear()
   {
     events_.clear();
+  }
+  
+  bool empty()
+  {
+    return events_.empty();
   }
   
 private:
@@ -374,20 +409,30 @@ private:
 
 struct PlayerKeyList
 {
-  RealKey keyLeft;
-  RealKey keyRight;
-  RealKey keyRotateCW;
-  RealKey keyRotateCCW;
-  RealKey keyDown;
-  RealKey keyDrop;
-//   RealKey keyHeal;
-  RealKey keyChangeVictim;
+  KeyboardKey keyLeft;
+  KeyboardKey keyRight;
+  KeyboardKey keyRotateCW;
+  KeyboardKey keyRotateCCW;
+  KeyboardKey keyDown;
+  KeyboardKey keyDrop;
+  KeyboardKey keyChangeVictim;
 };
 
-union Controls    // (?) Is this union necessary?
+union Controls
 {
-  PlayerKeyList keyList;
-  RealKey keyArray[N_PLAYER_KEYS];
+  PlayerKeyList keyByName;
+  KeyboardKey keyArray[N_PLAYER_KEYS];
+};
+
+
+
+struct GlobalKeyList { };
+
+union GlobalControls
+{
+  GlobalKeyList keyByName;
+//  KeyboardKey keyArray[N_GLOBAL_KEYS];
+  KeyboardKey keyArray[1];
 };
 
 
@@ -396,7 +441,7 @@ union Controls    // (?) Is this union necessary?
 
 class Game;
 
-class PlayerInfo
+class AccountInfo
 {
 public:
   string name;
@@ -409,7 +454,7 @@ class Player
 {
 public:
   int number;
-  PlayerInfo* info;
+  int accountNumber;  // TODO: changeSystem, use some ID's insted of numbers
   Game* game;
   
   bool participates;
@@ -441,13 +486,16 @@ public:
   EventSet events;
   
   int nBlockImages;
-  BlockImage blockImages;
+  BlockImage blockImage[MAX_BLOCKS];
   int nDisappearingLines;
   DisappearingLine disappearingLine[FIELD_HEIGHT];
   VisualEffects visualEffects;
   
+  Time nextKeyActivation[N_PLAYER_KEYS];
+
   void init(Game* game__, int number__);
-  void loadPlayerInfo(PlayerInfo* playerInfo);
+  void loadAccountInfo(int newAccount);
+  AccountInfo* account();
   void prepareForNewMatch();
   void prepareForNewRound();
   
@@ -463,11 +511,12 @@ public:
 
   void onKeyPress(PlayerKey key);
   void onTimer();
+  void redraw();
   
 private:
-  const BlockStructre& fallingBlockStructure();
-  bool canDisposePiece(FieldCoords position, const BlockStructre& piece) const;
-//   void setUpPiece(FieldCoords position, const BlockStructre& piece, const Color& color)
+  const BlockStructure& fallingBlockStructure();
+  bool canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
+//   void setUpPiece(FieldCoords position, const BlockStructure& piece, const Color& color)
   void setUpPiece();
   void sendNewPiece();
   void lowerPiece();
@@ -490,20 +539,27 @@ private:
 class Game
 {
 public:
+  vector<AccountInfo> account;
+
   Player player[MAX_PLAYERS];
   int nActivePlayers;
+  
+  std::vector<PieceTemplate> pieceTemplate;
+//   int nPieceTemplates;
   
   Time currentTime;
 //   Time lastSpeedUp;
 //   Time startTime;
   
-  std::vector<PieceTemplate> pieceTemplate;
-//   int nPieceTemplates;
-  
-//   Time lastKeyTrigger[N_REAL_KEYS];
+//   Time nextGlobalKeyActivation[N_GLOBAL_KEYS];
+  Time nextGlobalKeyActivation[1];
+  GlobalControls globalControls;
   
   void init();
   
+  void saveAccounts();
+  void saveSettings();
+
   void newMatch();
   void newRound(Time currentTime__);
   void endRound();
@@ -513,7 +569,10 @@ public:
   
 private:
   void loadPieces();
-//   void buildKeyMap();
+  void loadAccounts();
+  void loadDefaultAccounts();
+  void loadSettings();
+  void loadDefaultSettings();
 };
 
 #endif

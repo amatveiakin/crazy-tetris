@@ -1,10 +1,3 @@
-//=============================================================================
-// lighthelper.fx by Frank Luna (C) 2008 All Rights Reserved.
-//
-// Structures and functions for lighting calculations.
-//=============================================================================
-
-
 struct Light
 {
 	float3 pos;
@@ -15,6 +8,7 @@ struct Light
 	float3 att;
 	float  spotPower;
 	float  range;
+  int    lightType;
 };
 
 struct SurfaceInfo

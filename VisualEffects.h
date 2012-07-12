@@ -97,9 +97,9 @@ public:
   {
     float progressChange = float(currentTime - lastTime_) / duration;
     if (active_)
-      progress_ = myMinThatDoesntMatchMinFromAnyLibrary(progress_ + progressChange, MAX_PROGRESS);
+      progress_ = myMin(progress_ + progressChange, MAX_PROGRESS);
     else
-      progress_ = myMaxThatDoesntMatchMaxFromAnyLibrary(progress_ - progressChange, MIN_PROGRESS);
+      progress_ = myMax(progress_ - progressChange, MIN_PROGRESS);
     lastTime_ = currentTime;
     return progress_;
   }
@@ -173,7 +173,7 @@ public:
       }
     }
     else
-      progress_ = myMaxThatDoesntMatchMaxFromAnyLibrary(progress_ - progressChange, MIN_PROGRESS);
+      progress_ = myMax(progress_ - progressChange, MIN_PROGRESS);
     lastTime_ = currentTime;
     return progress_;
   }

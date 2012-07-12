@@ -2,21 +2,21 @@
 #define CRAZYTETRIS_DECLARATIONS_H
 
 #include <cstdio>
-#include <stdlib.h>
 #include <bitset>
+#include "D3DApp/D3DUtil.h" // temporary
 
 
 
 typedef float MyReal;
 
 template<typename T>
-T myMinThatDoesntMatchMinFromAnyLibrary(T x, T y)
+T myMin(T x, T y)
 {
   return (x < y) ? x : y;
 }
 
 template<typename T>
-T myMaxThatDoesntMatchMaxFromAnyLibrary(T x, T y)
+T myMax(T x, T y)
 {
   return (x > y) ? x : y;
 }
@@ -32,21 +32,11 @@ const int    MAX_BLOCKS = FIELD_WIDTH * FIELD_HEIGHT;
 typedef float Time;
 const Time NEVER = -1000.0f;
 
-struct Color
-{
-  float r, g, b, a;
-};
-
-const Color COLORLESS  = { -1.0, -1.0, -1.0, -1.0 };
+#define Color D3DXCOLOR
 
 
 
-const int N_PLAYER_KEYS = 7;
-enum PlayerKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop, keyChangeVictim };
-
-const int N_GLOBAL_KEYS = 7;
-enum GlobalKey { };
-
+const Color COLORLESS = Color(-1.0, -1.0, -1.0, -1.0);
 
 
 
@@ -54,17 +44,18 @@ enum GlobalKey { };
 template <typename T>
 struct Coord2D
 {
-  int row, col;
+  T row, col;
   
   Coord2D() { }
   Coord2D(const Coord2D &a) : row(a.row), col(a.col) { }
-  Coord2D(int row__, int col__) : row(row__), col(col__) { }
+  Coord2D(T row__, T col__) : row(row__), col(col__) { }
 
-  /*Coord2D& operator=(const Coord2D& a)
+  Coord2D& operator=(const Coord2D& a)
   {
     row = a.row;
     col = a.col;
-  }*/
+    return *this;
+  }
 
   Coord2D operator+(const Coord2D& a)
   {
@@ -74,6 +65,20 @@ struct Coord2D
   Coord2D operator-(const Coord2D& a)
   {
     return Coord2D(row - a.row, col - a.col);
+  }
+
+  Coord2D& operator+=(const Coord2D& a)
+  {
+    row += a.row;
+    col += a.col;
+    return *this;
+  }
+
+  Coord2D& operator-=(const Coord2D& a)
+  {
+    row -= a.row;
+    col -= a.col;
+    return *this;
   }
 };
 
