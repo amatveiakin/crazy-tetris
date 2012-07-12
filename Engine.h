@@ -216,21 +216,21 @@ union GlobalControls
 
 const int    BONUS_CHANCES[N_BONUSES] =
 {
-  0, // bnNoBonus
-  0, // bnEnlargeHintQueue
-  0, // bnPieceTheft
-  5, // bnHeal
-  2, // bnSlowDown
-  1, // bnClearField
-  2, // bnFlippedScreen
-  2, // bnRotatingScreen
-  2, // bnWave
-  2, // bnLantern
-  0, // bnCrazyPieces
-  2, // bnTruncatedBlocks
-  0, // bnNoHint
-  2  // bnSpeedUp
-//  2  // bnFlipField
+  0,  // bnNoBonus
+  0,  // bnEnlargeHintQueue
+  0,  // bnPieceTheft
+  10, // bnHeal
+  4,  // bnSlowDown
+  2,  // bnClearField
+  4,  // bnFlippedScreen
+  3,  // bnRotatingScreen
+  4,  // bnWave
+  3,  // bnLantern
+  0,  // bnCrazyPieces
+  4,  // bnTruncatedBlocks
+  0,  // bnNoHint
+  4   // bnSpeedUp
+//  2   // bnFlipField
 };
 
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
@@ -251,8 +251,8 @@ const Time   BONUS_PLAYER_DYING_ANIMATION_TIME = 1.0f;
 
 const Time   MIN_BONUS_APPEAR_TIME = 4.0f;
 const Time   MAX_BONUS_APPEAR_TIME = 6.0f;
-const Time   MIN_BONUS_LIFE_TIME = 15.0;
-const Time   MAX_BONUS_LIFE_TIME = 20.0;
+const Time   MIN_BONUS_LIFE_TIME = 20.0;
+const Time   MAX_BONUS_LIFE_TIME = 25.0;
 
 const int    N_BONUS_CHOOSE_ATTEMPTS = 10;
 const int    N_BONUS_GENERATION_ATTEMPTS = 5;
