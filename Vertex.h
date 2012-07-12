@@ -23,6 +23,7 @@ struct CubeInstance
   D3DXCOLOR  diffuseColor;
   D3DXCOLOR  specularColor;
   D3DXMATRIX mWorld;
+  int texIndex;
 };
 
 #endif // VERTEX_H

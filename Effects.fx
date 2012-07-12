@@ -33,30 +33,10 @@ cbuffer cbPerObject
 
 
 Texture2D gDiffuseMap;
+Texture2DArray gTexBonuses;
 
 
 
-
-StandardVS_OUT vsGlass(UncoloredVS_IN vIn)
-{
-	StandardVS_OUT vOut;
-
-  vOut.posL = vIn.posL;
-	// Translate to world space space.
-
-  //Make wave effect
-  //vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
-  //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
-  vOut.posW    = mul(float4(vIn.posL, 0.0f), gGlobalRotation);
-  vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
-  // Transform to homogeneous clip space.
-	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
-  // Output vertex attributes for interpolation across triangle.
-	vOut.diffuse = gColorDiffuse;
-	vOut.spec    = gColorSpecular;
-	
-	return vOut;
-}
 
 TexturedVS_OUT vsTextured(TexturedVS_IN vIn)
 {
@@ -116,6 +96,7 @@ StandardVS_OUT vsCubes(CubesVS_IN vIn)
   // Output vertex attributes for interpolation across triangle.
 	vOut.diffuse = vIn.diffuseColor;
 	vOut.spec    = vIn.specularColor;
+  vOut.texIndex = vIn.texIndex;
 	
 	return vOut;
 }
@@ -131,8 +112,11 @@ float4 psCubes(StandardVS_OUT pIn) : SV_Target
     //rendering transparent or sliced object, so normal may have wrong direction
     if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
   }
-  
-  SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
+  float3 texC = float3(pIn.posL.xy * CUBE_SCALE_INVERTED / 2 + float2(0.5, 0.5), pIn.texIndex);
+  float4 diffuseTex  =       gTexBonuses.Sample(gAnisotropicSamBorder, texC);
+  SurfaceInfo v = {pIn.posW, pIn.normalW, 
+                  (1 - diffuseTex.a) * pIn.diffuse + diffuseTex.a * diffuseTex, 
+                  (1 - diffuseTex.a) * pIn.spec +    diffuseTex.a * (diffuseTex + float4(1.0, 1.0, 1.0, 1.0)) / 2};
   float3 litCol = float3(0., 0., 0.);
   
   for (int i = 0; i < MAX_LIGHTS; ++i)
@@ -146,18 +130,7 @@ float4 psCubes(StandardVS_OUT pIn) : SV_Target
 
 
 
-BlendState bsTransparent
-{
-  AlphaToCoverageEnable = false;
-  BlendEnable[0] = true;
-  SrcBlend = Src_Alpha;
-  DestBlend = Inv_Src_Alpha;
-  BlendOp = Add;
-  SrcBlendAlpha = One;
-  DestBlendAlpha =Zero;
-  BlendOpAlpha = Add;
-  //RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
-};
+
 
 float4 psSemicubes(StandardVS_OUT pIn) : SV_Target
 {
@@ -286,13 +259,3 @@ technique10 techTextured
     }
 }
 
-
-technique10 techGlass
-{
-    pass P0
-    {
-        SetVertexShader( CompileShader( vs_4_0, vsGlass() ) );
-        SetGeometryShader( NULL );
-        SetPixelShader( CompileShader( ps_4_0, psCubes() ) );
-    }
-}

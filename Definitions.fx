@@ -32,7 +32,8 @@ struct CubesVS_IN
 	float3 normalL   : NORMAL;
   float4 diffuseColor  : diffuse;
 	float4 specularColor : specular;
-  row_major float4x4 gWorld  : Transform;  
+  row_major float4x4 gWorld  : Transform;
+  int texIndex     :  TEXTURE_INDEX;
 };
 
 struct StandardVS_OUT
@@ -43,6 +44,7 @@ struct StandardVS_OUT
   float3 normalW : NORMAL;
   float4 diffuse : DIFFUSE;
   float4 spec    : SPECULAR;
+  int texIndex   :  TEXTURE_INDEX;
 };
 
 #endif

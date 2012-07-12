@@ -14,7 +14,7 @@ SamplerState gAnisotropicSamBorder
     Filter = ANISOTROPIC;
     AddressU = BORDER;
     AddressV = BORDER;
-    BorderColor = float4(0.0f, 0.0f, 1.0f, 1.0f);
+    BorderColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 };
 
 #endif

@@ -100,7 +100,7 @@ private:
 
   ID3D10EffectShaderResourceVariable* fxDiffuseMapVar;
   ID3D10EffectShaderResourceVariable* fxColorFilterVar;
-
+  ID3D10EffectShaderResourceVariable* fxTexBonusesVar;
 
 	//Rasterizer state - clean up
   ID3D10RasterizerState* rsSolidCullFront;
@@ -112,6 +112,8 @@ private:
   //Textures and texture views
   ID3D10ShaderResourceView* texBackWallRV;
   ID3D10ShaderResourceView* texSearchLightColorFilterRV;
+  ID3D10ShaderResourceView* texBonusesRV;
+  ID3D10ShaderResourceView* texBonusesArrayRV;
   
   ID3D10Buffer* cubeInstancesBuffer;
 
@@ -174,7 +176,7 @@ CrazyTetrisApp::~CrazyTetrisApp()
 
   ReleaseCOM(cubesVertexLayout);
   ReleaseCOM(texturedVertexLayout);
-  ReleaseCOM(uncoloredVertexLayout);
+  //ReleaseCOM(uncoloredVertexLayout);
 
   ReleaseCOM(texBackWallRV);
   ReleaseCOM(texSearchLightColorFilterRV);
@@ -183,9 +185,8 @@ CrazyTetrisApp::~CrazyTetrisApp()
 void CrazyTetrisApp::initApp()
 {
   mGame.init();
-  mGame.newMatch();
-  mGame.newRound(0);
-  mGame.saveSettings();
+    mGame.newMatch();
+
 
   D3DApp::initApp();
 	
@@ -208,6 +209,9 @@ void CrazyTetrisApp::initApp()
 
  // for test purposes
 
+  mGame.newRound(0);
+  buildViewports();
+  mGame.saveSettings();
 
 }
 
@@ -376,17 +380,36 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
     cubeInstances[i].diffuseColor  = player->lyingBlockImages[i].color; 
     cubeInstances[i].specularColor = player->lyingBlockImages[i].color * 0.5f + WHITE * 0.5f;
     cubeInstances[i].specularColor.a = 128.f;
+    cubeInstances[i].texIndex = player->lyingBlockImages[i].bonus;
 
   }
   cubeInstancesBuffer->Unmap();
   mBox.draw(player->lyingBlockImages.size());
-  
+
+  /*for (size_t i = 0; i < 200; ++i)
+  {
+    D3DXMatrixTranslation(&cubeInstances[i].mWorld, 
+                           fieldToWorldX(i % 10),
+                           fieldToWorldY(i / 10),
+                           0);
+
+    cubeInstances[i].diffuseColor  = BLUE;
+    cubeInstances[i].specularColor = WHITE;
+    cubeInstances[i].specularColor.a = 128.f;
+    cubeInstances[i].texIndex = i % N_BONUSES;
+
+  }
+  cubeInstancesBuffer->Unmap();
+  mBox.draw(200);
+  */
   //бортики
+  /*
   clippingPlane = D3DXVECTOR4(0.0, 0.0f, 0.0f, 0.0f);
 	fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));
   fxOpacityVar->SetFloat(0.0);
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
   cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
+  
   for (size_t i = 0; i < FIELD_HEIGHT; ++i)
   {
     D3DXMatrixTranslation(&cubeInstances[2 * i].mWorld, 
@@ -424,11 +447,11 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   cubeInstancesBuffer->Unmap();
 
   techFallingPiece->GetPassByIndex( 0 )->Apply(0);
-  mBox.draw(2 * FIELD_HEIGHT + FIELD_WIDTH + 2);
+  mBox.draw(40);
   techFallingPiece->GetPassByIndex( 1 )->Apply(0);
-  mBox.draw(2 * FIELD_HEIGHT + FIELD_WIDTH + 2);
+  mBox.draw(40);
 
-
+  */
   //рисуем убираемые линии
   
   for (size_t i = 0; i < player->disappearingLines.size(); ++i)
@@ -540,8 +563,9 @@ void CrazyTetrisApp::buildFX()
   fxTimeVar = FX->GetVariableByName("gTime")->AsScalar();
 
   //Textures
-  fxDiffuseMapVar = FX->GetVariableByName("gDiffuseMap")->AsShaderResource();
+  fxDiffuseMapVar =  FX->GetVariableByName("gDiffuseMap")->AsShaderResource();
   fxColorFilterVar = FX->GetVariableByName("gColorFilter")->AsShaderResource();
+  fxTexBonusesVar =  FX->GetVariableByName("gTexBonuses")->AsShaderResource();
 
   //Visual effect's progress
   fxWaveProgressVar      = FX->GetVariableByName("gWaveProgress")->AsScalar();
@@ -558,10 +582,7 @@ void CrazyTetrisApp::setConstantBuffers()
 
   fxDiffuseMapVar->SetResource(texBackWallRV);
   fxColorFilterVar->SetResource(texSearchLightColorFilterRV);
-  //D3DXVECTOR3 offs(FIELD_INDENT_LEFT - FIELD_INDENT_RIGHT,
-  //                 HUD_HEIGHT / 2.0f + FIELD_INDENT_BOTTOM - FIELD_INDENT_TOP,
-  //                 0.0f);
-  //fxGlobalOffsetVar->SetRawValue(&offs, 0, sizeof(D3DXVECTOR3));
+  fxTexBonusesVar->SetResource(texBonusesRV);
 
   D3DXCOLOR diffuse  = 5.f * BLUE;
   D3DXCOLOR specular = 5.f * (BLUE * 0.5f + WHITE * 0.5f);
@@ -580,18 +601,19 @@ void CrazyTetrisApp::buildVertexLayouts()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D10_INPUT_PER_VERTEX_DATA,   0},
 		{"NORMAL"  , 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA,   0},
-    
-    {"diffuse",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"specular",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},   
-    {"Transform",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 2 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"Transform",   1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 3 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"Transform",   2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"Transform",   3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 5 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1}
+     
+    {"diffuse",      0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"specular",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},   
+    {"Transform",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 2 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",    1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 3 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",    2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",    3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 5 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"TEXTURE_INDEX",0, DXGI_FORMAT_R32_SINT           , 1, 6 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1}
+
   };
   numElements = sizeof(cubesVertexDesc) / sizeof(D3D10_INPUT_ELEMENT_DESC);
 	techCubes->GetPassByIndex(0)->GetDesc(&passDesc);
-  HR(md3dDevice->CreateInputLayout(cubesVertexDesc, numElements, passDesc.pIAInputSignature,
-	passDesc.IAInputSignatureSize, &cubesVertexLayout));
+  HR(md3dDevice->CreateInputLayout(cubesVertexDesc, numElements, passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &cubesVertexLayout));
 
   D3D10_INPUT_ELEMENT_DESC texturedVertexDesc[] =
   {
@@ -604,7 +626,7 @@ void CrazyTetrisApp::buildVertexLayouts()
   HR(md3dDevice->CreateInputLayout(texturedVertexDesc, numElements, passDesc.pIAInputSignature,
 	passDesc.IAInputSignatureSize, &texturedVertexLayout));
 
-  D3D10_INPUT_ELEMENT_DESC uncoloredVertexDesc[] =
+  /*D3D10_INPUT_ELEMENT_DESC uncoloredVertexDesc[] =
   {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D10_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D10_INPUT_PER_VERTEX_DATA, 0},
@@ -612,7 +634,7 @@ void CrazyTetrisApp::buildVertexLayouts()
   numElements = sizeof(uncoloredVertexDesc) / sizeof(D3D10_INPUT_ELEMENT_DESC);
   techGlass->GetPassByIndex(0)->GetDesc(&passDesc);
   HR(md3dDevice->CreateInputLayout(uncoloredVertexDesc, numElements, passDesc.pIAInputSignature,
-	passDesc.IAInputSignatureSize, &uncoloredVertexLayout));
+	passDesc.IAInputSignatureSize, &uncoloredVertexLayout));*/
 
 }
 void CrazyTetrisApp::buildRasterizerStates()
@@ -749,8 +771,103 @@ void CrazyTetrisApp::buildBuffers()
 
 void CrazyTetrisApp::buildTextures()
 {
-  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, L"Resources/Textures/Wall.dds", 0, 0, &texBackWallRV, 0) );
-  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, L"Resources/Textures/SearchLightMM.jpg", 0, 0, &texSearchLightColorFilterRV, 0) );
+  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER + L"Wall.dds").c_str(), 0, 0, &texBackWallRV, 0) );
+  HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"SearchLightMM.jpg").c_str(), 0, 0, &texSearchLightColorFilterRV, 0) );
+  //HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"flare.dds").c_str(), 0, 0, &texBonusesRV, 0) );
+
+  ID3D10Texture2D* srcTex[N_BONUSES];
+  for(UINT i = 0; i < N_BONUSES; ++i)
+  {
+    D3DX10_IMAGE_LOAD_INFO loadInfo;
+    loadInfo.Width  = D3DX10_FROM_FILE;
+    loadInfo.Height = D3DX10_FROM_FILE;
+    loadInfo.Depth  = D3DX10_FROM_FILE;
+    loadInfo.FirstMipLevel = 0;
+    loadInfo.MipLevels = D3DX10_FROM_FILE;
+    loadInfo.Usage = D3D10_USAGE_STAGING;
+    loadInfo.BindFlags = 0;
+    loadInfo.CpuAccessFlags = D3D10_CPU_ACCESS_WRITE | D3D10_CPU_ACCESS_READ;
+    loadInfo.MiscFlags = 0;
+    loadInfo.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    loadInfo.Filter = D3DX10_FILTER_NONE;
+    loadInfo.MipFilter = D3DX10_FILTER_NONE;
+    loadInfo.pSrcInfo  = 0;
+
+    HR(D3DX10CreateTextureFromFile(md3dDevice,
+      (BONUS_IMAGES_FOLDER + BONUS_NAME[i] + L".png").c_str(),
+         //(TEXTURES_FOLDER + L"tree0.dds").c_str(),
+          &loadInfo, 0,
+          (ID3D10Resource**)&srcTex[i], 0));
+  }
+
+  //
+  // Create the texture array.  Each element in the texture
+  // array has the same format/dimensions.
+  //
+
+  D3D10_TEXTURE2D_DESC texElementDesc;
+  srcTex[0]->GetDesc(&texElementDesc);
+
+  D3D10_TEXTURE2D_DESC texArrayDesc;
+  texArrayDesc.Width              = texElementDesc.Width;
+  texArrayDesc.Height             = texElementDesc.Height;
+  texArrayDesc.MipLevels          = texElementDesc.MipLevels;
+  texArrayDesc.ArraySize          = N_BONUSES;
+  texArrayDesc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+  texArrayDesc.SampleDesc.Count   = 1;
+  texArrayDesc.SampleDesc.Quality = 0;
+  texArrayDesc.Usage              = D3D10_USAGE_DEFAULT;
+  texArrayDesc.BindFlags          = D3D10_BIND_SHADER_RESOURCE;
+  texArrayDesc.CPUAccessFlags     = 0;
+  texArrayDesc.MiscFlags          = 0;
+
+  ID3D10Texture2D* texArray = 0;
+  HR(md3dDevice->CreateTexture2D(&texArrayDesc, 0, &texArray));
+
+  //
+  // Copy individual texture elements into texture array.
+  //
+
+  // for each texture element...
+  for(UINT i = 0; i < N_BONUSES; ++i)
+  {
+      // for each mipmap level...
+      for(UINT j = 0; j < texElementDesc.MipLevels; ++j)
+      {
+          D3D10_MAPPED_TEXTURE2D mappedTex2D;
+          srcTex[i]->Map(j, D3D10_MAP_READ, 0, &mappedTex2D);
+
+          md3dDevice->UpdateSubresource(texArray,
+          D3D10CalcSubresource(j, i, texElementDesc.MipLevels),
+          0, mappedTex2D.pData, mappedTex2D.RowPitch, 0);
+
+          srcTex[i]->Unmap(j);
+      }
+  }
+  //
+  // Create a resource view to the texture array.
+  //
+
+  D3D10_SHADER_RESOURCE_VIEW_DESC viewDesc;
+  viewDesc.Format = texArrayDesc.Format;
+  viewDesc.ViewDimension = D3D10_SRV_DIMENSION_TEXTURE2DARRAY;
+  viewDesc.Texture2DArray.MostDetailedMip = 0;
+  viewDesc.Texture2DArray.MipLevels = texArrayDesc.MipLevels;
+  viewDesc.Texture2DArray.FirstArraySlice = 0;
+  viewDesc.Texture2DArray.ArraySize = N_BONUSES;
+
+  HR(md3dDevice->CreateShaderResourceView(
+        texArray, &viewDesc, &texBonusesRV));
+
+  //
+  // Cleanup--we only need the resource view.
+  //
+
+  ReleaseCOM(texArray);
+
+  for(UINT i = 0; i < 4; ++i)
+      ReleaseCOM(srcTex[i]);
+
 }
 
 void CrazyTetrisApp::buildViewports()
