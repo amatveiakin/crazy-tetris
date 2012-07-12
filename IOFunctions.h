@@ -4,13 +4,14 @@
 #include "Declarations.h"
 
 typedef int RealKey;
-const int BEGIN_REAL_KEY = 0;
-const int END_REAL_KEY = 256; // TODO: find real value
-const int N_REAL_KEYS = END_REAL_KEY - BEGIN_REAL_KEY;
+const int FIRST_REAL_KEY = 0;
+const int LAST_REAL_KEY = 1023;   // TODO: find real value
+const int N_REAL_KEYS = LAST_REAL_KEY - FIRST_REAL_KEY + 1;
 
-// void registerKeyHandler(RealKey key, int reactivateTime, ControlKey controlKey, int iPlayer,
-//                         void* keyHandler(ControlKey controlKey, int iPlayer));
-void registerKeyHandler(RealKey key, int reactivateTime, void* keyHandler(RealKey key));
-void unregisterKeyHandler(RealKey key);
+// void registerKeyHandler(RealKey key, Time reactivateTime, void* keyHandler(RealKey key));
+// void unregisterKeyHandler(RealKey key);
+// void unregisterAllKeyHandlers();
+
+bool keyPressed(RealKey key);
 
 #endif

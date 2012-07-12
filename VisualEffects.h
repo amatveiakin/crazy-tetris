@@ -10,8 +10,8 @@
 class BaseEffectType
 {
 public:
-  BaseEffectType() : MIN_PROGRESS(0.0f), MAX_PROGRESS(1.0f), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
-                     active_(false), progress_(MIN_PROGRESS), lastTime_(0.0f) { }
+  BaseEffectType() : MIN_PROGRESS(0.0), MAX_PROGRESS(1.0), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
+                     active_(false), progress_(MIN_PROGRESS), lastTime_(0.0) { }
 protected:
   const float MIN_PROGRESS;
   const float MAX_PROGRESS;
@@ -30,7 +30,7 @@ class PeriodicalEffectType : public BaseEffectType
 public:
   float period;
 
-  PeriodicalEffectType() : stopping_(false), period(1.0f) { }
+  PeriodicalEffectType() : period(1.0), stopping_(false) { }
 
   void enable(float newPeriod) 
   {
@@ -80,7 +80,7 @@ class FadingEffectType : public BaseEffectType
 public:
   float duration;
 
-  FadingEffectType() : duration(1.0f) { }
+  FadingEffectType() : duration(1.0) { }
 
   void enable(float newDuration)
   {
@@ -97,9 +97,9 @@ public:
   {
     float progressChange = float(currentTime - lastTime_) / duration;
     if (active_)
-      progress_ = min(progress_ + progressChange, MAX_PROGRESS);
+      progress_ = myMinThatDoesntMatchMinFromAnyLibrary(progress_ + progressChange, MAX_PROGRESS);
     else
-      progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+      progress_ = myMaxThatDoesntMatchMaxFromAnyLibrary(progress_ - progressChange, MIN_PROGRESS);
     lastTime_ = currentTime;
     return progress_;
   }
@@ -107,13 +107,13 @@ public:
 
 
 
-// Effect that acts once     // words (?)
+// Effect that acts once
 class SingleEffectType : public BaseEffectType   // Name (?)
 {
 public:
   float duration;
 
-  SingleEffectType() : duration(1.0f) { }
+  SingleEffectType() : duration(1.0) { }
 
   void enable(float newDuration)
   {
@@ -142,13 +142,13 @@ public:
 
 
 
-// Effect that fades in for some time and than immediately fades out.    <-- spelling (?)
+// Effect that fades in and than immediately fades out.
 class FlashEffectType : public BaseEffectType
 {
 public:
   float halfDuration;
 
-  FlashEffectType() : halfDuration(1.0f) { }
+  FlashEffectType() : halfDuration(1.0) { }
 
   void enable(float newHalfDuration)
   {
@@ -173,7 +173,7 @@ public:
       }
     }
     else
-      progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+      progress_ = myMaxThatDoesntMatchMaxFromAnyLibrary(progress_ - progressChange, MIN_PROGRESS);
     lastTime_ = currentTime;
     return progress_;
   }
@@ -184,7 +184,7 @@ public:
 typedef SingleEffectType ClearGlassEffect; // --> FlashEffectType (?)
 
 // if can't actually fade out :-)
-typedef FadingEffectType PlayerDyingEffect; // spelling -- (?)
+typedef FadingEffectType PlayerDyingEffect;
 
 typedef FadingEffectType NoHintEffect;
 
@@ -217,7 +217,9 @@ public:
 
 class VisualObject { };
 
-class Block : public VisualObject {
+
+
+class BlockImage : public VisualObject {
 public:
   Color color;
   FloatFieldCoords movingFrom;
@@ -239,12 +241,12 @@ public:
   
   void setStanding(Color color__, FloatFieldCoords position)
   {
-    setMotion(color__, position, position, 0.0f, 1.0f, false);
+    setMotion(color__, position, position, 0.0, 1.0, false);
   }
   
-  float row(Time currentTime)
+  float positionY(Time currentTime)
   {
-    if (currentTime > movingStartTime + movingDuration) // (?)
+    if (currentTime < movingStartTime + movingDuration) // (?)
     {
       return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
               movingTo.row   * (currentTime - movingStartTime)) /
@@ -254,9 +256,9 @@ public:
       return movingTo.row;
   }
   
-  float col(Time currentTime)
+  float positionX(Time currentTime)
   {
-    if (currentTime > movingStartTime + movingDuration) // (?)
+    if (currentTime < movingStartTime + movingDuration) // (?)
     {
       return (movingFrom.col * (movingStartTime + movingDuration - currentTime) +
               movingTo.col   * (currentTime - movingStartTime)) /
@@ -267,6 +269,8 @@ public:
   }
 };
 
+
+
 class DisappearingLine : public VisualObject {
 public:
   Color blockColor[FIELD_WIDTH];
@@ -274,7 +278,5 @@ public:
   Time startTime;
   Time duration;
 };
-
-typedef std::map<FieldCoords, VisualObject> VisualObjects;
 
 #endif
