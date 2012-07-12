@@ -348,6 +348,16 @@ class EventSet
 public:
   typedef set<Event>::iterator iterator;
 
+  iterator begin()
+  {
+    return events_.begin();
+  }
+
+  iterator end()
+  {
+    return events_.end();
+  }
+
   void push(const Event& event)
   {
     events_.insert(event);
@@ -509,9 +519,9 @@ public:
   void heal();
   void kill();
 
-  void onKeyPress(PlayerKey key);
+  void onKeyPress(PlayerKey key);  // (!) private
   void onTimer();
-  void redraw();
+  void redraw();  // (!) private
   
 private:
   const BlockStructure& fallingBlockStructure();
@@ -544,12 +554,11 @@ public:
   Player player[MAX_PLAYERS];
   int nActivePlayers;
   
-  std::vector<PieceTemplate> pieceTemplate;
-//   int nPieceTemplates;
+  vector<PieceTemplate> pieceTemplate;
+  vector<int> randomPieceTable;
   
   Time currentTime;
 //   Time lastSpeedUp;
-//   Time startTime;
   
 //   Time nextGlobalKeyActivation[N_GLOBAL_KEYS];
   Time nextGlobalKeyActivation[1];
@@ -564,7 +573,7 @@ public:
   void newRound(Time currentTime__);
   void endRound();
   
-  void onGlobalKeyPress(GlobalKey key);
+  void onGlobalKeyPress(GlobalKey key);  // (!) private
   void onTimer(Time currentTime);
   
 private:

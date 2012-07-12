@@ -10,14 +10,23 @@
 class BaseEffectType
 {
 public:
-  BaseEffectType() : MIN_PROGRESS(0.0), MAX_PROGRESS(1.0), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
-                     active_(false), progress_(MIN_PROGRESS), lastTime_(0.0) { }
+  BaseEffectType() : active_(false) { }
+protected:
+  bool active_;
+};
+
+
+
+class SmoothEffectType : public BaseEffectType
+{
+public:
+  SmoothEffectType() : MIN_PROGRESS(0.0), MAX_PROGRESS(1.0), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
+                       progress_(MIN_PROGRESS), lastTime_(0.0) { }
 protected:
   const float MIN_PROGRESS;
   const float MAX_PROGRESS;
   const float PROGRESS_RANGE;
 
-  bool active_;
   float progress_;
   Time lastTime_;
 };
@@ -25,7 +34,7 @@ protected:
 
 
 // An effect that repeats periodically (starting from zero moment)
-class PeriodicalEffectType : public BaseEffectType 
+class PeriodicalEffectType : public SmoothEffectType 
 {
 public:
   float period;
@@ -75,7 +84,7 @@ protected:
 // An effect that can fade in and (or) out. If (active == true) the effect is turned on
 // and thus is either functioning normally [if (current_time > endTime] or is being
 // activated now [if (current time <= endTime)]. If (active == false) everything is vice versa.
-class FadingEffectType : public BaseEffectType
+class FadingEffectType : public SmoothEffectType
 {
 public:
   float duration;
@@ -108,7 +117,7 @@ public:
 
 
 // Effect that acts once
-class SingleEffectType : public BaseEffectType   // Name (?)
+class SingleEffectType : public SmoothEffectType   // Name (?)
 {
 public:
   float duration;
@@ -143,7 +152,7 @@ public:
 
 
 // Effect that fades in and than immediately fades out.
-class FlashEffectType : public BaseEffectType
+class FlashEffectType : public SmoothEffectType
 {
 public:
   float halfDuration;
@@ -196,6 +205,40 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect;
 
+class LanternEffect : public BaseEffectType
+{
+public:
+  FloatFieldCoords lanternPosition;
+
+  void enable()
+  {
+    active_ = true;
+  }
+
+  void disable()
+  {
+    active_ = false;
+  }
+
+  void powerOn()
+  {
+    isPowered_ = true;
+  }
+
+  void powerOff()
+  {
+    isPowered_ = false;
+  }
+
+  bool isOn()
+  {
+    return active_ && isPowered_;
+  }
+
+protected:
+  bool isPowered_;
+};
+
 
 
 class VisualEffects
@@ -208,6 +251,7 @@ public:
   RotatingFieldEffect rotatingField;
   SemicubesEffect semicubes;
   WaveEffect wave;
+  LanternEffect lantern;
 };
 
 

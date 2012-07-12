@@ -174,8 +174,9 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   SmartFileHandler piecesFile(PIECE_TEMPLATES_FILE.c_str(), "r");
   if (piecesFile.get() == NULL)
     throw ERR_FILE_NOT_FOUND;   // TODO: format
-  int nPieceTemplates;
+  pieceTemplate.clear();
   char blockRow[MAX_PIECE_SIZE + 1];
+  int nPieceTemplates;
   fscanf(piecesFile.get(), "%d", &nPieceTemplates);
   pieceTemplate.resize(nPieceTemplates);
   for (int iPiece = 0; iPiece < nPieceTemplates; ++iPiece)
@@ -206,7 +207,12 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
       }
       pieceTemplate[iPiece].structure[rotationState].afterRead();
     }
-  } 
+  }
+
+  randomPieceTable.clear();
+  for (int iPiece = 0; iPiece < pieceTemplate.size(); ++iPiece)
+    for (int i = 0; i < pieceTemplate[iPiece].chance; ++i)
+      randomPieceTable.push_back(iPiece);
 }
 
 
@@ -252,6 +258,8 @@ void Player::prepareForNewRound()
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
+  visualEffects.lantern.lanternPosition = FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
+                                                           (FIELD_WIDTH  - 1.0f) / 2.0f);
   // ...
 }
 
@@ -389,11 +397,23 @@ void Player::redraw()
     for (int col = 0; col < FIELD_WIDTH; ++col)
       if (field(row, col).isBlocked())
         blockImage[nBlockImages++].setStanding(field(row, col).color, FloatFieldCoords(row, col));
+  
   if (fallingPieceState != psAbsent)
+  {
     for (int i = 0; i < fallingBlockStructure().block.size(); ++i)
+    {
       blockImage[nBlockImages++].setStanding(fallingPiece->color,
-          FloatFieldCoords(fallingBlockStructure().block[i].row + fallingPiecePosition.row,
-                           fallingBlockStructure().block[i].col + fallingPiecePosition.col));
+          FloatFieldCoords(fallingBlockStructure().block[i] + fallingPiecePosition));
+    }
+  }
+
+  if (fallingPieceState != psAbsent)
+  {
+    visualEffects.lantern.lanternPosition = fallingPiecePosition;
+    visualEffects.lantern.powerOn();
+  }
+  else
+    visualEffects.lantern.powerOff();
 }
 
 
@@ -435,8 +455,8 @@ void Player::sendNewPiece()
   }
   else
     fallingPieceState = psAbsent;
-  //nextPiece = &game->pieceTemplate[rand() % game->pieceTemplate.size()];
-  nextPiece = &game->pieceTemplate[0];
+//  nextPiece = &game->pieceTemplate[rand() % game->pieceTemplate.size()];
+  nextPiece = &game->pieceTemplate[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
   nextPieceRotationState = rand() % N_PIECE_ROTATION_STATES;
 }
 
@@ -499,6 +519,9 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
   for (int i = 0; i < nDisappearingLines; ++i)
     if (disappearingLine[i].row > row)
       --disappearingLine[i].row;
+  for (EventSet::iterator event = events.begin(); event != events.end(); ++event)
+    if ((event->type == etLineCollapse) && (event->parameters.lineCollapse.row > row))
+      --event->parameters.lineCollapse.row;
 }
 
 void Player::movePiece(int direction)

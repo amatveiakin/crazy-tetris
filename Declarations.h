@@ -47,7 +47,7 @@ struct Coord2D
   T row, col;
   
   Coord2D() { }
-  Coord2D(const Coord2D &a) : row(a.row), col(a.col) { }
+  Coord2D(const Coord2D& a) : row(a.row), col(a.col) { }
   Coord2D(T row__, T col__) : row(row__), col(col__) { }
 
   Coord2D& operator=(const Coord2D& a)
@@ -57,12 +57,12 @@ struct Coord2D
     return *this;
   }
 
-  Coord2D operator+(const Coord2D& a)
+  Coord2D operator+(const Coord2D& a) const
   {
     return Coord2D(row + a.row, col + a.col);
   }
 
-  Coord2D operator-(const Coord2D& a)
+  Coord2D operator-(const Coord2D& a) const
   {
     return Coord2D(row - a.row, col - a.col);
   }
@@ -84,7 +84,31 @@ struct Coord2D
 
 typedef Coord2D<int> FieldCoords;
 
-typedef Coord2D<MyReal> FloatFieldCoords;
+//typedef Coord2D<MyReal> FloatFieldCoords;
+
+struct FloatFieldCoords : public Coord2D<MyReal> // (?) What's happening here?!!
+{
+  FloatFieldCoords() { }
+
+  FloatFieldCoords(const FloatFieldCoords& a)
+  {
+    row = a.row;
+    col = a.col;
+  }
+
+  FloatFieldCoords(MyReal row__, MyReal col__)
+  {
+    row = row__;
+    col = col__;
+  }
+
+//  FloatFieldCoords(const FieldCoords a) : row(a.row), col(a.col) { }   //  TODO: find out why this is wrong
+  FloatFieldCoords(const FieldCoords& a)
+  {
+    row = a.row;
+    col = a.col;
+  }
+};
 
 
 
