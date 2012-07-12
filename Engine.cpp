@@ -10,20 +10,20 @@
 Field::Field()
 {
   // ``Floor''
-  for (int row = -WALL_WIDTH; row < 0; ++row)
-    for (int col = -WALL_WIDTH; col < FIELD_WIDTH + WALL_WIDTH; ++col)
+  for (int row = BORDERED_FIELD_ROW_BEGIN; row < 0; ++row)
+    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
       operator()(row, col).setBlock(COLORLESS);
   // ``Walls''
-  for (int row = -WALL_WIDTH; row < FIELD_HEIGHT + SKY_HEIGHT; ++row)
+  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
   {
-    for (int col = -WALL_WIDTH; col < 0; ++col)
+    for (int col = BORDERED_FIELD_COL_BEGIN; col < 0; ++col)
       operator()(row, col).setBlock(COLORLESS);
-    for (int col = FIELD_WIDTH; col < FIELD_WIDTH + WALL_WIDTH; ++col)
+    for (int col = FIELD_WIDTH; col < BORDERED_FIELD_COL_END; ++col)
       operator()(row, col).setBlock(COLORLESS);
   }
   // ``Sky''
-  for (int row = FIELD_HEIGHT; row < FIELD_HEIGHT + SKY_HEIGHT; ++row)
-    for (int col = -WALL_WIDTH; col < FIELD_WIDTH + WALL_WIDTH; ++col)
+  for (int row = FIELD_HEIGHT; row < BORDERED_FIELD_ROW_END; ++row)
+    for (int col = 0; col < FIELD_WIDTH; ++col)
       operator()(row, col).clear();
 }
 
@@ -462,8 +462,8 @@ void Player::redraw()
   if (fallingPieceState != psAbsent)
   {
     // TODO: selfmodifiable  movingFrom  (?)
-    visualEffects.lantern.setMotion(FieldCoords(visualEffects.lantern.positionY(currentTime()),
-                                                visualEffects.lantern.positionX(currentTime())),
+    visualEffects.lantern.setMotion(FloatFieldCoords(visualEffects.lantern.positionY(currentTime()),
+                                                     visualEffects.lantern.positionX(currentTime())),
                                     fallingPiecePosition,
                                     currentTime(), BONUS_LANTERN_ANIMATION_TIME);
   }
@@ -538,7 +538,7 @@ void Player::lowerPiece()
     }
     applyBlockImagesMovements();
 
-    fallingPiecePosition = newPosition; // animation (!)
+    fallingPiecePosition = newPosition;
     events.push(etPieceLowering,
                 currentTime() +
                 ((fallingPieceState == psDropping) ?
@@ -671,7 +671,7 @@ void Player::rotatePiece(int direction)
 
 void Player::applyBlockImagesMovements()
 {
-  FILE* logFile = fopen("debug.log", "a");
+  /*FILE* logFile = fopen("debug.log", "a");
   fprintf(logFile, "BEFORE (old):\n");
   for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
   {
@@ -687,8 +687,7 @@ void Player::applyBlockImagesMovements()
     fprintf(logFile, "\n");
   }
   fprintf(logFile, "\n");
-  fclose(logFile);
-
+  fclose(logFile);*/
 
   for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
     for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
@@ -698,8 +697,7 @@ void Player::applyBlockImagesMovements()
         field(row, col).iNewBlockImage = NO_CHANGE;
       }
 
-
-  logFile = fopen("debug.log", "a");
+  /*logFile = fopen("debug.log", "a");
   fprintf(logFile, "AFTER:\n");
   for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
   {
@@ -708,7 +706,7 @@ void Player::applyBlockImagesMovements()
     fprintf(logFile, "\n");
   }
   fprintf(logFile, "\n\n\n");
-  fclose(logFile);
+  fclose(logFile);*/
 }
 
 void Player::addStandingBlockImage(Color color, FieldCoords position)
@@ -747,18 +745,6 @@ void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
 
 void Player::removeBlockImage(FieldCoords position)
 {
-  /*FILE* logFile = fopen("removeBlockImage.log", "a");
-  fprintf(logFile, "BEFORE:\n");
-  for (int row = 0; row < FIELD_HEIGHT; ++row)
-  {
-    for (int col = 0; col < FIELD_WIDTH; ++col)
-      fprintf(logFile, "%d ", field(row, col).iBlockImage);
-    fprintf(logFile, "\n");
-  }
-  fprintf(logFile, "\n");
-  fclose(logFile);*/
-
-
   --nBlockImages;
   if (field(position).iBlockImage == nBlockImages)
   {
@@ -771,18 +757,6 @@ void Player::removeBlockImage(FieldCoords position)
         (blockImage[nBlockImages].movingTo.col)).
        iBlockImage = field(position).iBlockImage;
   field(position).iBlockImage = NO_BLOCK_IMAGE;
-
-
-  /*logFile = fopen("removeBlockImage.log", "a");
-  fprintf(logFile, "AFTER:\n");
-  for (int row = 0; row < FIELD_HEIGHT; ++row)
-  {
-    for (int col = 0; col < FIELD_WIDTH; ++col)
-      fprintf(logFile, "%d ", field(row, col).iBlockImage);
-    fprintf(logFile, "\n");
-  }
-  fprintf(logFile, "\n\n\n");
-  fclose(logFile);*/
 }
 
 void Player::cycleVictim()

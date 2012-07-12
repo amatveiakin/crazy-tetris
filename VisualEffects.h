@@ -6,14 +6,15 @@
 
 //================================= General ===================================
 
+template <typename CoordT>
 class MovingObject {
 public:
-  FieldCoords movingFrom;
-  FieldCoords movingTo;
+  CoordT movingFrom;
+  CoordT movingTo;
   Time movingStartTime;
   Time movingDuration;
   
-  void setMotion(FieldCoords movingFrom__, FieldCoords movingTo__,
+  void setMotion(CoordT movingFrom__, CoordT movingTo__,
                  Time movingStartTime__, Time movingDuration__)
   {
     movingFrom = movingFrom__;
@@ -22,7 +23,7 @@ public:
     movingDuration = movingDuration__;
   }
   
-  void startMovingTo(FieldCoords movingTo__,
+  void startMovingTo(CoordT movingTo__,
                      Time movingStartTime__, Time movingDuration__)
   {
     movingTo = movingTo__;
@@ -284,7 +285,7 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect;
 
-class LanternEffect : public FadingEffectType, public MovingObject { };
+class LanternEffect : public FadingEffectType, public MovingObject<FloatFieldCoords> { };
 
 
 
@@ -323,7 +324,7 @@ class VisualObject { };
 
 
 //class BlockImage : public VisualObject, private MovingObject {   // TODO: return
-class BlockImage : public VisualObject, public MovingObject {
+class BlockImage : public VisualObject, public MovingObject<FieldCoords> {
 public:
 //  BlockID id;
   Color color;
