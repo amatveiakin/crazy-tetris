@@ -533,12 +533,20 @@ private:
 
 class Game;
 
-class AccountInfo
+struct Statistics
 {
-public:
+  int lineCleared;
+
+  void clear()
+  {
+    lineCleared = 0;
+  }
+};
+
+struct AccountInfo
+{
   string name;
-//   int totalWins;
-//   int totalLosts;
+//  Statistics totalStatistics;
   // TODO: other stats
 };
 
@@ -551,21 +559,23 @@ public:
   Game*         game;           // C
   
   bool          participates;   // S
-  bool          active;         // R  (in Game::newRound)
+  bool          active;         // R (in Game::newRound)
   int           score;          // M
   Controls      controls;       // S
+  Statistics    statistics;     // R
   
   float         speed;          // R
-  Field         field;          // C/R
+  Field         field;          // C (boders) / R (content)
   Time          latestLineCollapse; // R
-  
-  const PieceTemplate*  nextPiece;                // R
-  int                   nextPieceRotationState;   // R
   
   FallingPieceState     fallingPieceState;        // R
   const PieceTemplate*  fallingPiece;             // R
   int                   fallingPieceRotationState; // R
   FieldCoords           fallingPiecePosition;     // R    [``center'' coordinates]
+  
+  const PieceTemplate*  nextPiece;                // R
+  int                   nextPieceRotationState;   // R
+  FieldCoords           nextPiecePosition;        // R    [``center'' coordinates]
   
   Buffs         buffs;          // R
   Debuffs       debuffs;        // R
@@ -601,6 +611,7 @@ public:
   
 private:
   const BlockStructure& fallingBlockStructure();
+  const BlockStructure& nextBlockStructure();
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   void          setUpPiece();
   void          sendNewPiece();

@@ -23,7 +23,7 @@ const std::string  ACCOUNTS_FILE = "Accounts";
 const std::string  ERR_FILE_NOT_FOUND = "Файл \"%s\" не найден.";
 const std::string  ERR_FILE_CORRUPTED = "Файл \"%s\" повреждён.";
 // const std::string  ERR_FILE_READ_ERROR = "Не удаётся прочитать файл \"%s\".";
-// const std::string  ERR_FILE_WRITE_ERROR = "Не удаётся записать файл \"%s\".";
+const std::string  ERR_FILE_WRITE_ERROR = "Не удаётся записать файл \"%s\".";
 const std::string  ERR_EMPTY_BLOCK = "Пустая фигура в файле \"" + PIECE_TEMPLATES_FILE + "\".";
 
 #endif

@@ -310,6 +310,7 @@ void Player::prepareForNewMatch()
 
 void Player::prepareForNewRound()
 {
+  statistics.clear();
   events.clear();
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
   buffs.clear();
@@ -326,8 +327,7 @@ void Player::prepareForNewRound()
   victimNumber = number;
   cycleVictim();
   visualEffects.clear();
-  visualEffects.lantern.placeAt(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
-                                                 (FIELD_WIDTH  - 1.0f) / 2.0f));
+  visualEffects.lantern.placeAt(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f, (FIELD_WIDTH  - 1.0f) / 2.0f));
   // ...
 }
 
@@ -480,6 +480,11 @@ const BlockStructure& Player::fallingBlockStructure()
   return fallingPiece->structure[fallingPieceRotationState];
 }
 
+const BlockStructure& Player::nextBlockStructure()
+{
+  return nextPiece->structure[nextPieceRotationState];
+}
+
 void Player::setUpPiece()
 {
   for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
@@ -522,8 +527,7 @@ void Player::sendNewPiece()
   {
     fallingPieceState = psNormal;
     fallingPieceRotationState = nextPieceRotationState;
-    fallingPiecePosition.row = FIELD_HEIGHT - fallingBlockStructure().lowestBlockRow;
-    fallingPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // (?)
+    fallingPiecePosition = nextPiecePosition;
     events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
     for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
     {
@@ -535,6 +539,8 @@ void Player::sendNewPiece()
     fallingPieceState = psAbsent;
   nextPiece = &game->pieceTemplates[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
   nextPieceRotationState = rand() % N_PIECE_ROTATION_STATES;
+  nextPiecePosition.row = FIELD_HEIGHT - nextBlockStructure().lowestBlockRow;
+  nextPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // TODO: modify the formula
 }
 
 void Player::lowerPiece()
@@ -585,6 +591,7 @@ bool Player::removeFullLines() // TODO: optimize: don't check all lines
     if (rowIsFull)
     {
       fullLinesExisted = true;
+      ++statistics.lineCleared;
 
       disappearingLines.resize(disappearingLines.size() + 1);
       disappearingLines.back().startTime = currentTime();
