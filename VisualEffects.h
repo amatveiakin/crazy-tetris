@@ -4,17 +4,16 @@
 #include <map>
 #include "Declarations.h"
 
-//================================= General ===================================
+//================================== General ===================================
 
-template <typename CoordT>
 class MovingObject {
 public:
-  CoordT movingFrom;
-  CoordT movingTo;
+  FloatFieldCoords movingFrom;
+  FloatFieldCoords movingTo;
   Time movingStartTime;
   Time movingDuration;
   
-  void setMotion(CoordT movingFrom__, CoordT movingTo__,
+  void setMotion(FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
                  Time movingStartTime__, Time movingDuration__)
   {
     movingFrom = movingFrom__;
@@ -23,42 +22,54 @@ public:
     movingDuration = movingDuration__;
   }
   
-  void startMovingTo(CoordT movingTo__,
-                     Time movingStartTime__, Time movingDuration__)
+  void moveTo(FloatFieldCoords movingTo__, Time currentTime, Time movingDuration__)
   {
+    movingFrom = position(currentTime);
     movingTo = movingTo__;
-    movingStartTime = movingStartTime__;
+    movingStartTime = currentTime;
     movingDuration = movingDuration__;
   }
   
-  void setStanding(CoordT position)
+  void placeAt(FloatFieldCoords position)
   {
     setMotion(position, position, 0.0, 1.0);
   }
   
-  float positionY(Time currentTime)
+  FloatFieldCoords position(Time currentTime)
   {
     if (currentTime < movingStartTime)
     {
-      return float(movingFrom.row);
+      return movingFrom;
     }
     else if (currentTime < movingStartTime + movingDuration)
     {
-      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
-              movingTo.row   * (currentTime - movingStartTime)) /
+      return (movingFrom * (movingStartTime + movingDuration - currentTime) +
+              movingTo   * (currentTime - movingStartTime)) /
              movingDuration;
     }
     else
     {
-      return float(movingTo.row);
+      return movingTo;
     }
   }
-  
+
   float positionX(Time currentTime)
+  {
+    return position(currentTime).col;
+  }
+
+  float positionY(Time currentTime)
+  {
+    return position(currentTime).row;
+  }
+
+  // TODO: Test whether VS' optimizator is smart enough to remove unnecessary calculations
+
+  /*float positionX(Time currentTime)
   {
     if (currentTime < movingStartTime)
     {
-      return float(movingFrom.col);
+      return movingFrom.col;
     }
     else if (currentTime < movingStartTime + movingDuration)
     {
@@ -68,9 +79,27 @@ public:
     }
     else
     {
-      return float(movingTo.col);
+      return movingTo.col;
     }
   }
+
+  float positionY(Time currentTime)
+  {
+    if (currentTime < movingStartTime)
+    {
+      return movingFrom.row;
+    }
+    else if (currentTime < movingStartTime + movingDuration)
+    {
+      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
+              movingTo.row   * (currentTime - movingStartTime)) /
+             movingDuration;
+    }
+    else
+    {
+      return movingTo.row;
+    }
+  }*/
 };
 
 
@@ -210,7 +239,7 @@ public:
     duration = newDuration;
   }
 
-  // TODO: SingleEffectType::disable should it be simply ignored?
+  // TODO: Should SingleEffectType::disable be simply ignored?
   void disable() { }
 
   float progress(Time currentTime)
@@ -285,7 +314,7 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect; // += FadingEffectType (?)
 
-class LanternEffect : public FadingEffectType, public MovingObject<FloatFieldCoords> { };
+class LanternEffect : public FadingEffectType, public MovingObject { };
 
 
 
@@ -317,43 +346,41 @@ public:
 
 
 
-// =================================== Blocks ==================================
+//================================== Objects ===================================
 
 class VisualObject { };
 
 
 
-//class BlockImage : public VisualObject, private MovingObject {   // TODO: return
-class BlockImage : public VisualObject, public MovingObject<FieldCoords> {
+class BlockImage : public VisualObject, private MovingObject {
 public:
-//  BlockID id;
   Color color;
+  FieldCoords binding;
 //  bool motionBlur;
   
-  /*BlockImage(Color color__, FieldCoords movingFrom__, FieldCoords movingTo__,
-             Time movingStartTime__, Time movingDuration__)
+  void placeAt(FieldCoords position)
   {
-    setMotion(color__, movingFrom__, movingTo__, movingStartTime__, movingDuration__, motionBlur__);
+    binding = position;
+    MovingObject::placeAt(FloatFieldCoords(position));
   }
-
-  BlockImage(BlockID id__, Color color__, FieldCoords position)
+  
+  void moveTo(FieldCoords movingTo__, Time currentTime, Time movingDuration__)
   {
-    setStanding(color__, position);
-  }*/
-
-  void setMotion(Color color__, FieldCoords movingFrom__, FieldCoords movingTo__,
-                 Time movingStartTime__, Time movingDuration__)
+    binding = movingTo__;
+    MovingObject::moveTo(FloatFieldCoords(movingTo__), currentTime, movingDuration__);
+  }
+  
+  void placeNewImageAt(Color color__, FieldCoords position)
   {
     color = color__;
-    MovingObject::setMotion(movingFrom__, movingTo__, movingStartTime__, movingDuration__);
+    placeAt(position);
   }
   
-  void setStanding(Color color__, FieldCoords position)
-  {
-    setMotion(color__, position, position, 0.0, 1.0);
-  }
-  
-  float positionY(Time currentTime)
+  using MovingObject::position;
+  using MovingObject::positionX;
+  using MovingObject::positionY;
+
+  /*float positionY(Time currentTime)
   {
     return MovingObject::positionY(currentTime);
   }
@@ -361,7 +388,7 @@ public:
   float positionX(Time currentTime)
   {
     return MovingObject::positionX(currentTime);
-  }
+  }*/
 };
 
 

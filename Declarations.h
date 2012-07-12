@@ -3,7 +3,7 @@
 
 #include <cstdio>
 #include <bitset>
-#include "D3DApp/D3DUtil.h" // temporary
+#include "d3dapp/d3dUtil.h" // temporary
 
 
 
@@ -77,6 +77,19 @@ struct Coord2D
     return Coord2D(row - a.row, col - a.col);
   }
 
+  Coord2D operator*(T x) const
+  {
+    return Coord2D(row * x, col * x);
+  }
+
+  Coord2D operator/(T x) const
+  {
+    return Coord2D(row / x, col / x);
+  }
+  
+  // TODO: find out how it can be declared
+  //friend Coord2D operator*(T, const Coord2D&);
+
   Coord2D& operator+=(const Coord2D& a)
   {
     row += a.row;
@@ -113,6 +126,12 @@ struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
     col = float(a.col);
   }
 
+  FloatFieldCoords(const Coord2D<float>& a)
+  {
+    row = float(a.row);
+    col = float(a.col);
+  }
+
   FloatFieldCoords(float row__, float col__)
   {
     row = row__;
@@ -128,9 +147,10 @@ struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
 
 
 
-template <typename T, int size>   // TODO: use it
+template <typename T, int size>
 class FixedZeroBasedArray
 {
+public:
   T& operator[](int index)
   {
     assert(0 <= index);

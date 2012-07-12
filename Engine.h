@@ -20,6 +20,38 @@ using std::set;
 
 
 
+
+// Continuous mode :-)
+
+/*const float  STARTING_SPEED = 1.0;
+const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
+const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
+// Speed limit can be excedeed via bonus
+const float  SPEED_LIMIT = 5.0;
+
+const Time   NORMAL_LOWERING_TIME = 0.8f;
+// Time necessary for a dropping piece to move one line down
+const Time   DROPPING_PIECE_LOWERING_TIME = 0.1f;
+const Time   LINE_DISAPPEAR_TIME = 1.0f;
+const Time   LINE_COLLAPSE_TIME = 0.05f;
+
+const Time   PIECE_LOWERING_ANIMATION_TIME = 0.8f;
+const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.3f;
+const Time   PIECE_MOVING_ANIMATION_TIME = 0.4f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.4f;
+
+const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
+const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
+const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
+const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
+
+const int    MAX_PLAYERS = 4;
+const int    MAX_PLAYER_NAME_LENGTH = 16;*/
+
+
+
+
+
 //================================== General ===================================
 
 const float  STARTING_SPEED = 1.0;
@@ -37,7 +69,7 @@ const Time   LINE_COLLAPSE_TIME = 0.05f;
 const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.03f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;
 
 const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
 const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
@@ -55,21 +87,22 @@ const int N_PLAYER_KEYS = 7;
 
 enum PlayerKey { keyLeft, keyRight, keyRotateCCW, keyRotateCW, keyDown, keyDrop, keyChangeVictim };
 
+// TODO: find optimal value for KEY_REACTIVATION_TIMEs
 const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
 const Time   ROTATE_KEY_REACTIVATION_TIME = 0.18f;
 const Time   DOWN_KEY_REACTIVATION_TIME = 0.08f;
 const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
 const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
-const string PLAYER_KEY_NAME[N_PLAYER_KEYS] =
+const string PLAYER_KEY_NAMES[N_PLAYER_KEYS] =
 {
   "Влево: ",
   "Вправо: ",
-  "Вращать пр. ч.: ",
-  "Вращать по ч.: ",
+  "Вращать против часовой: ",
+  "Вращать по часовой: ",
   "Вниз: ",
   "Бросить: ",
-  "Менять цель: "
+  "Следующая цель: "
 };
 
 const Time   PLAYER_KEY_REACTIVATION_TIME[N_PLAYER_KEYS] =
@@ -267,7 +300,6 @@ const int    SKY_HEIGHT = MAX_PIECE_SIZE;
 // MAX_PIECE_SIZE / 2  is enough for  WALL_WIDTH  in most cases, but that's safe
 const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;
 
-// TODO: use in Field::Field()
 const int    BORDERED_FIELD_ROW_BEGIN = -WALL_WIDTH;
 const int    BORDERED_FIELD_ROW_END   = FIELD_HEIGHT + SKY_HEIGHT;
 const int    BORDERED_FIELD_COL_BEGIN = -WALL_WIDTH;
@@ -376,7 +408,6 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
 
 enum FallingPieceState { psAbsent, psNormal, psDropping };
 
-//const char   PIECE_TEMPLATE_BLOCK_CHAR = 'X';
 const char   PIECE_TEMPLATE_FREE_CHAR  = '.';
 
 
@@ -546,7 +577,7 @@ public:
   vector<DisappearingLine>  disappearingLines;    // R
   VisualEffects             visualEffects;        // R
   
-  Time          nextKeyActivationTable[N_PLAYER_KEYS]; // C
+  FixedZeroBasedArray<Time, N_PLAYER_KEYS> nextKeyActivationTable; // C
 
   void          init(Game* game__, int number__);
   void          loadAccountInfo(int newAccount);
@@ -581,12 +612,11 @@ private:
   void          rotatePiece(int direction);
   
   void          applyBlockImagesMovements();
-  void          addStandingBlockImage(Color color, FieldCoords position);
-  void          addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
-                                    Time movingStartTime, Time movingDuration);
-  void          setUpBlockImage(Color color, FieldCoords position);
-  void          moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
-                               Time movingStartTime, Time movingDuration);
+  void          addStandingBlockImage(Color color, FieldCoords position);  // name (?)
+//  void          addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
+//                                    Time movingStartTime, Time movingDuration); // XXX
+//  void          setUpBlockImage(FieldCoords position);
+  void          moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo, Time movingDuration);
   void          removeBlockImage(FieldCoords position);
 
   void          routineSpeedUp();
@@ -606,18 +636,16 @@ class Game
 public:
   vector<AccountInfo> accounts;
 
-  //FixedZeroBasedArray<Player, MAX_PLAYERS> players;
-  Player        players[MAX_PLAYERS];
+  FixedZeroBasedArray<Player, MAX_PLAYERS> players;
   vector<Player*> activePlayers;
-  //int nActivePlayers;
   
   vector<PieceTemplate> pieceTemplates;
   vector<int>   randomPieceTable;
   
   Time          currentTime;
   
-//  Time          nextGlobalKeyActivationTable[N_GLOBAL_KEYS];
-  Time          nextGlobalKeyActivationTable[1];
+//  FixedZeroBasedArray<Time, N_GLOBAL_KEYS> nextGlobalKeyActivationTable[N_GLOBAL_KEYS];
+  FixedZeroBasedArray<Time, 1> nextGlobalKeyActivationTable;
   GlobalControls globalControls;
   
   void          init();

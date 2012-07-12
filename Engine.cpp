@@ -1,5 +1,3 @@
-// TODO: apply effects in the end or middle of animation, not in the beggining
-
 #include <windows.h>
 #include <cstdio>
 #include "IOFunctions.h"
@@ -86,6 +84,8 @@ void Game::loadSettings()
 void Game::saveSettings()
 {
   SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "w");
+  if (settingsFile.get() == NULL)
+    throw ERR_FILE_WRITE_ERROR;   // TODO: format
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
     fprintf(settingsFile.get(), "%d\n", players[iPlayer].accountNumber);
@@ -97,7 +97,7 @@ void Game::saveSettings()
 
 void Game::loadDefaultSettings()
 {
-  players[0].participates = false;
+  players[0].participates = true;
   players[0].accountNumber = 0;
   players[0].controls.keyByName.keyLeft = 'A';
   players[0].controls.keyByName.keyRight = 'D';
@@ -109,6 +109,13 @@ void Game::loadDefaultSettings()
 
   players[1].participates = false;
   players[1].accountNumber = 1;
+  players[1].controls.keyByName.keyLeft = 'H';
+  players[1].controls.keyByName.keyRight = 'K';
+  players[1].controls.keyByName.keyRotateCCW = 'U';
+  players[1].controls.keyByName.keyRotateCW = 'I';
+  players[1].controls.keyByName.keyDown = 'J';
+  players[1].controls.keyByName.keyDrop = VK_SPACE;
+  players[1].controls.keyByName.keyChangeVictim = 'L';
 
   players[2].participates = true;
   players[2].accountNumber = 2;
@@ -122,6 +129,13 @@ void Game::loadDefaultSettings()
 
   players[3].participates = false;
   players[3].accountNumber = 3;
+  players[3].controls.keyByName.keyLeft = VK_NUMPAD4;
+  players[3].controls.keyByName.keyRight = VK_NUMPAD6;
+  players[3].controls.keyByName.keyRotateCCW = VK_NUMPAD8;
+  players[3].controls.keyByName.keyRotateCW = VK_NUMPAD9;
+  players[3].controls.keyByName.keyDown = VK_NUMPAD5;
+  players[3].controls.keyByName.keyDrop = VK_NUMPAD0;
+  players[3].controls.keyByName.keyChangeVictim = VK_ADD;
 }
 
 void Game::newMatch()
@@ -132,7 +146,6 @@ void Game::newMatch()
 void Game::newRound(Time currentTime__)
 {
   currentTime = currentTime__;
-//   lastSpeedUp = currentTime;
   activePlayers.clear();
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
@@ -150,12 +163,7 @@ void Game::endRound()
 
 }
 
-void Game::onGlobalKeyPress(GlobalKey key)
-{
-  /*switch (key)
-  {
-  }*/
-}
+void Game::onGlobalKeyPress(GlobalKey key) { }
 
 void Game::onTimer(Time currentTime__)
 {
@@ -318,8 +326,8 @@ void Player::prepareForNewRound()
   victimNumber = number;
   cycleVictim();
   visualEffects.clear();
-  visualEffects.lantern.setStanding(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
-                                                     (FIELD_WIDTH  - 1.0f) / 2.0f));
+  visualEffects.lantern.placeAt(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f,
+                                                 (FIELD_WIDTH  - 1.0f) / 2.0f));
   // ...
 }
 
@@ -455,21 +463,6 @@ void Player::onTimer()
 
 void Player::redraw()
 {
-  /*nBlockImages = 0;
-  for (int row = 0; row < FIELD_HEIGHT; ++row)
-    for (int col = 0; col < FIELD_WIDTH; ++col)
-      if (field(row, col).isBlocked())
-        blockImages[nBlockImages++].setStanding(field(row, col).color, FieldCoords(row, col));
-  
-  if (fallingPieceState != psAbsent)
-  {
-    for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
-    {
-      blockImages[nBlockImages++].setStanding(fallingPiece->color,
-          FieldCoords(fallingBlockStructure().blocks[i] + fallingPiecePosition));
-    }
-  }*/
-
   if (fallingPieceState != psAbsent)
   {
     // TODO: selfmodifiable  movingFrom  (?)
@@ -504,7 +497,7 @@ void Player::setUpPiece()
     }*/
     // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
     field(cell).setBlock(fallingPiece->color);
-    setUpBlockImage(fallingPiece->color, cell);
+    //setUpBlockImage(fallingPiece->color, cell);  // (?) Is it necessary?
   }
   fallingPieceState = psAbsent;
 
@@ -529,7 +522,7 @@ void Player::sendNewPiece()
   {
     fallingPieceState = psNormal;
     fallingPieceRotationState = nextPieceRotationState;
-    fallingPiecePosition.row = FIELD_HEIGHT + fallingBlockStructure().lowestBlockRow;
+    fallingPiecePosition.row = FIELD_HEIGHT - fallingBlockStructure().lowestBlockRow;
     fallingPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // (?)
     events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
     for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
@@ -558,7 +551,8 @@ void Player::lowerPiece()
     {
       moveBlockImage(fallingPiecePosition + fallingBlockStructure().blocks[i],
                      newPosition + fallingBlockStructure().blocks[i],
-                     currentTime(), PIECE_LOWERING_ANIMATION_TIME);
+                     (fallingPieceState == psDropping) ?
+                     DROPPING_PIECE_LOWERING_TIME : PIECE_LOWERING_ANIMATION_TIME);
     }
     applyBlockImagesMovements();
 
@@ -625,7 +619,7 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
       if (field(curRow, col).isBlocked())
       {
         moveBlockImage(FieldCoords(curRow + 1, col), FieldCoords(curRow, col),
-                       currentTime(), LINE_COLLAPSE_ANIMATION_TIME);
+                       LINE_COLLAPSE_ANIMATION_TIME);
       }
     }
   }
@@ -660,7 +654,7 @@ void Player::movePiece(int direction)
     {
       moveBlockImage(fallingPiecePosition + fallingBlockStructure().blocks[i],
                      newPosition + fallingBlockStructure().blocks[i],
-                     currentTime(), PIECE_MOVING_ANIMATION_TIME);
+                     PIECE_MOVING_ANIMATION_TIME);
     }
     applyBlockImagesMovements();
     fallingPiecePosition = newPosition;
@@ -707,7 +701,7 @@ void Player::rotatePiece(int direction)
   {    // animation
     moveBlockImage(oldPosition + fallingPiece->structure[oldRotationState].blocks[i],    // animation
                    fallingPiecePosition + fallingBlockStructure().blocks[i],    // animation
-                   currentTime(), PIECE_ROTATING_ANIMATION_TIME);    // animation
+                   PIECE_ROTATING_ANIMATION_TIME);    // animation
   }    // animation
   applyBlockImagesMovements();    // animation
 }
@@ -721,16 +715,7 @@ void Player::applyBlockImagesMovements()
     for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
       fprintf(logFile, "%d ", field(row, col).iBlockImage);
     fprintf(logFile, "\n");
-  }
-  fprintf(logFile, "BEFORE (new):\n");
-  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
-  {
-    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
-      fprintf(logFile, "%d ", field(row, col).iNewBlockImage);
-    fprintf(logFile, "\n");
-  }
-  fprintf(logFile, "\n");
-  fclose(logFile);*/
+  }*/
 
   for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
     for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
@@ -739,47 +724,33 @@ void Player::applyBlockImagesMovements()
         field(row, col).iBlockImage = field(row, col).iNewBlockImage;
         field(row, col).iNewBlockImage = NO_CHANGE;
       }
-
-  /*logFile = fopen("debug.log", "a");
-  fprintf(logFile, "AFTER:\n");
-  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
-  {
-    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
-      fprintf(logFile, "%d ", field(row, col).iBlockImage);
-    fprintf(logFile, "\n");
-  }
-  fprintf(logFile, "\n\n\n");
-  fclose(logFile);*/
 }
 
 void Player::addStandingBlockImage(Color color, FieldCoords position)
 {
   blockImages.resize(blockImages.size() + 1);
-  blockImages.back().setStanding(color, position);
+  blockImages.back().placeNewImageAt(color, position);
   field(position).iBlockImage = blockImages.size() - 1;
 }
 
-void Player::addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
+/*void Player::addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
                                  Time movingStartTime, Time movingDuration)
 {
   blockImages.resize(blockImages.size() + 1);
   blockImages.back().setMotion(color, movingFrom, movingTo, movingStartTime, movingDuration);
   field(movingTo).iBlockImage = blockImages.size() - 1;
-}
+}*/
 
-void Player::setUpBlockImage(Color color, FieldCoords position)
+/*void Player::setUpBlockImage(FieldCoords position)
 {
-  blockImages[field(position).iBlockImage].setStanding(color, position);
-}
+  blockImages[field(position).iBlockImage].placeAt(position);
+}*/
 
-void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
-                            Time movingStartTime, Time movingDuration)
+void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo, Time movingDuration)
 {
   if (movingFrom == movingTo)
     return;
-  blockImages[field(movingFrom).iBlockImage].setMotion(  // TODO: add version that doesn't change color
-          blockImages[field(movingFrom).iBlockImage].color, movingFrom, movingTo,
-          movingStartTime, movingDuration);
+  blockImages[field(movingFrom).iBlockImage].moveTo(movingTo, currentTime(), movingDuration);
   field(movingTo).iNewBlockImage = field(movingFrom).iBlockImage;
   if (field(movingFrom).iNewBlockImage == NO_CHANGE)
     field(movingFrom).iNewBlockImage = NO_BLOCK_IMAGE;
@@ -794,9 +765,7 @@ void Player::removeBlockImage(FieldCoords position)
   else
   {
     blockImages[field(position).iBlockImage] = blockImages.back();
-    // TODO: change it !!!
-    field((blockImages.back().movingTo.row), (blockImages.back().movingTo.col)).iBlockImage =
-            field(position).iBlockImage;
+    field(blockImages.back().binding).iBlockImage = field(position).iBlockImage;
     field(position).iBlockImage = NO_BLOCK_IMAGE;
   }
   blockImages.erase(blockImages.end() - 1);
