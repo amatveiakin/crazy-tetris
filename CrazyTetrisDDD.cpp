@@ -881,9 +881,12 @@ void CrazyTetrisApp::installLights(float x, float y, float lanternProgress)
     D3DXVec4Transform(&Lights[2].pos, &Lights[2].pos, &mGlobalRotation);
     D3DXVec4Transform(&Lights[2].dir, &Lights[2].dir, &mGlobalRotation);
     
-    D3DXVECTOR3 target = Lights[1].pos + Lights[1].dir;
+    int shadingLight;
+    if (Lights[1].dir.z > 0) shadingLight = 1; else shadingLight = 2;
+
+    D3DXVECTOR3 target = Lights[shadingLight].pos + Lights[shadingLight].dir;
 	  D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
-	  D3DXVECTOR3 pos(Lights[1].pos.x, Lights[1].pos.y, Lights[1].pos.z);
+	  D3DXVECTOR3 pos(Lights[shadingLight].pos.x, Lights[shadingLight].pos.y, Lights[shadingLight].pos.z);
     D3DXMATRIX temp1, temp2;
     D3DXMatrixLookAtLH(&temp1, &pos, &target, &up);
 	  D3DXMatrixPerspectiveFovLH(&temp2, 2 * searchBeta, 1, 1.0f, 100.0f);
