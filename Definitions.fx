@@ -28,11 +28,11 @@ struct TexturedVS_OUT
 
 struct CubesVS_IN
 {
-	float3 posL    : POSITION;
-	float3 normalL : NORMAL;
-  float3 offset  : offset;  
+	float3 posL      : POSITION;
+	float3 normalL   : NORMAL;
   float4 diffuseColor  : diffuse;
 	float4 specularColor : specular;
+  row_major float4x4 gWorld  : Transform;  
 };
 
 struct StandardVS_OUT

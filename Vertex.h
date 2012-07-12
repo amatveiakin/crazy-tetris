@@ -20,9 +20,9 @@ struct TexturedVertex
 
 struct CubeInstance
 {
-  D3DXVECTOR3 offset;
-  D3DXCOLOR   diffuseColor;
-  D3DXCOLOR   specularColor;
+  D3DXCOLOR  diffuseColor;
+  D3DXCOLOR  specularColor;
+  D3DXMATRIX mWorld;
 };
 
 #endif // VERTEX_H

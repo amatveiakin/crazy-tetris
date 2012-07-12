@@ -87,6 +87,7 @@ private:
 	ID3D10EffectScalarVariable* fxLightTypeVar;
   ID3D10EffectScalarVariable* fxWaveProgressVar;
   ID3D10EffectScalarVariable* fxSemicubesProgressVar;
+  ID3D10EffectScalarVariable* fxOpacityVar;
   ID3D10EffectScalarVariable* fxCUBE_SCALE;
   ID3D10EffectScalarVariable* fxCUBE_SCALE_INVERTED;
 
@@ -163,15 +164,20 @@ CrazyTetrisApp::~CrazyTetrisApp()
 		md3dDevice->ClearState();
 
 	ReleaseCOM(FX);
-	ReleaseCOM(cubesVertexLayout);
-  ReleaseCOM(texturedVertexLayout);
-  
+
   ReleaseCOM(rsSolidCullFront);
   ReleaseCOM(rsSolidCullBack);
   ReleaseCOM(rsSolidCullNone);
   ReleaseCOM(rsForSemicubes);
   ReleaseCOM(transparentBS);
   ReleaseCOM(cubeInstancesBuffer);
+
+  ReleaseCOM(cubesVertexLayout);
+  ReleaseCOM(texturedVertexLayout);
+  ReleaseCOM(uncoloredVertexLayout);
+
+  ReleaseCOM(texBackWallRV);
+  ReleaseCOM(texSearchLightColorFilterRV);
 }
 
 void CrazyTetrisApp::initApp()
@@ -186,7 +192,7 @@ void CrazyTetrisApp::initApp()
   mBox.init(md3dDevice, CUBE_SCALE / 2.0f, 0.5f, 5);
   mWall.init(md3dDevice, 
              CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
-             CUBE_SCALE * FIELD_HEIGHT * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
+             CUBE_SCALE * (FIELD_HEIGHT) * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
              1.0f,  1.0f);
   mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
   
@@ -285,6 +291,7 @@ void CrazyTetrisApp::drawScene()
 
 void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
 {
+  D3DXVECTOR4 clippingPlane;
   //Reseting states
   md3dDevice->OMSetDepthStencilState(0, 0);
 	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -361,9 +368,10 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
   for (size_t i = 0; i < player->lyingBlockImages.size(); ++i)
   {
-    cubeInstances[i].offset.x = fieldToWorldX(player->lyingBlockImages[i].positionX(currTime));
-    cubeInstances[i].offset.y = fieldToWorldY(player->lyingBlockImages[i].positionY(currTime));
-    cubeInstances[i].offset.z = 0.0f;
+    D3DXMatrixTranslation(&cubeInstances[i].mWorld, 
+                           fieldToWorldX(player->lyingBlockImages[i].positionX(currTime)),
+                           fieldToWorldY(player->lyingBlockImages[i].positionY(currTime)),
+                           0);
 
     cubeInstances[i].diffuseColor  = player->lyingBlockImages[i].color; 
     cubeInstances[i].specularColor = player->lyingBlockImages[i].color * 0.5f + WHITE * 0.5f;
@@ -373,18 +381,98 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   cubeInstancesBuffer->Unmap();
   mBox.draw(player->lyingBlockImages.size());
   
-  //рисуем падающую фигуру (пока плохо)
+  //бортики
+  clippingPlane = D3DXVECTOR4(0.0, 0.0f, 0.0f, 0.0f);
+	fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));
+  fxOpacityVar->SetFloat(0.0);
+  mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
+  cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
+  for (size_t i = 0; i < FIELD_HEIGHT; ++i)
+  {
+    D3DXMatrixTranslation(&cubeInstances[2 * i].mWorld, 
+                           fieldToWorldX(-1),
+                           fieldToWorldY(i),
+                           0);
 
-  D3DXVECTOR4 clippingPlane = D3DXVECTOR4(0.0, -1.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2.0f);
+    cubeInstances[2 * i].diffuseColor  = WHITE; 
+    cubeInstances[2 * i].specularColor = WHITE;
+    cubeInstances[2 * i].specularColor.a = 128.f;
+
+    D3DXMatrixTranslation(&cubeInstances[2 * i + 1].mWorld, 
+                           fieldToWorldX(FIELD_WIDTH),
+                           fieldToWorldY(i),
+                           0);
+
+    cubeInstances[2 * i + 1].diffuseColor  = WHITE; 
+    cubeInstances[2 * i + 1].specularColor = WHITE;
+    cubeInstances[2 * i + 1].specularColor.a = 128.f;
+
+  }
+
+    for (int i = 0; i < FIELD_WIDTH + 2; ++i) 
+  {
+    D3DXMatrixTranslation(&cubeInstances[2 * FIELD_HEIGHT + i].mWorld, 
+                           fieldToWorldX(i - 1),
+                           fieldToWorldY(-1),
+                           0);
+
+    cubeInstances[2 * FIELD_HEIGHT + i].diffuseColor  = WHITE; 
+    cubeInstances[2 * FIELD_HEIGHT + i].specularColor = WHITE;
+    cubeInstances[2 * FIELD_HEIGHT + i].specularColor.a = 128.f;
+
+  }
+  cubeInstancesBuffer->Unmap();
+
+  techFallingPiece->GetPassByIndex( 0 )->Apply(0);
+  mBox.draw(2 * FIELD_HEIGHT + FIELD_WIDTH + 2);
+  techFallingPiece->GetPassByIndex( 1 )->Apply(0);
+  mBox.draw(2 * FIELD_HEIGHT + FIELD_WIDTH + 2);
+
+
+  //рисуем убираемые линии
+  
+  for (size_t i = 0; i < player->disappearingLines.size(); ++i)
+  {
+
+    clippingPlane = -D3DXVECTOR4(2.0f * (i % 2) - 1.0f, 1.0f, 1.0f, 1.5f * (CUBE_SCALE + MATH_EPS) * (2.f * player->disappearingLines[i].progress(currTime) - 1.f));
+    fxClippingPlaneVar->SetRawValue(&clippingPlane,0,sizeof(D3DXVECTOR4));
+
+    mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
+    cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
+    for (int j = 0; j < FIELD_WIDTH; ++j)
+    {
+      D3DXMatrixTranslation(&cubeInstances[j].mWorld, 
+                             fieldToWorldX((float) j),
+                             fieldToWorldY((float) player->disappearingLines[i].row),
+                             0.0f);
+      
+      cubeInstances[j].diffuseColor  =  player->disappearingLines[i].blockColor[j]; 
+      cubeInstances[j].specularColor =   WHITE;
+      cubeInstances[j].specularColor.a = 32.f;
+    }
+    cubeInstancesBuffer->Unmap();
+    md3dDevice->IASetInputLayout(cubesVertexLayout);
+    techDisappearingLine->GetPassByIndex( 0 )->Apply(0);
+    mBox.draw(FIELD_WIDTH);
+  }
+
+   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
+  //упорядочиваем по удаленности и рисуем прозрачные объекты
+  
+     //рисуем падающую фигуру
+  md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);
+  clippingPlane = D3DXVECTOR4(0.0, -1.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2.0f);
 	D3DXVec4Transform(&clippingPlane, &clippingPlane, &mGlobalRotation);
   fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));
+  fxOpacityVar->SetFloat(0.3);
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
   cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
   for (size_t i = 0; i < player->fallingBlockImages.size(); ++i)
   {
-    cubeInstances[i].offset.x = fieldToWorldX(player->fallingBlockImages[i].positionX(currTime));
-    cubeInstances[i].offset.y = fieldToWorldY(player->fallingBlockImages[i].positionY(currTime));
-    cubeInstances[i].offset.z = 0.0f;
+    D3DXMatrixTranslation(&cubeInstances[i].mWorld, 
+                           fieldToWorldX(player->fallingBlockImages[i].positionX(currTime)),
+                           fieldToWorldY(player->fallingBlockImages[i].positionY(currTime)),
+                           0);
 
     cubeInstances[i].diffuseColor  = player->fallingBlockImages[i].color; 
     cubeInstances[i].specularColor = player->fallingBlockImages[i].color * 0.5f + WHITE * 0.5f;
@@ -396,38 +484,7 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   mBox.draw(player->fallingBlockImages.size());
   techFallingPiece->GetPassByIndex( 1 )->Apply(0);
   mBox.draw(player->fallingBlockImages.size());
-  //рисуем убираемые линии
-  
-  for (size_t i = 0; i < player->disappearingLines.size(); ++i)
-  {
 
-    D3DXVECTOR4 clippingPlane = -D3DXVECTOR4(2.0f * (i % 2) - 1.0f, 1.0f, 1.0f, 1.5f * (CUBE_SCALE + MATH_EPS) * (2.f * player->disappearingLines[i].progress(currTime) - 1.f));
-    fxClippingPlaneVar->SetRawValue(&clippingPlane,0,sizeof(D3DXVECTOR4));
-
-    mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
-    cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
-    for (int j = 0; j < FIELD_WIDTH; ++j)
-    {
-      cubeInstances[j].offset.x = fieldToWorldX((float) j);
-      cubeInstances[j].offset.y = fieldToWorldY((float) player->disappearingLines[i].row);
-      cubeInstances[j].offset.z = 0;
-
-      cubeInstances[j].diffuseColor  =  player->disappearingLines[i].blockColor[j]; 
-      cubeInstances[j].specularColor =   WHITE;
-      cubeInstances[j].specularColor.a = 32.f;
-    }
-    cubeInstancesBuffer->Unmap();
-    md3dDevice->IASetInputLayout(cubesVertexLayout);
-    techDisappearingLine->GetPassByIndex( 0 )->Apply(0);
-    mBox.draw(FIELD_WIDTH);
-  }
-
-   //md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
-  //упорядочиваем по удаленности и рисуем прозрачные объекты
-  /* md3dDevice->RSSetState(rsSolidCullNone);
-   techGlass->GetPassByIndex(0)->Apply(0);
-   mGlass.draw();
-   md3dDevice->IASetInputLayout(uncoloredVertexLayout);*/
 }
 
 void CrazyTetrisApp::buildFX()
@@ -477,6 +534,7 @@ void CrazyTetrisApp::buildFX()
   //Colors
   fxColorDiffuseVar  = FX->GetVariableByName("gColorDiffuse");
   fxColorSpecularVar = FX->GetVariableByName("gColorSpecular");
+  fxOpacityVar =       FX->GetVariableByName("gOpacity")->AsScalar();
 
   //Current time
   fxTimeVar = FX->GetVariableByName("gTime")->AsScalar();
@@ -488,6 +546,7 @@ void CrazyTetrisApp::buildFX()
   //Visual effect's progress
   fxWaveProgressVar      = FX->GetVariableByName("gWaveProgress")->AsScalar();
   fxSemicubesProgressVar = FX->GetVariableByName("gSemicubesProgress")->AsScalar();
+
 
   fxClippingPlaneVar     = FX->GetVariableByName("gClippingPlane");
 }
@@ -521,10 +580,14 @@ void CrazyTetrisApp::buildVertexLayouts()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D10_INPUT_PER_VERTEX_DATA,   0},
 		{"NORMAL"  , 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA,   0},
-    {"offset",   0, DXGI_FORMAT_R32G32B32_FLOAT,    1, 0,  D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"diffuse",  0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 12, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"specular", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 28, D3D10_INPUT_PER_INSTANCE_DATA, 1}
-	};
+    
+    {"diffuse",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"specular",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},   
+    {"Transform",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 2 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",   1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 3 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",   2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
+    {"Transform",   3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 5 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1}
+  };
   numElements = sizeof(cubesVertexDesc) / sizeof(D3D10_INPUT_ELEMENT_DESC);
 	techCubes->GetPassByIndex(0)->GetDesc(&passDesc);
   HR(md3dDevice->CreateInputLayout(cubesVertexDesc, numElements, passDesc.pIAInputSignature,
