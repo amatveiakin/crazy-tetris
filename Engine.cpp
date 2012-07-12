@@ -710,6 +710,7 @@ void Player::setUpPiece()
 
   removeFullLines();
   events.pushWithUniquenessCheck(etNewPiece, currentTime() + HINT_MATERIALIZATION_TIME);
+  visualEffects.hint.disable();
   visualEffects.hintMaterialization.enable(HINT_MATERIALIZATION_TIME);
 
   /*if (!removeFullLines())  // There was it least one full line
