@@ -134,11 +134,19 @@ class Fixed2DArray
 public:
   T& operator()(int row, int col)
   {
+    assert(firstRow <= row);
+    assert(row <= lastRow);
+    assert(firstCol <= col);
+    assert(col <= lastCol);
     return elements_[(row - firstRow) * nCols + (col - firstCol)];
   }
   
   const T& operator()(int row, int col) const
   {
+    assert(firstRow <= row);
+    assert(row <= lastRow);
+    assert(firstCol <= col);
+    assert(col <= lastCol);
     return elements_[(row - firstRow) * nCols + (col - firstCol)];
   }
   

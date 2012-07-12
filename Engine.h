@@ -229,8 +229,8 @@ typedef ShiftedBitSet<N_DEBUFFS, FIRST_DEBUFF> Debuffs;
 //=============================== Pieces & Field ===============================
 
 const int    MAX_PIECE_SIZE = 4;
-const int    CENTRAL_PIECE_ROW = MAX_PIECE_SIZE / 2; // (?)
-const int    CENTRAL_PIECE_COL = MAX_PIECE_SIZE / 2; // (?)
+const int    CENTRAL_PIECE_ROW = (MAX_PIECE_SIZE - 1) / 2; // is it necessary (?)
+const int    CENTRAL_PIECE_COL = (MAX_PIECE_SIZE - 1) / 2; // is it necessary (?)
 const int    N_PIECE_ROTATION_STATES = 4;
 
 const int    SKY_HEIGHT = MAX_PIECE_SIZE;
@@ -241,7 +241,7 @@ const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;
 const int    BORDERED_FIELD_ROW_BEGIN = -WALL_WIDTH;
 const int    BORDERED_FIELD_ROW_END   = FIELD_HEIGHT + SKY_HEIGHT;
 const int    BORDERED_FIELD_COL_BEGIN = -WALL_WIDTH;
-const int    BORDERED_FIELD_COL_END   = FIELD_HEIGHT + SKY_HEIGHT;
+const int    BORDERED_FIELD_COL_END   = FIELD_WIDTH + WALL_WIDTH;
 
 const int    NO_BLOCK_IMAGE = -1;
 const int    NO_CHANGE = -2;
@@ -276,6 +276,13 @@ struct FieldCell
   int iBlockImage;
   int iNewBlockImage;
   
+  void assign(const FieldCell& a)
+  {
+    blocked = a.blocked;
+    color = a.color;
+    bonus = a.bonus;
+  }
+
   void clear()
   {
     blocked = false;
@@ -297,6 +304,10 @@ struct FieldCell
   {
     return blocked;
   }
+
+private:
+  // prevent full copy
+  FieldCell& operator=(const FieldCell& a);
 };
 
 struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
@@ -335,7 +346,7 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
 
 enum FallingPieceState { psAbsent, psNormal, psDropping };
 
-const char   PIECE_TEMPLATE_BLOCK_CHAR = 'X';
+//const char   PIECE_TEMPLATE_BLOCK_CHAR = 'X';
 const char   PIECE_TEMPLATE_FREE_CHAR  = '.';
 
 
@@ -515,7 +526,7 @@ public:
   Controls      controls;       // S
   
   float         speed;          // R
-  Field         field;          // R
+  Field         field;          // C/R
   Time          latestLineCollapse; // R
   
   const PieceTemplate* nextPiece;       // R
@@ -572,7 +583,7 @@ private:
   void          dropPiece();
   void          rotatePiece(int direction);
   
-  void          applyBlockImagesChanges();
+  void          applyBlockImagesMovements();
   void          addStandingBlockImage(Color color, FieldCoords position);
   void          addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
                                     Time movingStartTime, Time movingDuration);

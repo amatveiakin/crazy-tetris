@@ -8,12 +8,12 @@
 
 class MovingObject {
 public:
-  FloatFieldCoords movingFrom;
-  FloatFieldCoords movingTo;
+  FieldCoords movingFrom;
+  FieldCoords movingTo;
   Time movingStartTime;
   Time movingDuration;
   
-  void setMotion(FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+  void setMotion(FieldCoords movingFrom__, FieldCoords movingTo__,
                  Time movingStartTime__, Time movingDuration__)
   {
     movingFrom = movingFrom__;
@@ -22,7 +22,7 @@ public:
     movingDuration = movingDuration__;
   }
   
-  void startMovingTo(FloatFieldCoords movingTo__,
+  void startMovingTo(FieldCoords movingTo__,
                      Time movingStartTime__, Time movingDuration__)
   {
     movingTo = movingTo__;
@@ -30,7 +30,7 @@ public:
     movingDuration = movingDuration__;
   }
   
-  void setStanding(FloatFieldCoords position)
+  void setStanding(FieldCoords position)
   {
     setMotion(position, position, 0.0, 1.0);
   }
@@ -329,25 +329,25 @@ public:
   Color color;
 //  bool motionBlur;
   
-  /*BlockImage(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+  /*BlockImage(Color color__, FieldCoords movingFrom__, FieldCoords movingTo__,
              Time movingStartTime__, Time movingDuration__)
   {
     setMotion(color__, movingFrom__, movingTo__, movingStartTime__, movingDuration__, motionBlur__);
   }
 
-  BlockImage(BlockID id__, Color color__, FloatFieldCoords position)
+  BlockImage(BlockID id__, Color color__, FieldCoords position)
   {
     setStanding(color__, position);
   }*/
 
-  void setMotion(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+  void setMotion(Color color__, FieldCoords movingFrom__, FieldCoords movingTo__,
                  Time movingStartTime__, Time movingDuration__)
   {
     color = color__;
     MovingObject::setMotion(movingFrom__, movingTo__, movingStartTime__, movingDuration__);
   }
   
-  void setStanding(Color color__, FloatFieldCoords position)
+  void setStanding(Color color__, FieldCoords position)
   {
     setMotion(color__, position, position, 0.0, 1.0);
   }
