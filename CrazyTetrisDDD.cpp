@@ -119,6 +119,7 @@ private:
 	ID3D10EffectScalarVariable* fxLightTypeVar;
   ID3D10EffectScalarVariable* fxWaveProgressVar;
   ID3D10EffectScalarVariable* fxSemicubesProgressVar;
+  ID3D10EffectScalarVariable* fxImplodeProgressVar;
   ID3D10EffectScalarVariable* fxOpacityVar;
   ID3D10EffectScalarVariable* fxColoredVar;
   ID3D10EffectScalarVariable* fxEdgeOpacityVar;
@@ -318,17 +319,12 @@ void CrazyTetrisApp::drawScene()
 {
   D3DApp::drawScene(); //Cleaning screen
   //Getting current time once
+  
   currTime = mTimer.getGameTime();
   
-  //Set time for this frame
-	fxTimeVar->SetFloat(currTime);
-
-  //for (size_t i = 0; i < mGame.activePlayers.size(); ++i)
-  //  drawPlayer(mGame.activePlayers[i], &vpPlayers[i]);
-
-  drawPlayer(mGame.activePlayers[0], &vpPlayers[0]);
-  drawPlayer(mGame.activePlayers[1], &vpPlayers[1]);
-
+  for (size_t i = 0; i < mGame.participants.size(); ++i)
+    if (mGame.participants[i]->active)   
+      drawPlayer(mGame.participants[i], &vpPlayers[i]);
   
   md3dDevice->RSSetViewports(1, &vpScreen);
 	md3dDevice->RSSetState(0);
@@ -426,25 +422,22 @@ void CrazyTetrisApp::buildFX()
  
 	ID3D10Blob* compilationErrors = 0;
 	HRESULT hr = 0;
-	hr = D3DX10CreateEffectFromFile(L"effects.fx", 0, 0, 
+	hr = D3DX10CreateEffectFromFile(L"effects.fxo", 0, 0, 
 		"fx_4_0", shaderFlags, 0, md3dDevice, 0, 0, &FX, &compilationErrors, 0);
-	if(FAILED(hr))
+	
+  if (hr == D3D10_ERROR_FILE_NOT_FOUND)
+  	hr = D3DX10CreateEffectFromFile(L"effects/effects.fx", 0, 0, 
+	  	"fx_4_0", shaderFlags, 0, md3dDevice, 0, 0, &FX, &compilationErrors, 0);
+  
+  if(FAILED(hr))
 	{
-		if( compilationErrors )
+    if( compilationErrors )
 		{
 			MessageBoxA(0, (char*)compilationErrors->GetBufferPointer(), 0, 0);
 			ReleaseCOM(compilationErrors);
 		}
 		DXTrace(__FILE__, (DWORD)__LINE__, hr, L"D3DX10CreateEffectFromFile", true);
   }
-  /*ifstream is("effects.fxh");
-  is.seekg(0,ios_base::end);
-  streampos pos = is.tellg();
-  is.seekg(0,ios_base::beg);
-  char * effectBuffer = new char[pos];
-  is.read(effectBuffer,pos);
-	
-  HR( D3D10CreateEffectFromMemory((void *)effectBuffer,pos,0,md3dDevice,NULL,&FX) );*/
 
   //Techniques
   techCubes             = FX->GetTechniqueByName("techCubes");
@@ -495,6 +488,7 @@ void CrazyTetrisApp::buildFX()
   //Visual effect's progress
   fxWaveProgressVar      = FX->GetVariableByName("gWaveProgress")->AsScalar();
   fxSemicubesProgressVar = FX->GetVariableByName("gSemicubesProgress")->AsScalar();
+  fxImplodeProgressVar   = FX->GetVariableByName("gSemicubesProgress")->AsScalar();
 
 
   fxClippingPlaneVar     = FX->GetVariableByName("gClippingPlane");
@@ -591,7 +585,7 @@ void CrazyTetrisApp::buildRasterizerStates()
   ZeroMemory(&rsDesc, sizeof(D3D10_RASTERIZER_DESC));
 	rsDesc.FillMode = D3D10_FILL_SOLID;
 	rsDesc.CullMode = D3D10_CULL_NONE;
-  rsDesc.MultisampleEnable = false;  //иначе будут артефакты
+  rsDesc.MultisampleEnable = true;  //иначе будут артефакты
   rsDesc.AntialiasedLineEnable = true;
   HR(md3dDevice->CreateRasterizerState(&rsDesc, &rsForSemicubes));
 
@@ -799,7 +793,7 @@ void CrazyTetrisApp::buildTextures()
 void CrazyTetrisApp::buildViewports()
 {
     //Updating viewports
-  int nActivePlayers = mGame.activePlayers.size();
+  int nActivePlayers = mGame.participants.size();
 	float vpWidth  = (float) mClientWidth / nActivePlayers; 
   float vpHeight = (float) mClientHeight;
 
@@ -853,12 +847,19 @@ void CrazyTetrisApp::loadCubeInstances(Player* player)
                            fieldToWorldX(player->lyingBlockImages[i].positionX(currTime)),
                            fieldToWorldY(player->lyingBlockImages[i].positionY(currTime)),
                            0);
+    float bonusProgress = 2 * player->lyingBlockImages[i].bonusImage.progress(currTime) - 1;
+    float scale = abs(bonusProgress);
+    D3DXMATRIX mScale;
+    D3DXMatrixScaling(&mScale, scale, scale, scale);
+    D3DXMatrixMultiply(&cubeInstances[i].mWorld, &mScale, &cubeInstances[i].mWorld);
 
     cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].diffuseColor  = player->lyingBlockImages[i].color; 
     cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].specularColor = player->lyingBlockImages[i].color * 0.5f + WHITE * 0.5f;
     cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].specularColor.a = 128.f;
-    cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].texIndex = player->lyingBlockImages[i].bonus;
-
+    if (bonusProgress > 0) 
+      cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].texIndex = player->lyingBlockImages[i].bonus;
+    else
+      cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].texIndex = 0;
   }
  
     for (size_t i = 0; i < player->disappearingLines.size(); ++i)

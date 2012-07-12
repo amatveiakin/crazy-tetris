@@ -25,7 +25,7 @@ float GameTimer::getGameTime()const
 
 	if( mStopped )
 	{
-		return (float)((mStopTime - mBaseTime)*mSecondsPerCount);
+		return (float)(((mStopTime-mPausedTime)-mBaseTime)*mSecondsPerCount);
 	}
 
 	// The distance mCurrTime - mBaseTime includes paused time,
