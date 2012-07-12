@@ -349,7 +349,7 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
     D3DXMatrixTranslation(&tempX, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
   techTextured->GetPassByIndex( 0 )->Apply(0);
-  //mWall.draw();
+  mWall.draw();
   
   //рисуем (полу)кубики, которые уже упали
   md3dDevice->IASetInputLayout(cubesVertexLayout);
@@ -393,6 +393,8 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   }
   cubeInstancesBuffer->Unmap();
   techFallingPiece->GetPassByIndex( 0 )->Apply(0);
+  mBox.draw(player->fallingBlockImages.size());
+  techFallingPiece->GetPassByIndex( 1 )->Apply(0);
   mBox.draw(player->fallingBlockImages.size());
   //рисуем убираемые линии
   

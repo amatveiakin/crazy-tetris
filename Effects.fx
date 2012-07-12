@@ -2,6 +2,7 @@
 #include "DirectXConstants.h"
 #include "Definitions.fx"  
 #include "Samplers.fx"
+#include "States.fx"
 
 cbuffer cbRare
 {
@@ -141,12 +142,19 @@ float4 psCubes(StandardVS_OUT pIn) : SV_Target
 
 //Semicubes section
 
-RasterizerState rsSemicubes 
+
+
+BlendState bsTransparent
 {
-  FillMode = Solid; 
-  CullMode = None;
-  AntiAliasedLineEnable = true;
-  MultisampleEnable = true;
+  AlphaToCoverageEnable = false;
+  BlendEnable[0] = true;
+  SrcBlend = Src_Alpha;
+  DestBlend = Inv_Src_Alpha;
+  BlendOp = Add;
+  SrcBlendAlpha = One;
+  DestBlendAlpha =Zero;
+  BlendOpAlpha = Add;
+  //RenderTargetWriteMask[0] = D3D10_COLOR_WRITE_ENABLE_ALL;
 };
 
 float4 psSemicubes(StandardVS_OUT pIn) : SV_Target
@@ -191,9 +199,11 @@ float4 psDisappearingLine(StandardVS_OUT pIn) : SV_Target
 
 float4 psFallingPiece(StandardVS_OUT pIn) : SV_Target
 {
-  float3 distToGrid = (pIn.posL / CUBE_SCALE + 1 + 0.125) % 0.25 - 0.2;
-  clip(max(max(max(distToGrid.x, distToGrid.y), distToGrid.z), dot(float4(pIn.posW, 1.0f), gClippingPlane)));
-
+  float3 distToGrid = ((pIn.posL * CUBE_SCALE_INVERTED + 11 - 0.1) % 2.0f - 1.8); //another VERY MAGIC constants
+  //float3 distToGrid = ((pIn.posL * CUBE_SCALE_INVERTED +2 ) % 2.0f - 1.8);
+  //clip(-min(max(max(distToGrid.x, distToGrid.y), distToGrid.z), -dot(float4(pIn.posW, 1.0f), gClippingPlane)));
+  float opacity;
+  if (min(max(max(distToGrid.x, distToGrid.y), distToGrid.z), -dot(float4(pIn.posW, 1.0f), gClippingPlane)) > 0) opacity = 0.3; else opacity = 1.0;
 
   //Interpolating normal can make it not be of unit length so normalize it.
   pIn.normalW = normalize(pIn.normalW);
@@ -206,7 +216,7 @@ float4 psFallingPiece(StandardVS_OUT pIn) : SV_Target
   for (int i = 0; i < MAX_LIGHTS; ++i)
     litCol += litColor(v, gLight[i], gEyePosW);
      
-  return float4(litCol, pIn.diffuse.a);
+  return float4(litCol, opacity * pIn.diffuse.a);
   //return float4(1., 1., 1., 1.);
 }
 
@@ -224,7 +234,16 @@ technique10 techFallingPiece
 {
     pass P0
     {
-        SetRasterizerState(rsSemicubes);
+        SetRasterizerState(rsCullFront);
+        SetBlendState(bsTransparent, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+        SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, psFallingPiece() ) );
+    }
+     pass P1
+    {
+        SetRasterizerState(rsCullBack);
+        SetBlendState(bsTransparent, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
         SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
         SetGeometryShader( NULL );
         SetPixelShader( CompileShader( ps_4_0, psFallingPiece() ) );
