@@ -17,4 +17,13 @@ SamplerState gAnisotropicSamBorder
     BorderColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 };
 
+
+SamplerState gShadowSam
+{
+    Filter = MIN_MAG_MIP_POINT;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+
 #endif

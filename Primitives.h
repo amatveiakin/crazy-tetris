@@ -25,7 +25,7 @@ public:
 
 	void init(ID3D10Device* device, float scale, float smoothnessRadius, int angleSteps);
 	void setVB_AndIB_AsCurrent(ID3D10Device* device,  ID3D10Buffer* cubeInstancesBuffer);
-  void draw(int nInstances);
+  void draw(int nInstances, int instancesOffset);
 
 private:
   ID3D10Buffer* mIB;

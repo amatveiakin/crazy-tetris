@@ -124,10 +124,10 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
   delete[] indices;
 }
 
-void Box::draw(int nInstances)
+void Box::draw(int nInstances, int instancesOffset)
 {
   md3dDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  md3dDevice->DrawIndexedInstanced(3 * nFaces, nInstances, 0, 0, 0);
+  md3dDevice->DrawIndexedInstanced(3 * nFaces, nInstances, 0, 0, instancesOffset);
 }
 void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstancesBuffer)
 {
@@ -144,7 +144,6 @@ void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstanc
   curVB[1] = cubeInstancesBuffer;
   
   device->IASetVertexBuffers(0, 2, curVB, stride, offset);
-
   device->IASetIndexBuffer(mIB, DXGI_FORMAT_R32_UINT, 0);
 }
 

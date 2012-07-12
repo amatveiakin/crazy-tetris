@@ -1,11 +1,8 @@
 #include "DirectXConstants.h"
 #include "Samplers.fx"
 
-cbuffer perFrame
-{
-  float4x4 gLightWVP;
-}
 Texture2D gColorFilter;
+Texture2D gShadowMap;
 
 
 
@@ -29,6 +26,7 @@ struct SurfaceInfo
   float3 normal;
   float4 diffuse;
   float4 spec;
+  float4 projTexC;
 };
 
 float DiscreetSpecFactor(float specFactor)
@@ -49,6 +47,42 @@ float DiscreetDiffuseFactor(float diffuseFactor)
   return diffuseFactor;
 }
 
+float ShadowFactor(float4 projTexC)
+{
+    // Complete projection by doing division by w.
+    projTexC.xyz /= projTexC.w;
+    // Points outside the light volume are in shadow.
+    if( projTexC.x < -1.0f || projTexC.x > 1.0f ||
+        projTexC.y < -1.0f || projTexC.y > 1.0f ||
+        projTexC.z < 0.0f )
+        return 0.0f;
+    // Transform from NDC space to texture space.
+    projTexC.x = +0.5f*projTexC.x + 0.5f;
+    projTexC.y = -0.5f*projTexC.y + 0.5f;
+    // Depth in NDC space.
+    float depth = projTexC.z;
+    // Sample shadow map to get nearest depth to light.
+    float s0 = gShadowMap.Sample(gShadowSam,
+          projTexC.xy).r;
+    float s1 = gShadowMap.Sample(gShadowSam,
+          projTexC.xy + float2(SMAP_DX, 0)).r;
+    float s2 = gShadowMap.Sample(gShadowSam,
+          projTexC.xy + float2(0, SMAP_DX)).r;
+    float s3 = gShadowMap.Sample(gShadowSam,
+          projTexC.xy + float2(SMAP_DX, SMAP_DX)).r;
+    // Is the pixel depth <= shadow map value?
+    float result0 = depth <= s0 + SHADOW_EPSILON;
+    float result1 = depth <= s1 + SHADOW_EPSILON;
+    float result2 = depth <= s2 + SHADOW_EPSILON;
+    float result3 = depth <= s3 + SHADOW_EPSILON;
+    // Transform to texel space.
+    float2 texelPos = SMAP_SIZE*projTexC.xy;
+    // Determine the interpolation amounts.
+    float2 t = frac( texelPos );
+    // Interpolate results.
+    return lerp(lerp(result0, result1, t.x),
+                lerp(result2, result3, t.x), t.y);
+}
 
 float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)
 {
@@ -145,14 +179,15 @@ float3 SearchLight(SurfaceInfo v, Light L, float3 eyePos)
 	// The vector from the surface to the light.
 	float3 lightVec = normalize(L.pos - v.pos);
 	
-  float4 projTexC = mul(float4(v.pos, 1.0f), gLightWVP);
-  projTexC.xyz /= projTexC.w;
+  //float4 projTexC = mul(float4(v.pos, 1.0f), gLightWVP);
+  //projTexC.xyz /= projTexC.w;
   // Transform from NDC space to texture space.
-  projTexC.x = +0.5f*projTexC.x + 0.5f;
-  projTexC.y = -0.5f*projTexC.y + 0.5f;
+  //projTexC.x = +0.5f*projTexC.x + 0.5f;
+  //projTexC.y = -0.5f*projTexC.y + 0.5f;
   
-  float s = float4(1, 1, 1, 1);
-  s = gColorFilter.Sample(gAnisotropicSamBorder, projTexC.xy); 
+  float s ;//= float4(1, 1, 1, 1);
+  //s = gColorFilter.Sample(gAnisotropicSamBorder, projTexC.xy); 
+  s = ShadowFactor(v.projTexC);
 	float angle = acos(dot(-lightVec, normalize(L.dir)));
   
   if (angle < searchAlpha)
@@ -192,3 +227,4 @@ float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
   return float3(0.0f, 0.0f, 0.0f);
  }  
  
+
