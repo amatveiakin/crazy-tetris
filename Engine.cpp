@@ -878,6 +878,7 @@ void Player::removeBonuses()
       }
     }
   }
+  planBonusAppearance();
 }
 
 void Player::planBonusAppearance()
