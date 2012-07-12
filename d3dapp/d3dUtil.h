@@ -11,9 +11,9 @@
 #define _WIN32_WINNT   0x0600 // Vista
 #endif
 
- 
-// Enable extra D3D debugging in debug builds if using the debug DirectX runtime.  
-// This makes D3D objects work well in the debugger watch window, but slows down 
+
+// Enable extra D3D debugging in debug builds if using the debug DirectX runtime.
+// This makes D3D objects work well in the debugger watch window, but slows down
 // performance slightly.
 #if defined(DEBUG) || defined(_DEBUG)
 	#ifndef D3D_DEBUG_INFO
@@ -52,7 +52,7 @@
 	#ifndef HR
 	#define HR(x) (x)
 	#endif
-#endif 
+#endif
 
 
 //*****************************************************************************
@@ -96,7 +96,7 @@ D3DX10INLINE D3DXVECTOR3 RandUnitVec3()
 	D3DXVec3Normalize(&v, &v);
 	return v;
 }
- 
+
 template<typename T>
 D3DX10INLINE T Min(const T& a, const T& b)
 {
@@ -108,7 +108,7 @@ D3DX10INLINE T Max(const T& a, const T& b)
 {
 	return a > b ? a : b;
 }
- 
+
 template<typename T>
 D3DX10INLINE T Lerp(const T& a, const T& b, float t)
 {
@@ -118,7 +118,7 @@ D3DX10INLINE T Lerp(const T& a, const T& b, float t)
 template<typename T>
 D3DX10INLINE T Clamp(const T& x, const T& low, const T& high)
 {
-	return x < low ? low : (x > high ? high : x); 
+	return x < low ? low : (x > high ? high : x);
 }
 
 

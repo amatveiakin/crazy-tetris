@@ -1,7 +1,7 @@
 #include "DrawableTex2D.h"
 
 DrawableTex2D::DrawableTex2D()
-: mWidth(0), mHeight(0), mColorMapFormat(DXGI_FORMAT_UNKNOWN), 
+: mWidth(0), mHeight(0), mColorMapFormat(DXGI_FORMAT_UNKNOWN),
   md3dDevice(0), mColorMapSRV(0), mColorMapRTV(0), mDepthMapSRV(0), mDepthMapDSV(0)
 {
 	ZeroMemory(&mViewport, sizeof(D3D10_VIEWPORT));
@@ -16,7 +16,7 @@ DrawableTex2D::~DrawableTex2D()
 	ReleaseCOM(mDepthMapDSV);
 }
 
-void DrawableTex2D::init(ID3D10Device* device, UINT width, UINT height, bool hasColorMap, 
+void DrawableTex2D::init(ID3D10Device* device, UINT width, UINT height, bool hasColorMap,
 		                 DXGI_FORMAT colorFormat)
 {
 	mWidth  = width;
@@ -31,7 +31,7 @@ void DrawableTex2D::init(ID3D10Device* device, UINT width, UINT height, bool has
 	// shadow maps don't need color maps, for example
 	if( hasColorMap )
 		buildColorMap();
- 
+
 	mViewport.TopLeftX = 0;
 	mViewport.TopLeftY = 0;
 	mViewport.Width    = width;
@@ -71,24 +71,24 @@ void DrawableTex2D::end()
 
 	//if( mColorMapSRV )
 	//	md3dDevice->GenerateMips(mColorMapSRV);
-}	
+}
 
 void DrawableTex2D::buildDepthMap()
 {
 	ID3D10Texture2D* depthMap = 0;
 
 	D3D10_TEXTURE2D_DESC texDesc;
-	
+
 	texDesc.Width     = mWidth;
 	texDesc.Height    = mHeight;
 	texDesc.MipLevels = 1;
 	texDesc.ArraySize = 1;
 	texDesc.Format    = DXGI_FORMAT_R32_TYPELESS;
-	texDesc.SampleDesc.Count   = 1;  
-	texDesc.SampleDesc.Quality = 0;  
+	texDesc.SampleDesc.Count   = 1;
+	texDesc.SampleDesc.Quality = 0;
 	texDesc.Usage          = D3D10_USAGE_DEFAULT;
 	texDesc.BindFlags      = D3D10_BIND_DEPTH_STENCIL | D3D10_BIND_SHADER_RESOURCE;
-	texDesc.CPUAccessFlags = 0; 
+	texDesc.CPUAccessFlags = 0;
 	texDesc.MiscFlags      = 0;
 
 	HR(md3dDevice->CreateTexture2D(&texDesc, 0, &depthMap));
@@ -116,22 +116,22 @@ void DrawableTex2D::buildColorMap()
 	ID3D10Texture2D* colorMap = 0;
 
 	D3D10_TEXTURE2D_DESC texDesc;
-	
+
 	texDesc.Width     = mWidth;
 	texDesc.Height    = mHeight;
 	texDesc.MipLevels = 0;
 	texDesc.ArraySize = 1;
 	texDesc.Format    = mColorMapFormat;
-	texDesc.SampleDesc.Count   = 1;  
-	texDesc.SampleDesc.Quality = 0;  
+	texDesc.SampleDesc.Count   = 1;
+	texDesc.SampleDesc.Quality = 0;
 	texDesc.Usage          = D3D10_USAGE_DEFAULT;
 	texDesc.BindFlags      = D3D10_BIND_RENDER_TARGET | D3D10_BIND_SHADER_RESOURCE;
-	texDesc.CPUAccessFlags = 0; 
+	texDesc.CPUAccessFlags = 0;
 	texDesc.MiscFlags      = D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
 	HR(md3dDevice->CreateTexture2D(&texDesc, 0, &colorMap));
 
-	// Null description means to create a view to all mipmap levels using 
+	// Null description means to create a view to all mipmap levels using
 	// the format the texture was created with.
 	HR(md3dDevice->CreateRenderTargetView(colorMap, 0, &mColorMapRTV));
 	HR(md3dDevice->CreateShaderResourceView(colorMap, 0, &mColorMapSRV));

@@ -1,22 +1,22 @@
-RasterizerState rsSemicubes 
+RasterizerState rsSemicubes
 {
-  FillMode = Solid; 
+  FillMode = Solid;
   CullMode = None;
   AntiAliasedLineEnable = true;
   MultisampleEnable = true;
 };
 
-RasterizerState rsCullBack 
+RasterizerState rsCullBack
 {
-  FillMode = Solid; 
+  FillMode = Solid;
   CullMode = Back;
   AntiAliasedLineEnable = true;
   MultisampleEnable = true;
 };
 
-RasterizerState rsCullFront 
+RasterizerState rsCullFront
 {
-  FillMode = Solid; 
+  FillMode = Solid;
   CullMode = Front;
   AntiAliasedLineEnable = true;
   MultisampleEnable = true;

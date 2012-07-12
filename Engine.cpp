@@ -144,7 +144,7 @@ void Game::loadDefaultSettings()
   players[2].controls.keyByName.keyDrop = VK_RSHIFT;
   players[2].controls.keyByName.keyNextVictim = VK_RCONTROL;
 
-  players[3].participates = false;  
+  players[3].participates = false;
   players[3].accountNumber = 3;
   players[3].controls.keyByName.keyLeft = VK_NUMPAD4;
   players[3].controls.keyByName.keyRight = VK_NUMPAD6;
@@ -186,7 +186,7 @@ void Game::onGlobalKeyPress(GlobalKey key) { }
 void Game::onTimer(Time currentTime__)
 {
   currentTime = currentTime__;
-  
+
   for (int key = 0; key < N_GLOBAL_KEYS; ++key)
   {
     if (keyPressed(globalControls.keyArray[key] &&
@@ -198,7 +198,7 @@ void Game::onTimer(Time currentTime__)
     else if (!keyPressed(globalControls.keyArray[key]))
       nextGlobalKeyActivationTable[key]  = currentTime;
   }
-  
+
   for (size_t iPlayer = 0; iPlayer < activePlayers.size(); ++iPlayer)
   {
     for (int key = 0; key < N_PLAYER_KEYS; ++key)
@@ -213,10 +213,10 @@ void Game::onTimer(Time currentTime__)
         activePlayers[iPlayer]->nextKeyActivationTable[key] = currentTime;
     }
   }
-  
+
   for (size_t iPlayer = 0; iPlayer < activePlayers.size(); ++iPlayer)
     activePlayers[iPlayer]->onTimer();
-  
+
   /*for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
     if (players[iPlayer].active)
@@ -232,7 +232,7 @@ void Game::onTimer(Time currentTime__)
       }
     }
   }
-  
+
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     if (players[iPlayer].active)
       players[iPlayer].onTimer();*/
@@ -775,7 +775,7 @@ void Player::setUpPiece()
   }
   fallingBlockImages.clear();
   fallingPieceState = psAbsent;
-  
+
   bool fullLinesFound = removeFullLines();
   Time newPieceDelay = fullLinesFound ? myMax(HINT_MATERIALIZATION_TIME, LINE_DISAPPEAR_TIME) :
                                         HINT_MATERIALIZATION_TIME;
@@ -871,7 +871,7 @@ bool Player::removeFullLines()
       {
         rowIsFull = false;
         break;
-      } 
+      }
     }
 
     if (rowIsFull)

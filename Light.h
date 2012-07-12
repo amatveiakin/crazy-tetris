@@ -24,9 +24,9 @@ struct Light
 	float spotPow;
 	float range;
   __int32 lightType; //0 - off, 1 - parallel, 2 - point, 3 - spot
- 	float brightness;    
+ 	float brightness;
   float pad4;      // not used
-  
+
 };
 
 #endif // LIGHT_H

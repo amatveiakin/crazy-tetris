@@ -31,19 +31,19 @@ struct SurfaceInfo
 
 float DiscreetSpecFactor(float specFactor)
 {
-  
+
   if (specFactor >= 0.0f & specFactor < 0.1f) return 0.0f;
-  if (specFactor >= 0.1f & specFactor < 0.8f) return 0.5f;  
-  if (specFactor >= 0.8f & specFactor < 1.0f) return 0.8f;   
+  if (specFactor >= 0.1f & specFactor < 0.8f) return 0.5f;
+  if (specFactor >= 0.8f & specFactor < 1.0f) return 0.8f;
   return specFactor;
 }
 
 float DiscreetDiffuseFactor(float diffuseFactor)
 {
-  
+
   if (diffuseFactor < 0.0f)            return 0.1f;
-  if (diffuseFactor >= 0.0f & diffuseFactor < 0.5f) return 0.3f;  
-  if (diffuseFactor >= 0.5f & diffuseFactor < 1.0f) return 0.66f;   
+  if (diffuseFactor >= 0.0f & diffuseFactor < 0.5f) return 0.3f;
+  if (diffuseFactor >= 0.5f & diffuseFactor < 1.0f) return 0.66f;
   return diffuseFactor;
 }
 
@@ -75,7 +75,7 @@ float ShadowFactor(float4 projTexC)
       [unroll]
       for (int j = -2; j <=2; ++j)
       {
-        result += distribution(i, j) * 
+        result += distribution(i, j) *
           (gShadowMap.Sample(gShadowSam, projTexC.xy + float2(i * SMAP_DX, j * SMAP_DX)).r > depth - SHADOW_EPSILON);
         m += distribution(i, j);
       }
@@ -107,16 +107,16 @@ float ShadowFactor(float4 projTexC)
 float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)
 {
 	float3 litColor = float3(0.0f, 0.0f, 0.0f);
- 
+
 	// The light vector aims opposite the direction the light rays travel.
 	float3 lightVec = -normalize(L.dir);
-	
+
 	// Add the ambient term.
-	litColor += v.diffuse * L.brightness * L.ambient ;	
-	
-	// Add diffuse and specular term, provided the surface is in 
+	litColor += v.diffuse * L.brightness * L.ambient ;
+
+	// Add diffuse and specular term, provided the surface is in
 	// the line of site of the light.
-	
+
 	float diffuseFactor = dot(lightVec, v.normal);
 	[branch]
 	if( diffuseFactor > 0.0f )
@@ -125,39 +125,39 @@ float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)
 		float3 toEye     = normalize(eyePos - v.pos);
 		float3 R         = reflect(-lightVec, v.normal);
 		float specFactor = pow(max(dot(R, toEye), 0.0f), specPower);
-					
+
 		//diffuseFactor = DiscreetDiffuseFactor(diffuseFactor);
-		//specFactor = DiscreetSpecFactor(specFactor); 
-		
+		//specFactor = DiscreetSpecFactor(specFactor);
+
 		// diffuse and specular terms
 		litColor += diffuseFactor * v.diffuse * L.brightness * L.diffuse;
 		litColor += specFactor * v.spec * L.brightness * L.spec;
 	}
-	
+
 	return litColor;
 }
 
 float3 PointLight(SurfaceInfo v, Light L, float3 eyePos)
 {
 	float3 litColor = float3(0.0f, 0.0f, 0.0f);
-	
+
 	// The vector from the surface to the light.
 	float3 lightVec = L.pos - v.pos;
-		
+
 	// The distance from surface to light.
 	float d = length(lightVec);
-	
+
 	if( d > L.range ) return float3(0.0f, 0.0f, 0.0f);
-		
+
 	// Normalize the light vector.
-	lightVec /= d; 
-	
+	lightVec /= d;
+
 	// Add the ambient light term.
-	litColor += v.diffuse * L.brightness * L.ambient;	
-	
-	// Add diffuse and specular term, provided the surface is in 
+	litColor += v.diffuse * L.brightness * L.ambient;
+
+	// Add diffuse and specular term, provided the surface is in
 	// the line of site of the light.
-	
+
 	float diffuseFactor = dot(lightVec, v.normal);
 	[branch]
 	if( diffuseFactor > 0.0f )
@@ -168,13 +168,13 @@ float3 PointLight(SurfaceInfo v, Light L, float3 eyePos)
 		float specFactor = pow(max(dot(R, toEye), 0.0f), specPower);
 
 		//diffuseFactor = DiscreetDiffuseFactor(diffuseFactor);
-		//specFactor = DiscreetSpecFactor(specFactor); 
-	
+		//specFactor = DiscreetSpecFactor(specFactor);
+
 		// diffuse and specular terms
 		litColor += diffuseFactor * v.diffuse * L.brightness * L.diffuse;
 		litColor += specFactor * v.spec * L.brightness * L.spec;
 	}
-	
+
 	// attenuate
 	return litColor / dot(L.att, float3(1.0f, d, d*d));
 }
@@ -182,12 +182,12 @@ float3 PointLight(SurfaceInfo v, Light L, float3 eyePos)
 float3 Spotlight(SurfaceInfo v, Light L, float3 eyePos)
 {
 	float3 litColor = PointLight(v, L, eyePos);
-	
+
 	// The vector from the surface to the light.
 	float3 lightVec = normalize(L.pos - v.pos);
-	
+
 	float s = pow(max(dot(-lightVec, normalize(L.dir)), 0.0f), L.spotPower);
-	
+
 	// Scale color by spotlight factor.
 	return litColor*s;
 }
@@ -195,25 +195,25 @@ float3 Spotlight(SurfaceInfo v, Light L, float3 eyePos)
 float3 SearchLight(SurfaceInfo v, Light L, float3 eyePos)
 {
 	float3 litColor = PointLight(v, L, eyePos);
-	
+
 	// The vector from the surface to the light.
 	float3 lightVec = normalize(L.pos - v.pos);
-	
+
   //float4 projTexC = mul(float4(v.pos, 1.0f), gLightWVP);
   //projTexC.xyz /= projTexC.w;
   // Transform from NDC space to texture space.
   //projTexC.x = +0.5f*projTexC.x + 0.5f;
   //projTexC.y = -0.5f*projTexC.y + 0.5f;
-  
+
   float s ;//= float4(1, 1, 1, 1);
-  //s = gColorFilter.Sample(gAnisotropicSamBorder, projTexC.xy); 
+  //s = gColorFilter.Sample(gAnisotropicSamBorder, projTexC.xy);
   s = ShadowFactor(v.projTexC);
 	float angle = acos(dot(-lightVec, normalize(L.dir)));
-  
+
   if (angle < searchAlpha)
   {
     s *= 1;
-  } 
+  }
   else if (angle > searchBeta)
   {
     s *= 0;
@@ -240,11 +240,11 @@ float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
       return Spotlight(v, L, eyePos);
     }  if (L.lightType == 4)// Searchlight
     {
-      return 
+      return
         SearchLight(v, L, eyePos);
-    }  
+    }
   }
   return float3(0.0f, 0.0f, 0.0f);
- }  
- 
+ }
+
 

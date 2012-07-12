@@ -6,7 +6,7 @@
 #include <windows.h>
 
 GameTimer::GameTimer()
-: mSecondsPerCount(0.0), mDeltaTime(-1.0), mBaseTime(0), 
+: mSecondsPerCount(0.0), mDeltaTime(-1.0), mBaseTime(0),
   mPausedTime(0), mPrevTime(0), mCurrTime(0), mStopped(false)
 {
 	__int64 countsPerSec;
@@ -29,15 +29,15 @@ float GameTimer::getGameTime()const
 	}
 
 	// The distance mCurrTime - mBaseTime includes paused time,
-	// which we do not want to count.  To correct this, we can subtract 
-	// the paused time from mCurrTime:  
+	// which we do not want to count.  To correct this, we can subtract
+	// the paused time from mCurrTime:
 	//
-	//  (mCurrTime - mPausedTime) - mBaseTime 
+	//  (mCurrTime - mPausedTime) - mBaseTime
 	//
 	//                     |<-------d------->|
 	// ----*---------------*-----------------*------------*------> time
 	//  mBaseTime       mStopTime        startTime     mCurrTime
-	
+
 	else
 	{
 		return (float)(((mCurrTime-mPausedTime)-mBaseTime)*mSecondsPerCount);
@@ -70,11 +70,11 @@ void GameTimer::start()
 	//
 	//                     |<-------d------->|
 	// ----*---------------*-----------------*------------> time
-	//  mBaseTime       mStopTime        startTime     
+	//  mBaseTime       mStopTime        startTime
 
 	if( mStopped )
 	{
-		mPausedTime += (startTime - mStopTime);	
+		mPausedTime += (startTime - mStopTime);
 
 		mPrevTime = startTime;
 		mStopTime = 0;
@@ -112,7 +112,7 @@ void GameTimer::tick()
 	// Prepare for next frame.
 	mPrevTime = mCurrTime;
 
-	// Force nonnegative.  The DXSDK's CDXUTTimer mentions that if the 
+	// Force nonnegative.  The DXSDK's CDXUTTimer mentions that if the
 	// processor goes into a power save mode or we get shuffled to another
 	// processor, then mDeltaTime can be negative.
 	if(mDeltaTime < 0.0)

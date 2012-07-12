@@ -20,7 +20,7 @@ Box::Box()
 : nVertices(0), nFaces(0), md3dDevice(0), mVB(0), mIB(0)
 {
 }
- 
+
 Box::~Box()
 {
 	ReleaseCOM(mVB);
@@ -32,16 +32,16 @@ Box::~Box()
 
 void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int angleSteps)
 {
-	
-  
+
+
   int i, j;
   float alpha, beta;
   float x, y, z;
 
   md3dDevice = device;
- 
+
 	nVertices = 8 * angleSteps * angleSteps;
-  nFaces    = (2 * angleSteps - 1) * (8 * angleSteps + 4) ; 
+  nFaces    = (2 * angleSteps - 1) * (8 * angleSteps + 4) ;
 
   UncoloredVertex* vertices = new UncoloredVertex[nVertices];
 
@@ -63,7 +63,7 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
       vertices[i * 4 * angleSteps + j].normal.y = y;
       vertices[i * 4 * angleSteps + j].normal.z = z;
     }
-      
+
   D3D10_BUFFER_DESC vbd;
   vbd.Usage = D3D10_USAGE_IMMUTABLE;
   vbd.ByteWidth = sizeof(UncoloredVertex) * nVertices;
@@ -78,7 +78,7 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
   // Create the index buffer
 
 	DWORD* indices = new DWORD[3 * nFaces];
-	
+
   for (i = 0; i < 2 * angleSteps - 1; ++i)
     for (j = 0; j < 4 * angleSteps; ++j)
     {
@@ -92,16 +92,16 @@ void Box::init(ID3D10Device* device, float scale, float smoothnessRadius, int an
 
       int a = j + 1;
     }
-    
-  for (i = 0; i < 4 * angleSteps - 2; ++i) 
-  {  
+
+  for (i = 0; i < 4 * angleSteps - 2; ++i)
+  {
     indices[(2 * angleSteps - 1) * 24 * angleSteps + 3 * i + 0] = 0;
     indices[(2 * angleSteps - 1) * 24 * angleSteps + 3 * i + 1] = i + 1;
     indices[(2 * angleSteps - 1) * 24 * angleSteps + 3 * i + 2] = i + 2;
   }
-   
-  for (i = 0; i < 4 * angleSteps - 2; ++i) 
-  {  
+
+  for (i = 0; i < 4 * angleSteps - 2; ++i)
+  {
     indices[nFaces * 3 - 3 * i - 1] = nVertices - 1;
     indices[nFaces * 3 - 3 * i - 3] = nVertices - 2 - i;
     indices[nFaces * 3 - 3 * i - 2] = nVertices - 3 - i;
@@ -127,9 +127,9 @@ void Box::draw(int nInstances)
 }
 void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstancesBuffer)
 {
-  UINT stride[2] = 
+  UINT stride[2] =
   {
-    sizeof(UncoloredVertex), 
+    sizeof(UncoloredVertex),
     sizeof(CubeInstance)
   };
 
@@ -138,7 +138,7 @@ void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstanc
 	ID3D10Buffer* curVB[2];
   curVB[0] = mVB;
   curVB[1] = cubeInstancesBuffer;
-  
+
   device->IASetVertexBuffers(0, 2, curVB, stride, offset);
 
   device->IASetIndexBuffer(mIB, DXGI_FORMAT_R32_UINT, 0);

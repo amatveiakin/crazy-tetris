@@ -1,7 +1,7 @@
 //=======================================================================================
 // d3dApp.h by Frank Luna (C) 2008 All Rights Reserved.
 //
-// Simple Direct3D demo application class.  
+// Simple Direct3D demo application class.
 // Make sure you link: d3d10.lib d3dx10d.lib dxerr.lib dxguid.lib.
 // Link d3dx10.lib for release mode builds instead of d3dx10d.lib.
 //=======================================================================================
@@ -27,19 +27,19 @@ public:
 
 	int run();
 
-	// Framework methods.  Derived client class overrides these methods to 
+	// Framework methods.  Derived client class overrides these methods to
 	// implement specific application requirements.
 
 	virtual void initApp();
 	virtual void onResize();// reset projection/etc
 	virtual void updateScene(float dt);
-	virtual void drawScene(); 
+	virtual void drawScene();
 	virtual LRESULT msgProc(UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
 	void initMainWindow();
 	void initDirect3D();
-	
+
 protected:
 
 	HINSTANCE mhAppInst;
@@ -52,7 +52,7 @@ protected:
 	GameTimer mTimer;
 
 	std::wstring mFrameStats;
- 
+
 	ID3D10Device*    md3dDevice;
 	IDXGISwapChain*  mSwapChain;
 	ID3D10Texture2D* mDepthStencilBuffer;

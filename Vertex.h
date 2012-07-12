@@ -4,7 +4,7 @@
 #define VERTEX_H
 
 #include "d3dapp/d3dUtil.h"
- 
+
 struct UncoloredVertex
 {
 	D3DXVECTOR3 pos;

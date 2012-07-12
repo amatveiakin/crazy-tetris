@@ -91,7 +91,7 @@ public:
   {
     position_ = newPosition;
   }
-  
+
   virtual FloatFieldCoords relativePosition(Time currentTime)
   {
     return position_;
@@ -116,13 +116,13 @@ public:
   {
     motions.push_back(LinearMotion(aimingShiftVector, movingStartTime, movingDuration));
   }
-  
+
   virtual void placeAt(FloatFieldCoords newPosition)
   {
     AffixmentPointObject::placeAt(newPosition);
     motions.clear();
   }
-  
+
   virtual FloatFieldCoords relativePosition(Time currentTime)
   {
     FloatFieldCoords currentPosition = position_;
@@ -151,19 +151,19 @@ class MagnetObject : public AffixmentPointObject
 public:
   VisualObject* binding;
   float maxSpeed;
-  
+
   MagnetObject() : binding(NULL) { }
 
   void bindTo(VisualObject* newBinding)
   {
     binding = newBinding;
   }
-  
+
   void resetBinding()
   {
     binding = NULL;
   }
-  
+
   void clear()
   {
     resetBinding();
@@ -200,7 +200,7 @@ class BaseEffectType
 {
 public:
   BaseEffectType() : active_(false) { }
-  
+
 protected:
   bool active_;
 };
@@ -250,27 +250,27 @@ protected:
 
 
 // An effect that repeats periodically (starting from zero moment)
-class PeriodicalEffectType : public SmoothEffectType 
+class PeriodicalEffectType : public SmoothEffectType
 {
 public:
   Time period;
 
   PeriodicalEffectType() : STOPPING_ACCELERATION_COEFF(0.05f), period(1.0), isStopping_(false) { }
 
-  void enable(float newPeriod) 
+  void enable(float newPeriod)
   {
     active_ = true;
     isStopping_ = false;
     period = newPeriod;
   }
 
-  void disable() 
+  void disable()
   {
     isStopping_ = true;
     stoppingAcceleration_ = 0.0;
   }
 
-  float progress(Time currentTime) 
+  float progress(Time currentTime)
   {
     if (!active_)
     {
@@ -466,7 +466,7 @@ class AutoStartingEffectType : public EffectT__
 {
 public:
   AutoStartingEffectType() : startTime_(WILL_NEVER_HAPPEN) { }
-  
+
   void startAt(Time startTime)
   {
     startTime_ = startTime;
@@ -503,7 +503,7 @@ public:
     memcpy(this, &source, sizeof(AutoStoppingEffectType));  // (?)
     return *this;
   }
-  
+
   void stopAt(Time stopTime)
   {
     stopTime_ = stopTime;
@@ -585,7 +585,7 @@ public:
   SemicubesEffect semicubes;
   WaveEffect wave;
   LanternEffect lantern;
-  PieceTheftEffect* pieceTheftPtr; 
+  PieceTheftEffect* pieceTheftPtr;
 
   void clear()
   {
@@ -626,7 +626,7 @@ public:
   Bonus bonus;
   AutoStoppingEffectType<FadingEffectType> bonusImage;
 //  bool motionBlur;
-  
+
   BlockImage(VisualObject* parent__, Color color__, FieldCoords position) :
           color(color__), bonus(bnNoBonus)
   {

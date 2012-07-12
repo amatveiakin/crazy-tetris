@@ -55,7 +55,7 @@ public:
 	void initApp();
 	void onResize();
 	void updateScene(float dt);
-	void drawScene(); 
+	void drawScene();
   float fieldToWorldX(float fieldX);
   float fieldToWorldY(float fieldY);
 
@@ -67,11 +67,11 @@ private:
   void drawHint(Player* player);
   void drawDisappearingLines(Player* player, bool colored);
   void drawWall(Player* player, bool colored);
-  
+
   void loadPlayerData(Player* player);
   void loadCubeInstances(Player* player);
   void installLights(Player* player, bool isLanternOn);
-  
+
   void buildFX();
 	void buildVertexLayouts();
   void buildBuffers();
@@ -81,9 +81,9 @@ private:
   void buildTextures();
   void buildViewports();
   void setConstantBuffers();
- 
+
 private:
-	
+
 	Box mBox;
   TexturedQuad mWall;
   TexturedQuad mAim;
@@ -99,7 +99,7 @@ private:
   ID3D10InputLayout* texturedVertexLayout;
   ID3D10InputLayout* uncoloredVertexLayout;
 
-	
+
 	//Effects and techniques
   ID3D10Effect* FX;
 	ID3D10EffectTechnique* techCubes;
@@ -114,13 +114,13 @@ private:
   ID3D10EffectTechnique* techSMTextured;
   ID3D10EffectTechnique* techSMDisappearingLine;
   ID3D10EffectTechnique* techSMFallingPiece;
-	
+
   //Shader variables
 	ID3D10EffectMatrixVariable* fxVPVar;
 	ID3D10EffectMatrixVariable* fxWorldVar;
 	ID3D10EffectMatrixVariable* fxGlobalRotationVar;
   ID3D10EffectMatrixVariable* fxLightWVPVar;
-  
+
   ID3D10EffectScalarVariable* fxTimeVar;
 	ID3D10EffectScalarVariable* fxLightTypeVar;
   ID3D10EffectScalarVariable* fxWaveProgressVar;
@@ -150,23 +150,23 @@ private:
   ID3D10RasterizerState* rsSolidCullNone;
   ID3D10RasterizerState* rsForSemicubes;
 
- 
+
   //Textures and texture views
   vector<ID3D10ShaderResourceView*> texBackWallRV;
-  
+
   ID3D10ShaderResourceView* texAimRV;
   ID3D10ShaderResourceView* texSearchLightColorFilterRV;
   ID3D10ShaderResourceView* texBonusesRV;
   ID3D10ShaderResourceView* texBonusesArrayRV;
-  
+
   ID3D10Buffer* cubeInstancesBuffer;
 
   ID3D10BlendState* transparentBS;
-  
+
   D3D10_VIEWPORT vpScreen;
   D3D10_VIEWPORT vpShadow;
   PlayerScreen scrPlayers[MAX_PLAYERS];
-    
+
   D3DXMATRIX mWorld;
 	D3DXMATRIX mView;
 	D3DXMATRIX mProj;
@@ -175,14 +175,14 @@ private:
   D3DXMATRIX mGlobalRotation;
 
 	Light Lights[MAX_LIGHTS];
-	
+
 	D3DXVECTOR3 eyePosW;
-  	
+
 
   float currTime;
   float mPhi, mTheta;
   //float DistToLight;
-   
+
   //const float CUBE_SCALE;
 
   const float vpAspect;
@@ -191,18 +191,18 @@ private:
 
 CrazyTetrisApp::CrazyTetrisApp(HINSTANCE hInstance)
 : D3DApp(hInstance), FX(0), techCubes(0), techSemicubes(0),
-  fxVPVar(0), currTime(0.f), mPhi(PI / 2.f), mTheta(0.f), 
-  
+  fxVPVar(0), currTime(0.f), mPhi(PI / 2.f), mTheta(0.f),
+
   vpAspect(VP_WORLD_WIDTH / VP_WORLD_HEIGHT)
-  
+
 {
   D3DXMatrixIdentity(&mWorld);
 	D3DXMatrixIdentity(&mView);
 	D3DXMatrixIdentity(&mProj);
-  D3DXMatrixIdentity(&mVP); 
-  D3DXMatrixIdentity(&mGlobalRotation); 
+  D3DXMatrixIdentity(&mVP);
+  D3DXMatrixIdentity(&mGlobalRotation);
   srand(32);
-  
+
 }
 
 CrazyTetrisApp::~CrazyTetrisApp()
@@ -236,13 +236,13 @@ void CrazyTetrisApp::initApp()
 
 
   D3DApp::initApp();
-	
+
   mBox.init(md3dDevice, CUBE_SCALE / 2.0f + MATH_EPS, 0.5f, 5);
-  mWall.init(md3dDevice, 
-             CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
-             CUBE_SCALE * (FIELD_HEIGHT) * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
+  mWall.init(md3dDevice,
+             CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD),
+             CUBE_SCALE * (FIELD_HEIGHT) * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD),
              1.0f,  1.0f);
-  mAim.init(md3dDevice, CUBE_SCALE, CUBE_SCALE, 1.0f, 1.0f); 
+  mAim.init(md3dDevice, CUBE_SCALE, CUBE_SCALE, 1.0f, 1.0f);
   mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
   mShadowMap.init(md3dDevice, (int) SMAP_SIZE, (int) SMAP_SIZE, false, DXGI_FORMAT_R32G32B32A32_FLOAT); //change to false!
 
@@ -271,33 +271,33 @@ void CrazyTetrisApp::updateScene(float dt)
 
   currTime = mTimer.getGameTime();
   mGame.onTimer(currTime);
-  
 
-  
+
+
 	// Update angles based on input to orbit camera around box.
 	if ((GetAsyncKeyState('A') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000)) mTheta -= 2.0f*dt;
 	if ((GetAsyncKeyState('D') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	mTheta += 2.0f*dt;
 	if ((GetAsyncKeyState('W') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	mPhi -= 2.0f*dt;
-	if ((GetAsyncKeyState('S') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	mPhi += 2.0f*dt; 
+	if ((GetAsyncKeyState('S') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	mPhi += 2.0f*dt;
 	//if ((GetAsyncKeyState('Q') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	DistToLight -= 2.0f*dt;
-	//if ((GetAsyncKeyState('E') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	DistToLight += 2.0f*dt; 
+	//if ((GetAsyncKeyState('E') & 0x8000)	&& (GetAsyncKeyState(VK_LSHIFT) & 0x8000))	DistToLight += 2.0f*dt;
 
 	// Restrict the angle mPhi.
 	if( mPhi < 0.1f )	mPhi = 0.1f;
 	if( mPhi > PI-0.1f)	mPhi = PI-0.1f;
-	
+
   if(GetAsyncKeyState('R') & 0x8000)
   {
     mPhi = PI / 2;
     mTheta = 0;
   }
-  
+
   if (GetAsyncKeyState(VK_F1) & 0x8000) mGame.players[2].visualEffects.fieldCleaning.enable(3.0f);
   //if(GetAsyncKeyState(VK_F2) & 0x8000)	mGame.players[2].visualEffects.fieldCleaning.disable();
 
   if(GetAsyncKeyState(VK_F3) & 0x8000)	mGame.players[2].visualEffects.rotatingField.enable(10.0f);
   if(GetAsyncKeyState(VK_F4) & 0x8000)	mGame.players[2].visualEffects.rotatingField.disable();
-	
+
   if(GetAsyncKeyState(VK_F5) & 0x8000)	mGame.players[2].visualEffects.wave.enable(2.0f);
   if(GetAsyncKeyState(VK_F6) & 0x8000)	mGame.players[2].visualEffects.wave.disable();
 
@@ -316,8 +316,8 @@ void CrazyTetrisApp::updateScene(float dt)
 	eyePosW.x =  (EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*sinf(mTheta) + (FIELD_INDENT_RIGHT - FIELD_INDENT_LEFT) / 2.f;
   eyePosW.y =  (EYE_TO_FIELD + CUBE_SCALE / 2)*cosf(mPhi);
   eyePosW.z = -(EYE_TO_FIELD + CUBE_SCALE / 2)*sinf(mPhi)*cosf(mTheta) + (FIELD_INDENT_TOP - (HUD_HEIGHT + FIELD_INDENT_BOTTOM)) / 2.f;
-	
-  
+
+
 	D3DXVECTOR3 target((FIELD_INDENT_RIGHT - FIELD_INDENT_LEFT) / 2.f, 0.f,(FIELD_INDENT_TOP - (HUD_HEIGHT + FIELD_INDENT_BOTTOM)) / 2.f);
 	D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
 	D3DXMatrixLookAtLH(&mView, &eyePosW, &target, &up);
@@ -328,29 +328,29 @@ void CrazyTetrisApp::drawScene()
 {
   D3DApp::drawScene(); //Cleaning screen
   //Getting current time once
-  
+
   currTime = mTimer.getGameTime();
-  
+
   for (size_t i = 0; i < mGame.participants.size(); ++i)
-    if (mGame.participants[i]->active)   
+    if (mGame.participants[i]->active)
       drawPlayer(mGame.participants[i], scrPlayers[i]);
-  
+
   md3dDevice->RSSetViewports(1, &vpScreen);
 	md3dDevice->RSSetState(0);
 	// We specify DT_NOCLIP, so we do not care about width/height of the rect.
 	RECT R = {5, 5, 0, 0};
   mFont->DrawText(0, mFrameStats.c_str() , -1, &R, DT_NOCLIP, WHITE);
   //mFrameStats.c_str()
-  
+
 	mSwapChain->Present(0, 0);
 }
 
 void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
 {
-  
+
 
   D3DXVECTOR4 clippingPlane;
-  
+
   loadPlayerData(player);
   loadCubeInstances(player);
   installLights(player, true);
@@ -368,12 +368,12 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
 	fxVPVar->SetMatrix((float*)&mVP);
 
   fxShadowMapVar->SetResource(mShadowMap.depthMap());
-  //fxDiffuseMapVar->SetResource(mShadowMap.depthMap()); 
+  //fxDiffuseMapVar->SetResource(mShadowMap.depthMap());
   md3dDevice->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
-  md3dDevice->RSSetViewports(1, &screen.viewport); 
+  md3dDevice->RSSetViewports(1, &screen.viewport);
 
-  //рисуем непрозрачные объекты  
-  md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);       
+  //рисуем непрозрачные объекты
+  md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);
   //рисуем поле
   installLights(player, true);
   //Рисуем стенку
@@ -387,7 +387,7 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
   drawDisappearingLines(player, true);
   //mGlass.draw();
   //упорядочиваем по удаленности и рисуем прозрачные объекты
-  md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
+  md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);
   //рисуем падающую фигуру
   drawFallingPiece(player, true);
   //рисуем интерфейс
@@ -409,24 +409,24 @@ void CrazyTetrisApp::drawPlayer(Player* player, PlayerScreen screen)
 void CrazyTetrisApp::drawPlayerToShadowMap(Player* player)
 {
   D3DXVECTOR4 clippingPlane;
-   
+
   mShadowMap.begin();
-  
+
   md3dDevice->RSSetViewports(1, &vpShadow);
 	md3dDevice->RSSetState(0);
   fxVPVar->SetMatrix((float*)&mLightWVP);
   //fxColoredVar->SetInt(0);
-  
+
 	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
-  
-  //md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);       
+
+  //md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);
   //drawWall(player, false);
   md3dDevice->IASetInputLayout(cubesVertexLayout);
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
   drawLyingBlocks(player, false);
   drawDisappearingLines(player, false);
-  
-  //md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
+
+  //md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);
   drawFallingPiece(player, false);
   mShadowMap.end();
 }
@@ -437,16 +437,16 @@ void CrazyTetrisApp::buildFX()
     shaderFlags |= D3D10_SHADER_DEBUG;
 	shaderFlags |= D3D10_SHADER_SKIP_OPTIMIZATION;
 #endif
- 
+
 	ID3D10Blob* compilationErrors = 0;
 	HRESULT hr = 0;
-	hr = D3DX10CreateEffectFromFile(L"effects.fxo", 0, 0, 
+	hr = D3DX10CreateEffectFromFile(L"effects.fxo", 0, 0,
 		"fx_4_0", shaderFlags, 0, md3dDevice, 0, 0, &FX, &compilationErrors, 0);
-	
+
   if (hr == D3D10_ERROR_FILE_NOT_FOUND)
-  	hr = D3DX10CreateEffectFromFile(L"effects/effects.fx", 0, 0, 
+  	hr = D3DX10CreateEffectFromFile(L"effects/effects.fx", 0, 0,
 	  	"fx_4_0", shaderFlags, 0, md3dDevice, 0, 0, &FX, &compilationErrors, 0);
-  
+
   if(FAILED(hr))
 	{
     if( compilationErrors )
@@ -464,7 +464,7 @@ void CrazyTetrisApp::buildFX()
   techDisappearingLine  = FX->GetTechniqueByName("techDisappearingLine");
   techGlass             = FX->GetTechniqueByName("techGlass");
   techFallingPiece      = FX->GetTechniqueByName("techFallingPiece");
-  
+
   techSMCubes             = FX->GetTechniqueByName("techSMCubes");
   techSMSemicubes         = FX->GetTechniqueByName("techSMSemicubes");
 	techSMTextured          = FX->GetTechniqueByName("techSMTextured");
@@ -474,13 +474,13 @@ void CrazyTetrisApp::buildFX()
   //Constants
   fxCUBE_SCALE = FX->GetVariableByName("CUBE_SCALE")->AsScalar();
   fxCUBE_SCALE_INVERTED = FX->GetVariableByName("CUBE_SCALE_INVERTED")->AsScalar();
-  
+
   //Matrix variables
   fxWorldVar = FX->GetVariableByName("gWorld")->AsMatrix();
 	fxVPVar = FX->GetVariableByName("gVP")->AsMatrix();
   fxGlobalRotationVar = FX->GetVariableByName("gGlobalRotation")->AsMatrix();
   fxLightWVPVar = FX->GetVariableByName("gLightWVP")->AsMatrix();
-	
+
 	//Lights and camera position
   fxLightVar = FX->GetVariableByName("gLight");
 	fxEyePosVar = FX->GetVariableByName("gEyePosW");
@@ -530,15 +530,15 @@ void CrazyTetrisApp::buildVertexLayouts()
 {
 	int numElements;
   D3D10_PASS_DESC passDesc;
-  
+
   // Create the vertex input layout for cubes (instanced!)
 	D3D10_INPUT_ELEMENT_DESC cubesVertexDesc[] =
 	{
 		{"POSITION_LOCAL", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D10_INPUT_PER_VERTEX_DATA,   0},
 		{"NORMAL"  , 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA,   0},
-     
+
     {"diffuse",      0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
-    {"specular",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},   
+    {"specular",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 1 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
     {"Transform",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 2 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
     {"Transform",    1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 3 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
     {"Transform",    2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
@@ -615,12 +615,12 @@ void CrazyTetrisApp::buildLights()
 	  Lights[i].diffuse   = D3DXCOLOR(0.5f, 0.5f, 0.5f, 0.5f);
 	  Lights[i].specular  = D3DXCOLOR(0.6f, 0.6f, 0.6f, 1.0f);
   }
-  
+
   //Setting parallel light
   Lights[0].dir       = D3DXVECTOR4(0.0f, 0.0f, 1.0f, 0.0f);
   Lights[0].lightType = 1;
   Lights[0].brightness = 1.0f;
-  //Lights[0].active = 0;  
+  //Lights[0].active = 0;
 
   //Spots for lantern effect
   Lights[1].dir = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 0.0f);
@@ -644,8 +644,8 @@ void CrazyTetrisApp::buildLights()
   Lights[3].att.x = 1;
   Lights[3].brightness = 0;
 
-  
-  
+
+
 }
 
 void CrazyTetrisApp::buildBlendingStates()
@@ -683,7 +683,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 
 	CrazyTetrisApp theApp(hInstance);
-	
+
 	theApp.initApp();
 
 	return theApp.run();
@@ -702,7 +702,7 @@ void CrazyTetrisApp::buildBuffers()
   };
 
   HR( md3dDevice->CreateBuffer(&bufferDesc, NULL, &cubeInstancesBuffer) )
- 
+
 }
 
 void CrazyTetrisApp::buildTextures()
@@ -720,7 +720,7 @@ void CrazyTetrisApp::buildTextures()
     texBackWallRV.push_back(temp);
     if (!FindNextFile(hSearch, &FileData)) fFinished = TRUE;
   }
-  FindClose(hSearch); 
+  FindClose(hSearch);
 
   //HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"SearchLightXuy.jpg").c_str(), 0, 0, &texSearchLightColorFilterRV, 0) );
   HR( D3DX10CreateShaderResourceViewFromFile(md3dDevice, (TEXTURES_FOLDER +  L"Aim.jpg").c_str(), 0, 0, &texAimRV, 0) );
@@ -824,12 +824,12 @@ void CrazyTetrisApp::buildViewports()
 {
     //Updating viewports
   int nActivePlayers = mGame.participants.size();
-	float vpWidth  = (float) mClientWidth / nActivePlayers; 
+	float vpWidth  = (float) mClientWidth / nActivePlayers;
   float vpHeight = (float) mClientHeight;
 
   vpWidth  = Min(vpWidth,  vpHeight * vpAspect);
   vpHeight = Min(vpHeight, vpWidth  / vpAspect);
-  
+
   float leftIndent = (mClientWidth - nActivePlayers * vpWidth) / (2.0f * nActivePlayers);
   float topIndent  = (mClientHeight - vpHeight) / 2.0f;
   for (int i = 0; i < nActivePlayers; ++i)
@@ -840,11 +840,11 @@ void CrazyTetrisApp::buildViewports()
     scrPlayers[i].viewport.Height = (int) vpHeight;
     scrPlayers[i].viewport.MinDepth = 0.0f;
     scrPlayers[i].viewport.MaxDepth = 1.0f;
-    
+
     scrPlayers[i].rectName.left =  scrPlayers[i].viewport.TopLeftX + vpWidth * FIELD_INDENT_LEFT / VP_WORLD_WIDTH;
     scrPlayers[i].rectName.top  =  scrPlayers[i].viewport.TopLeftY + vpHeight * (1 - HUD_HEIGHT / VP_WORLD_HEIGHT);
     scrPlayers[i].rectName.right = scrPlayers[i].viewport.TopLeftX + vpWidth * (FIELD_INDENT_LEFT + (MAX_WORLD_FIELD_WIDTH - CUBE_SCALE) / 2)/ VP_WORLD_WIDTH;
-                              
+
     scrPlayers[i].rectVictim.left = scrPlayers[i].viewport.TopLeftX + vpWidth * (FIELD_INDENT_LEFT + (MAX_WORLD_FIELD_WIDTH + 3 * CUBE_SCALE) / 2)/ VP_WORLD_WIDTH;
     scrPlayers[i].rectVictim.top  = scrPlayers[i].viewport.TopLeftY + vpHeight* (1 - HUD_HEIGHT / VP_WORLD_HEIGHT);
   }
@@ -870,7 +870,7 @@ void CrazyTetrisApp::buildViewports()
   vpScreen.Height = mClientHeight;
   vpScreen.MinDepth = 0.0f;
   vpScreen.MaxDepth = 1.0f;
-  
+
   vpShadow.TopLeftX = 0;
   vpShadow.TopLeftY = 0;
   vpShadow.Width = (int) SMAP_SIZE;
@@ -892,10 +892,10 @@ float CrazyTetrisApp::fieldToWorldY(float fieldY)
 void CrazyTetrisApp::loadCubeInstances(Player* player)
 {
 
-  cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
+  cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances);
   for (size_t i = 0; i < player->lyingBlockImages.size(); ++i)
   {
-    D3DXMatrixTranslation(&cubeInstances[i].mWorld, 
+    D3DXMatrixTranslation(&cubeInstances[i].mWorld,
                            fieldToWorldX(player->lyingBlockImages[i].positionX(currTime)),
                            fieldToWorldY(player->lyingBlockImages[i].positionY(currTime)),
                            0);
@@ -905,45 +905,45 @@ void CrazyTetrisApp::loadCubeInstances(Player* player)
     D3DXMatrixScaling(&mScale, scale, scale, scale);
     D3DXMatrixMultiply(&cubeInstances[i].mWorld, &mScale, &cubeInstances[i].mWorld);
 
-    cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].diffuseColor  = player->lyingBlockImages[i].color; 
+    cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].diffuseColor  = player->lyingBlockImages[i].color;
     cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].specularColor = player->lyingBlockImages[i].color * 0.5f + WHITE * 0.5f;
     cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].specularColor.a = 128.f;
-    if (bonusProgress > 0) 
+    if (bonusProgress > 0)
       cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].texIndex = player->lyingBlockImages[i].bonus;
     else
       cubeInstances[LYING_BLOCKS_INSTANCES_OFFSET + i].texIndex = 0;
   }
- 
+
     for (size_t i = 0; i < player->disappearingLines.size(); ++i)
       for (int j = 0; j < FIELD_WIDTH; ++j)
       {
-        D3DXMatrixTranslation(&cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].mWorld, 
+        D3DXMatrixTranslation(&cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].mWorld,
                                fieldToWorldX((float) j),
                                fieldToWorldY((float) player->disappearingLines[i].row),
                                0.0f);
-        
-        cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].diffuseColor  =  player->disappearingLines[i].blockColor[j]; 
+
+        cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].diffuseColor  =  player->disappearingLines[i].blockColor[j];
         cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].specularColor =   WHITE;
         cubeInstances[DISAPPEARING_LINE_INSTANCES_OFFSET + i * FIELD_WIDTH + j].specularColor.a = 32.f;
       }
 
-  
+
   for (size_t i = 0; i < player->fallingBlockImages.size(); ++i)
   {
-    D3DXMatrixTranslation(&cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].mWorld, 
+    D3DXMatrixTranslation(&cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].mWorld,
                            fieldToWorldX(player->fallingBlockImages[i].positionX(currTime)),
                            fieldToWorldY(player->fallingBlockImages[i].positionY(currTime)),
                            0);
 
-    cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].diffuseColor  = player->fallingBlockImages[i].color; 
+    cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].diffuseColor  = player->fallingBlockImages[i].color;
     cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].specularColor = player->fallingBlockImages[i].color * 0.5f + WHITE * 0.5f;
     cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].specularColor.a = 128.f;
 
   }
-  
+
   for (size_t i = 0; i < player->nextPieces[0].nBlocks(); ++i)
   {
-    D3DXMatrixTranslation(&cubeInstances[HINT_INSTANCES_OFFSET + i].mWorld, 
+    D3DXMatrixTranslation(&cubeInstances[HINT_INSTANCES_OFFSET + i].mWorld,
                            fieldToWorldX((float) player->nextPieces[0].absoluteCoords(i).col),
                            fieldToWorldY((float) player->nextPieces[0].absoluteCoords(i).row),
                            0);
@@ -959,7 +959,7 @@ void CrazyTetrisApp::loadCubeInstances(Player* player)
 
 void CrazyTetrisApp::installLights(Player* player, bool isLanternOn)
 {
-  
+
   float x = (float) fieldToWorldX(player->visualEffects.lantern.positionX(currTime));
   float y = (float) fieldToWorldY(player->visualEffects.lantern.positionY(currTime));
   float lanternProgress = player->visualEffects.lantern.progress(currTime);
@@ -973,25 +973,25 @@ void CrazyTetrisApp::installLights(Player* player, bool isLanternOn)
     //Lights[1].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[1].pos.y)  * 0.33;
     Lights[1].pos.z = -DIST_TO_SEARCHLIGHT;
     Lights[1].dir = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 0.0f);
-    
+
     float angle = atan2(Lights[1].pos.x, Lights[1].pos.y);
     float coeff = sqrt(2 + 1 * cos(5 * angle + 3 * implodeProgress));
-    Lights[1].pos *= -sin(coeff * implodeProgress) / tan(coeff) + cos(coeff * implodeProgress);   
+    Lights[1].pos *= -sin(coeff * implodeProgress) / tan(coeff) + cos(coeff * implodeProgress);
 
     Lights[2].pos.x = x;
     Lights[2].pos.y = y;
     //Lights[2].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[2].pos.y)  * 0.33;
     Lights[2].pos.z =  DIST_TO_SEARCHLIGHT;
     Lights[2].dir = D3DXVECTOR4(0.0f, 0.0f,  -1.0f, 0.0f);
-    
-    Lights[2].pos *= -sin(coeff * implodeProgress) / tan(coeff) + cos(coeff * implodeProgress);   
+
+    Lights[2].pos *= -sin(coeff * implodeProgress) / tan(coeff) + cos(coeff * implodeProgress);
 
     D3DXVec4Transform(&Lights[1].pos, &Lights[1].pos, &mGlobalRotation);
     D3DXVec4Transform(&Lights[1].dir, &Lights[1].dir, &mGlobalRotation);
-    
+
     D3DXVec4Transform(&Lights[2].pos, &Lights[2].pos, &mGlobalRotation);
     D3DXVec4Transform(&Lights[2].dir, &Lights[2].dir, &mGlobalRotation);
-   
+
     int shadingLight;
     if (Lights[1].dir.z > 0) shadingLight = 1; else shadingLight = 2;
 
@@ -1023,25 +1023,25 @@ void CrazyTetrisApp::installLights(Player* player, bool isLanternOn)
 void CrazyTetrisApp::loadPlayerData(Player* player)
 {
   D3DXMATRIX temp, tempX, tempY;
-  D3DXMatrixMultiply(&mGlobalRotation, 
+  D3DXMatrixMultiply(&mGlobalRotation,
                      D3DXMatrixRotationY(&tempY, 2 * PI * player->visualEffects.rotatingField.progress(currTime)),
                      D3DXMatrixRotationX(&tempX,     PI * player->visualEffects.flippedScreen.progress(currTime)));
   fxGlobalRotationVar->SetMatrix((float*) &mGlobalRotation);
-  
+
   fxSemicubesProgressVar->SetFloat(player->visualEffects.semicubes.progress(currTime));
   fxWaveProgressVar->SetFloat(player->visualEffects.wave.progress(currTime));
-  fxImplodeProgressVar->SetFloat(player->visualEffects.fieldCleaning.progress(currTime));  
+  fxImplodeProgressVar->SetFloat(player->visualEffects.fieldCleaning.progress(currTime));
 }
 
- 
-  
+
+
 void CrazyTetrisApp::drawWall(Player* player, bool colored)
 {
   D3DXMATRIX temp;
   fxDiffuseMapVar->SetResource(texBackWallRV[player->backgroundSeed % texBackWallRV.size()]);
   fxWorldVar->SetMatrix((float*) D3DXMatrixTranslation(&temp, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
-  if (colored) 
+  if (colored)
         techTextured->GetPassByIndex( 0 )->Apply(0);
   else  techSMTextured->GetPassByIndex( 0 )->Apply(0);
   mWall.draw();
@@ -1052,14 +1052,14 @@ void CrazyTetrisApp::drawLyingBlocks(Player* player, bool colored)
 {
   if (colored)
   {
-    if (player->visualEffects.semicubes.progress(currTime) > MATH_EPS) 
+    if (player->visualEffects.semicubes.progress(currTime) > MATH_EPS)
            techSemicubes->GetPassByIndex( 0 )->Apply(0);
-      else techCubes    ->GetPassByIndex( 0 )->Apply(0); 
-  } else 
+      else techCubes    ->GetPassByIndex( 0 )->Apply(0);
+  } else
   {
-    if (player->visualEffects.semicubes.progress(currTime) > MATH_EPS) 
+    if (player->visualEffects.semicubes.progress(currTime) > MATH_EPS)
            techSMSemicubes->GetPassByIndex( 0 )->Apply(0);
-      else techSMCubes    ->GetPassByIndex( 0 )->Apply(0); 
+      else techSMCubes    ->GetPassByIndex( 0 )->Apply(0);
   }
   mBox.draw(player->lyingBlockImages.size(), LYING_BLOCKS_INSTANCES_OFFSET);
 }
@@ -1081,10 +1081,10 @@ void CrazyTetrisApp::drawDisappearingLines(Player* player, bool colored)
 {
   for (size_t i = 0; i < player->disappearingLines.size(); ++i)
   {
-    D3DXVECTOR4 clippingPlane = -D3DXVECTOR4(2.0f * (i % 2) - 1.0f, 1.0f, 1.0f, 
+    D3DXVECTOR4 clippingPlane = -D3DXVECTOR4(2.0f * (i % 2) - 1.0f, 1.0f, 1.0f,
                 1.5f * (CUBE_SCALE + MATH_EPS) * (2.f * player->disappearingLines[i].progress(currTime) - 1.f));
     fxClippingPlaneVar->SetRawValue(&clippingPlane,0,sizeof(D3DXVECTOR4));
-    if (colored) 
+    if (colored)
           techDisappearingLine->GetPassByIndex( 0 )->Apply(0);
     else  techSMDisappearingLine->GetPassByIndex( 0 )->Apply(0);
 
@@ -1100,7 +1100,7 @@ void CrazyTetrisApp::drawFallingPiece(Player* player, bool colored)
 	D3DXVec4Transform(&clippingPlane, &clippingPlane, &mGlobalRotation);
   fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));
   fxOpacityVar->SetFloat(0.3f);
-  if (colored) 
+  if (colored)
   {
     techFallingPiece->GetPassByIndex( 0 )->Apply(0);
     mBox.draw(player->fallingBlockImages.size(), FALLING_PIECE_INSTANCES_OFFSET);

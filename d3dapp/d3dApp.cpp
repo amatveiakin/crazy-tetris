@@ -38,7 +38,7 @@ D3DApp::D3DApp(HINSTANCE hInstance)
 	mResizing   = false;
 
 	mFrameStats = L"";
- 
+
 	md3dDevice          = 0;
 	mSwapChain          = 0;
 	mDepthStencilBuffer = 0;
@@ -82,7 +82,7 @@ int D3DApp::run()
 #endif
 
     MSG msg = {0};
- 
+
     mTimer.reset();
 
     while (msg.message != WM_QUIT)
@@ -95,7 +95,7 @@ int D3DApp::run()
         }
         // Otherwise, do game stuff.
         else
-    {    
+    {
           mTimer.tick();
 
           if (!mAppPaused)
@@ -138,7 +138,7 @@ void D3DApp::initApp()
 
 	D3DX10CreateFontIndirect(md3dDevice, &fontDesc, &mFont);
 }
- 
+
 void D3DApp::onResize()
 {
 	// Release the old views, as they hold references to the buffers we
@@ -161,7 +161,7 @@ void D3DApp::onResize()
 	// Create the depth/stencil buffer and view.
 
 	D3D10_TEXTURE2D_DESC depthStencilDesc;
-	
+
 	depthStencilDesc.Width     = mClientWidth;
 	depthStencilDesc.Height    = mClientHeight;
 	depthStencilDesc.MipLevels = 1;
@@ -171,7 +171,7 @@ void D3DApp::onResize()
 	depthStencilDesc.SampleDesc.Quality = 0; // swap chain values.
 	depthStencilDesc.Usage          = D3D10_USAGE_DEFAULT;
 	depthStencilDesc.BindFlags      = D3D10_BIND_DEPTH_STENCIL;
-	depthStencilDesc.CPUAccessFlags = 0; 
+	depthStencilDesc.CPUAccessFlags = 0;
 	depthStencilDesc.MiscFlags      = 0;
 
 	HR(md3dDevice->CreateTexture2D(&depthStencilDesc, 0, &mDepthStencilBuffer));
@@ -181,7 +181,7 @@ void D3DApp::onResize()
 	// Bind the render target view and depth/stencil view to the pipeline.
 
 	md3dDevice->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
-	
+
 
 	// Set the viewport transform.
   /*
@@ -198,7 +198,7 @@ void D3DApp::onResize()
 
 void D3DApp::updateScene(float dt)
 {
-	// Code computes the average frames per second, and also the 
+	// Code computes the average frames per second, and also the
 	// average time it takes to render one frame.
 
 	static int frameCnt = 0;
@@ -212,12 +212,12 @@ void D3DApp::updateScene(float dt)
 		float fps = (float)frameCnt; // fps = frameCnt / 1
 		float mspf = 1000.0f / fps;
 
-		std::wostringstream outs;   
+		std::wostringstream outs;
 		outs.precision(6);
-		outs << L"FPS: " << fps << L"\n" 
+		outs << L"FPS: " << fps << L"\n"
 			 << "Milliseconds: Per Frame: " << mspf;
 		mFrameStats = outs.str();
-		
+
 		// Reset for next average.
 		frameCnt = 0;
 		t_base  += 1.0f;
@@ -234,9 +234,9 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch( msg )
 	{
-	// WM_ACTIVATE is sent when the window is activated or deactivated.  
-	// We pause the game when the window is deactivated and unpause it 
-	// when it becomes active.  
+	// WM_ACTIVATE is sent when the window is activated or deactivated.
+	// We pause the game when the window is deactivated and unpause it
+	// when it becomes active.
 	case WM_ACTIVATE:
 		if( LOWORD(wParam) == WA_INACTIVE )
 		{
@@ -250,7 +250,7 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 
-	// WM_SIZE is sent when the user resizes the window.  
+	// WM_SIZE is sent when the user resizes the window.
 	case WM_SIZE:
 		// Save the new client area dimensions.
 		mClientWidth  = LOWORD(lParam);
@@ -272,7 +272,7 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			else if( wParam == SIZE_RESTORED )
 			{
-				
+
 				// Restoring from minimized state?
 				if( mMinimized )
 				{
@@ -290,13 +290,13 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 				}
 				else if( mResizing )
 				{
-					// If user is dragging the resize bars, we do not resize 
-					// the buffers here because as the user continuously 
+					// If user is dragging the resize bars, we do not resize
+					// the buffers here because as the user continuously
 					// drags the resize bars, a stream of WM_SIZE messages are
 					// sent to the window, and it would be pointless (and slow)
 					// to resize for each WM_SIZE message received from dragging
-					// the resize bars.  So instead, we reset after the user is 
-					// done resizing the window and releases the resize bars, which 
+					// the resize bars.  So instead, we reset after the user is
+					// done resizing the window and releases the resize bars, which
 					// sends a WM_EXITSIZEMOVE message.
 				}
 				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
@@ -322,14 +322,14 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 		mTimer.start();
 		onResize();
 		return 0;
- 
+
 	// WM_DESTROY is sent when the window is being destroyed.
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
 
-	// The WM_MENUCHAR message is sent when a menu is active and the user presses 
-	// a key that does not correspond to any mnemonic or accelerator key. 
+	// The WM_MENUCHAR message is sent when a menu is active and the user presses
+	// a key that does not correspond to any mnemonic or accelerator key.
 	case WM_MENUCHAR:
         // Don't beep when we alt-enter.
         return MAKELRESULT(0, MNC_CLOSE);
@@ -337,7 +337,7 @@ LRESULT D3DApp::msgProc(UINT msg, WPARAM wParam, LPARAM lParam)
 	// Catch this message so to prevent the window from becoming too small.
 	case WM_GETMINMAXINFO:
 		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
-		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200; 
+		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
 		return 0;
 	}
 
@@ -349,7 +349,7 @@ void D3DApp::initMainWindow()
 {
 	WNDCLASS wc;
 	wc.style         = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc   = MainWndProc; 
+	wc.lpfnWndProc   = MainWndProc;
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
 	wc.hInstance     = mhAppInst;
@@ -371,8 +371,8 @@ void D3DApp::initMainWindow()
 	int width  = R.right - R.left;
 	int height = R.bottom - R.top;
 
-	mhMainWnd = CreateWindow(L"D3DWndClassName", mMainWndCaption.c_str(), 
-		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, mhAppInst, this); 
+	mhMainWnd = CreateWindow(L"D3DWndClassName", mMainWndCaption.c_str(),
+		WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, mhAppInst, this);
 	if( !mhMainWnd )
 	{
 		MessageBox(0, L"CreateWindow FAILED", 0, 0);
@@ -412,7 +412,7 @@ void D3DApp::initDirect3D()
 	// Create the device.
 
 	UINT createDeviceFlags = 0;
-#if defined(DEBUG) || defined(_DEBUG)  
+#if defined(DEBUG) || defined(_DEBUG)
     createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -420,7 +420,7 @@ void D3DApp::initDirect3D()
 			0,                 //default adapter
 			md3dDriverType,
 			0,                 // no software device
-			createDeviceFlags, 
+			createDeviceFlags,
 			D3D10_SDK_VERSION,
 			&sd,
 			&mSwapChain,
@@ -430,7 +430,7 @@ void D3DApp::initDirect3D()
 	// The remaining steps that need to be carried out for d3d creation
 	// also need to be executed every time the window is resized.  So
 	// just call the onResize method here to avoid code duplication.
-	
+
 	onResize();
 }
 

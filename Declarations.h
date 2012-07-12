@@ -70,7 +70,7 @@ enum Bonus
   bnHeal,
   bnSlowDown,
   bnClearField,
-  
+
   // debuffs
   bnFlippedScreen,
   bnRotatingScreen,
@@ -79,7 +79,7 @@ enum Bonus
   bnCrazyPieces,
   bnTruncatedBlocks, // name --> (?)
   bnNoHint,
-  
+
   // evil sorceries
   bnSpeedUp
 //  bnFlipField
@@ -132,7 +132,7 @@ template <typename T>
 struct Coord2D
 {
   T row, col;
-  
+
   Coord2D() { }
   Coord2D(const Coord2D& a) : row(a.row), col(a.col) { }
   Coord2D(T row__, T col__) : row(row__), col(col__) { }
@@ -168,7 +168,7 @@ struct Coord2D
   {
     return Coord2D(row / x, col / x);
   }
-  
+
   // TODO: find out how it can be declared
   //friend Coord2D operator*(T, const Coord2D&);
 
@@ -253,14 +253,14 @@ public:
     assert(index < size);
     return elements_[index];
   }
-  
+
   const T& operator[](int index) const
   {
     assert(0 <= index);
     assert(index < size);
     return elements_[index];
   }
-  
+
 protected:
   T elements_[size];
 };
@@ -279,7 +279,7 @@ public:
     assert(col <= lastCol);
     return elements_[(row - firstRow) * nCols + (col - firstCol)];
   }
-  
+
   const T& operator()(int row, int col) const
   {
     assert(firstRow <= row);
@@ -288,7 +288,7 @@ public:
     assert(col <= lastCol);
     return elements_[(row - firstRow) * nCols + (col - firstCol)];
   }
-  
+
 protected:
   static const int nRows = lastRow - firstRow + 1;
   static const int nCols = lastCol - firstCol + 1;
@@ -307,31 +307,31 @@ public:
     assert(position < nElements + firstElementsNumber);
     std::bitset<nElements>::operator[](position - firstElementsNumber) = true;
   }
-  
+
   bool test(size_t position) const
   {
     assert(firstElementsNumber <= position);
     assert(position < nElements + firstElementsNumber);
     return std::bitset<nElements>::operator[](position - firstElementsNumber);
   }
-  
+
   bool any() const
   {
     return std::bitset<nElements>::any();
   }
-  
+
   bool none() const
   {
     return std::bitset<nElements>::none();
   }
-  
+
   void remove(size_t position)
   {
     assert(firstElementsNumber <= position);
     assert(position < nElements + firstElementsNumber);
     std::bitset<nElements>::operator[](position - firstElementsNumber) = false;
   }
-  
+
   void clear()
   {
     std::bitset<nElements>::reset();
@@ -348,18 +348,18 @@ public:
 //    file_handle_ = wfopen(path, mode);
     _wfopen_s(&file_handle_, path, mode);   // TODO: So, why is it safer?
   }
-  
+
   ~SmartFileHandler()
   {
     if (file_handle_ != NULL)
       fclose(file_handle_);
   }
-  
+
   FILE* get()
   {
     return file_handle_;
   }
-  
+
 private:
   FILE* file_handle_;
   // Prevent copying and assignment

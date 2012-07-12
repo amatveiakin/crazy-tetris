@@ -429,7 +429,7 @@ struct FieldCell
   bool blocked;
   Color color;
   Bonus bonus;
-  
+
   /*void assign(const FieldCell& a)
   {
     blocked = a.blocked;
@@ -441,19 +441,19 @@ struct FieldCell
   {
     blocked = false;
   }
-  
+
   void setBlock(Color color__, Bonus bonus__ = bnNoBonus)
   {
     blocked = true;
     color = color__;
     bonus = bonus__;
   }
-  
+
   bool isFree() const
   {
     return !blocked;
   }
-  
+
   bool isBlocked() const
   {
     return blocked;
@@ -473,7 +473,7 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
                         FIELD_HEIGHT + SKY_HEIGHT, FIELD_WIDTH + WALL_WIDTH>::
                         operator()(row, col);
   }
-  
+
   const FieldCell& operator()(int row, int col) const
   {
     return Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
@@ -551,12 +551,12 @@ struct Event
   EventType type;
   Time activationTime;
   EventParameters parameters;
-  
+
   Event() { }
   Event(const Event& otherEvent) : type(otherEvent.type), activationTime(otherEvent.activationTime),
                                    parameters(otherEvent.parameters) { }
   Event(EventType type__, Time activationTime__) : type(type__), activationTime(activationTime__) { }
-  
+
   bool operator<(const Event& otherEvent) const
   {
     return activationTime < otherEvent.activationTime;
@@ -585,34 +585,34 @@ public:
   {
     events_.insert(event);
   }
-  
+
   void push(const EventType eventType, Time activationTime)
   {
     events_.insert(Event(eventType, activationTime));
   }
-  
+
   void pushWithUniquenessCheck(const EventType eventType, Time activationTime)
   {
     for (iterator i = begin(); i != end(); ++i)
       assert(i->type != eventType);
     push(eventType, activationTime);
   }
-  
+
   const Event& top()
   {
     return *events_.begin();
   }
-  
+
   void pop()
   {
     events_.erase(events_.begin());
   }
-  
+
   void erase(iterator it)
   {
     events_.erase(it);
   }
-  
+
   void eraseEventType(EventType eventType)
   {
     for (iterator i = begin(); i != end(); )
@@ -623,7 +623,7 @@ public:
         ++i;
     }
   }
-  
+
   /*void delay(iterator it)
   {
     Event event = *it;
@@ -631,17 +631,17 @@ public:
     event.activationTime += EVENT_DELAY_TIME;
     push(event);
   }*/
-  
+
   void clear()
   {
     events_.clear();
   }
-  
+
   bool empty()
   {
     return events_.empty();
   }
-  
+
 private:
   multiset<Event> events_;
 };
@@ -687,29 +687,29 @@ public:
   int           score;          // M
   Controls      controls;       // S
   Statistics    statistics;     // R
-  
+
   float         speed;          // R
   Field         field;          // C (boders) / R (content)
   FieldLocks    fieldLocks;     // R
   Time          latestLineCollapse; // R
-  
+
   FallingPieceState     fallingPieceState;  // R
   Piece                 fallingPiece;       // R
   vector<const Piece>   nextPieces;         // R
-  
+
   Buffs         buffs;          // R
   Debuffs       debuffs;        // R
   int           victimNumber;   // R
-  
+
   EventSet      events;         // R
-  
+
   vector<BlockImage>            lyingBlockImages;   // R  // TODO: make be, simply use an  std::map  of  lyingBlockImages ?
   map<FieldCoords, int>         lyingBlockIndices;  // R
   MovingObject                  fallingPieceFrame;  // R
   vector<BlockImage>            fallingBlockImages; // R  (based on fallingPieceFrame)
   vector<DisappearingLine>      disappearingLines;  // R
   PlayerVisualEffects           visualEffects;      // R
-  
+
   FixedZeroBasedArray<Time, N_PLAYER_KEYS> nextKeyActivationTable; // C
 
   void          init(Game* game__, int number__);
@@ -717,13 +717,13 @@ public:
   AccountInfo*  account();
   void          prepareForNewMatch();
   void          prepareForNewRound();
-  
+
   Time          currentTime();
   Time          pieceLoweringInterval();
-  
+
   Player*       victim() const;
   wstring       victimName() const;
-  
+
   // TODO: standardize terminology:  fantasy  OR  formal (?)
   void          takesBonus(Bonus bonus);
   void          applyBonus(Bonus bonus);
@@ -733,7 +733,7 @@ public:
 
   void          onKeyPress(PlayerKey key);
   void          onTimer();
-  
+
   void          stealPiece();  // (!) make private
 
 private:
@@ -758,7 +758,7 @@ private:
   void          movePiece(int direction);
   void          dropPiece();
   void          rotatePiece(int direction);
-  
+
   bool          generateBonus();
   void          removeBonuses();
   void          planBonusAppearance();
@@ -775,7 +775,7 @@ private:
   void          bonusSpeedUp();
   void          bonusSlowDown();
   void          cycleVictim();
-  
+
   void          enableBonusVisualEffect(Bonus bonus);
   void          disableBonusVisualEffect(Bonus bonus);
 //  void          stealPiece();
@@ -795,31 +795,31 @@ public:
   FixedZeroBasedArray<Player, MAX_PLAYERS> players;
   vector<Player*> participants;
   vector<Player*> activePlayers;
-  
+
   vector<PieceTemplate> pieceTemplates;
   vector<int>   randomPieceTable;
 
   vector<Bonus> randomBonusTable;
-  
+
   Time          currentTime;
   GlobalVisualEffects   globalEffects;
 
 //  FixedZeroBasedArray<Time, N_GLOBAL_KEYS> nextGlobalKeyActivationTable;
   FixedZeroBasedArray<Time, 1> nextGlobalKeyActivationTable;
   GlobalControls globalControls;
-  
+
   void          init();
-  
+
   void          saveAccounts();
   void          saveSettings();
 
   void          newMatch();
   void          newRound(Time currentTime__);
   void          endRound();
-  
+
   void          onGlobalKeyPress(GlobalKey key);
   void          onTimer(Time currentTime);
-  
+
 private:
   void          loadPieces();
   void          loadBonuses();
