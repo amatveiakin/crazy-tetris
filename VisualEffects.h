@@ -417,7 +417,7 @@ public:
 
 // TODO: Join with FadingEffectType (?)
 
-// Effect fades in and remains fully active until it is resetted
+// Effect fades in and remains fully active until it is reset
 class PermanentEffectType : public SmoothEffectType   // Name (?)
 {
 public:
