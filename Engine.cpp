@@ -724,7 +724,11 @@ bool Player::removeFullLines()
       for (int col = 0; col < FIELD_WIDTH; ++col)
       {
         if (field(row, col).bonus != bnNoBonus)
+        {
           takesBonus(field(row, col).bonus);
+          events.eraseEventType(etBonusDisappearance);
+          planBonusAppearance();
+        }
         disappearingLines.back().blockColor[col] = field(row, col).color;
         field(row, col).clear();
         removeBlockImage(lyingBlockImages, FieldCoords(row, col));
@@ -878,12 +882,12 @@ void Player::removeBonuses()
 
 void Player::planBonusAppearance()
 {
-  events.push(etBonusAppearance, randomRange(MIN_BONUS_APPEAR_TIME, MAX_BONUS_APPEAR_TIME));
+  events.push(etBonusAppearance, currentTime() + randomRange(MIN_BONUS_APPEAR_TIME, MAX_BONUS_APPEAR_TIME));
 }
 
 void Player::planBonusDisappearance()
 {
-  events.push(etBonusDisappearance, randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME));
+  events.push(etBonusDisappearance, currentTime() + randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME));
 }
 
 void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)
