@@ -571,7 +571,7 @@ Piece Player::randomPiece() const
   Piece piece;
   piece.pieceTemplate = &game->pieceTemplates[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
   piece.rotationState = rand() % N_PIECE_ROTATION_STATES;
-  piece.position.row = FIELD_HEIGHT + piece.currentStructure().bounds.bottom;
+  piece.position.row = FIELD_HEIGHT - piece.currentStructure().bounds.bottom;
   piece.position.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // TODO: modify the formula
   return piece;
 }

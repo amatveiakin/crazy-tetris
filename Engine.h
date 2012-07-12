@@ -396,8 +396,8 @@ struct BlockStructure
     bounds.bottom = blocks[0].row;
     bounds.top = blocks[0].row;
     bounds.left = blocks[0].col;
-    bounds.bottom = blocks[0].col;
-    for (vector<FieldCoords>::iterator i = blocks.begin(); i != blocks.end(); ++i)
+    bounds.right = blocks[0].col;
+    for (vector<FieldCoords>::iterator i = blocks.begin() + 1; i != blocks.end(); ++i)
     {
       if (i->row < bounds.bottom)
         bounds.bottom = i->row;
