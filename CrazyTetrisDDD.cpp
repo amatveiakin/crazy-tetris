@@ -1023,8 +1023,8 @@ void CrazyTetrisApp::installLights(Player* player, bool isLanternOn)
 void CrazyTetrisApp::loadPlayerData(Player* player)
 {
   D3DXMATRIX temp, tempX, tempY;
-  double rotatingProgress = player->visualEffects.rotatingField.progress(currTime) * 2 * PI;
-  double rotatingAngle    = (-sin(rotatingProgress) * 0.667 + rotatingProgress);
+  float rotatingProgress = player->visualEffects.rotatingField.progress(currTime) * PI;
+  float rotatingAngle    = (-sin(4.0f * rotatingProgress) * 0.15f + rotatingProgress) * 2.0f;
   D3DXMatrixMultiply(&mGlobalRotation,
                      D3DXMatrixRotationY(&tempY, rotatingAngle),
                      D3DXMatrixRotationX(&tempX, PI * player->visualEffects.flippedScreen.progress(currTime)));
