@@ -345,6 +345,7 @@ void Player::prepareForNewRound()
   statistics.clear();
   events.clear();
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+  planBonusAppearance();
   buffs.clear();
   debuffs.clear();
   field.clear();
