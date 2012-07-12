@@ -165,20 +165,19 @@ void Game::loadDefaultSettings()
 
 void Game::newMatch()
 {
-  // ...
+  participants.clear();
+  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+    if (players[iPlayer].participates)
+      participants.push_back(&players[iPlayer]);
 }
 
 void Game::newRound(Time currentTime__)
 {
   currentTime = currentTime__;
   globalEffects.clear();
-  activePlayers.clear();
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-  {
     players[iPlayer].active = players[iPlayer].participates;
-    if (players[iPlayer].active)
-      activePlayers.push_back(&players[iPlayer]);
-  }
+  activePlayers = participants;
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     if (players[iPlayer].participates)
       players[iPlayer].prepareForNewRound();
@@ -186,7 +185,8 @@ void Game::newRound(Time currentTime__)
 
 void Game::endRound()
 {
-
+  MessageBox(0, L"Good game :-)", L"The end", 0);
+  exit(0);
 }
 
 void Game::onGlobalKeyPress(GlobalKey key) { }
@@ -495,8 +495,24 @@ void Player::endClearField()
   lyingBlockImages.clear();
 }
 
-void Player::deactivate()
+void Player::kill()
 {
+  for (vector<Player*>::iterator i = game->activePlayers.begin(); i != game->activePlayers.end(); ++i)
+    if ((*i)->victimNumber == number)
+      (*i)->cycleVictim();
+
+  for (vector<Player*>::iterator i = game->activePlayers.begin(); i != game->activePlayers.end(); ++i)
+  {
+    if (*i == this)
+    {
+      game->activePlayers.erase(i);
+      break;
+    }
+  }
+
+  if (game->activePlayers.empty())
+    game->endRound();
+
   visualEffects.playerDying.enable(BONUS_PLAYER_DYING_ANIMATION_TIME);
   active = false;
 }
@@ -608,8 +624,8 @@ void Player::onTimer()
     case etEndClearField:
       endClearField();
       break;
-    case etDefeat:
-      deactivate();
+    case etKill:
+      kill();
       break;
     default:
       throw ERR_INTERNAL_ERROR;  // TODO: formal  "Events queue crashed (event %d found)"
@@ -672,15 +688,11 @@ void Player::setUpPiece()
     FieldCoords cell = fallingPiece.absoluteCoords(i);
     if (cell.row >= FIELD_HEIGHT)
     {
-      MessageBox(0, L"Good game :-)", L"The end", 0);
-      exit(0);
-    }
-    /*{
-      field.clear();
-      field.clearImageIndices();
+      // Don't let the field borders to get spoilt!
+      events.push(etKill, currentTime());
       return;
-    }*/
-    // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
+    }
+
     field(cell).setBlock(fallingPiece.color());
 
     // TODO: copy images from one array to another with motion (?)
@@ -690,7 +702,8 @@ void Player::setUpPiece()
   fallingPieceState = psAbsent;
 
   removeFullLines();
-  events.pushWithUniquenessCheck(etNewPiece, currentTime());
+  events.pushWithUniquenessCheck(etNewPiece, currentTime() + HINT_MATERIALIZATION_TIME);
+  visualEffects.hint.enable(HINT_MATERIALIZATION_TIME);
 
   /*if (!removeFullLines())  // There was it least one full line
     sendNewPiece();
@@ -1075,7 +1088,7 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     visualEffects.wave.enable(BONUS_WAVE_PERIOD);
     break;
   case bnLantern:
-    visualEffects.lantern.enable(BONUS_LANTERN_ANIMATION_TIME);
+    visualEffects.lantern.enable(BONUS_LANTERN_FADING_TIME);
     break;
   case bnCrazyPieces:
     // no effect

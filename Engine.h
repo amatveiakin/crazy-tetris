@@ -93,6 +93,7 @@ const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTI
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
+const Time   HINT_MATERIALIZATION_TIME = 0.5f;
 
 
 
@@ -532,7 +533,7 @@ enum EventType
   etHeal,
   etBeginClearField,
   etEndClearField,
-  etDefeat
+  etKill
 };
 
 
@@ -728,7 +729,7 @@ public:
   void          applyBonus(Bonus bonus);
   void          disenchant(Bonus bonus);
   void          heal();  // make private (?)
-  void          deactivate();
+  void          kill();
 
   void          onKeyPress(PlayerKey key);
   void          onTimer();
@@ -789,6 +790,7 @@ public:
 
   // TODO: participants array (to speed up booting)
   FixedZeroBasedArray<Player, MAX_PLAYERS> players;
+  vector<Player*> participants;
   vector<Player*> activePlayers;
   
   vector<PieceTemplate> pieceTemplates;

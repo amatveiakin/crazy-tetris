@@ -141,6 +141,7 @@ public:
     progress_ = MIN_PROGRESS;
     lastTime_ = INITIAL_TIME;
   }
+
 protected:
   const float INITIAL_TIME;
   const float MIN_PROGRESS;
@@ -369,7 +370,7 @@ public:
 
 
 
-// TODO: Join with FadingEffectType
+// TODO: Join with FadingEffectType (?)
 
 // Effect fades in and remains fully active until it is resetted
 class PermanentEffectType : public SmoothEffectType   // Name (?)
@@ -423,6 +424,8 @@ public:
 
 typedef PermanentEffectType HintEffect;
 
+typedef SingleEffectType HintMaterializationEffect;
+
 typedef SingleEffectType FieldCleaningEffect; // --> FlashEffectType (?)
 
 // if can't actually fade out :-)
@@ -447,6 +450,8 @@ class PieceTheftEffect : public SingleEffectType, public DirectedEffectExtraType
 class PlayerVisualEffects
 {
 public:
+  HintEffect hint;
+  HintMaterializationEffect hintMaterialization;
   FieldCleaningEffect fieldCleaning;
   PlayerDyingEffect playerDying;
   NoHintEffect noHint;
@@ -459,6 +464,8 @@ public:
 
   void clear()
   {
+    hint.clear();
+    hintMaterialization.clear();
     fieldCleaning.clear();
     playerDying.clear();
     noHint.clear();
