@@ -93,6 +93,7 @@ const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTI
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
+const Time   HINT_APPERAING_TIME = 0.5f;
 const Time   HINT_MATERIALIZATION_TIME = 0.5f;
 
 
@@ -740,6 +741,7 @@ public:
 private:
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   bool          canSendNewPiece() const;
+  bool          fallingPieceCannotReachSky() const;
   Piece         randomPiece() const;
   Bonus         randomBonus() const;
 

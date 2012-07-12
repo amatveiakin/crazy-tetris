@@ -643,7 +643,6 @@ void Player::redraw()
 {
   if (fallingPieceState != psAbsent)
   {
-    // TODO: selfmodifiable  movingFrom  (?)
     visualEffects.lantern.setMotion(FloatFieldCoords(visualEffects.lantern.positionY(currentTime()),
                                                      visualEffects.lantern.positionX(currentTime())),
                                     fallingPiece.position,
@@ -657,6 +656,14 @@ bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) 
 {
   for (size_t i = 0; i < piece.blocks.size(); ++i)
     if (field(position + piece.blocks[i]).isBlocked())
+      return false;
+  return true;
+}
+
+bool Player::fallingPieceCannotReachSky() const
+{
+  for (int i = 0; i < N_PIECE_ROTATION_STATES; ++i)
+    if (fallingPiece.pieceTemplate->structure[i].bounds.top + fallingPiece.position.row >= FIELD_HEIGHT)
       return false;
   return true;
 }
@@ -703,7 +710,7 @@ void Player::setUpPiece()
 
   removeFullLines();
   events.pushWithUniquenessCheck(etNewPiece, currentTime() + HINT_MATERIALIZATION_TIME);
-  visualEffects.hint.enable(HINT_MATERIALIZATION_TIME);
+  visualEffects.hintMaterialization.enable(HINT_MATERIALIZATION_TIME);
 
   /*if (!removeFullLines())  // There was it least one full line
     sendNewPiece();
@@ -776,6 +783,10 @@ void Player::lowerPiece(bool forced)
     applyBlockImagesMovements(fallingBlockImages);
 
     fallingPiece.position = newPosition;
+
+    if (fallingPieceCannotReachSky())
+      visualEffects.hint.enable(HINT_APPERAING_TIME);
+
     events.push(etPieceLowering,
                 currentTime() +
                 ((fallingPieceState == psDropping) ?

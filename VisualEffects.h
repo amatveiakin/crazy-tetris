@@ -135,6 +135,11 @@ public:
     return (progress_ == MAX_PROGRESS);
   }
 
+  bool somehowActive() const
+  {
+    return (progress_ > MIN_PROGRESS);
+  }
+
   void clear()
   {
     active_ = false;
@@ -392,11 +397,11 @@ public:
     progress_ = MIN_PROGRESS;
   }
 
-  void restart(float newDuration)
+  /*void restart(float newDuration)
   {
     disable();
     enable(newDuration);
-  }
+  }*/
 
   float progress(Time currentTime)
   {
