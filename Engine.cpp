@@ -77,8 +77,32 @@ void Game::loadDefaultAccounts()
 
 void Game::loadSettings()
 {
-  // ...
-  loadDefaultSettings();
+  SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "r");
+  if (settingsFile.get() == NULL)
+  {
+      loadDefaultSettings();
+      return;
+  }
+  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+  {
+    fscanf_s(settingsFile.get(), "%d\n", &players[iPlayer].accountNumber);
+//    fscanf_s(settingsFile.get(), "%d\n", &players[iPlayer].participates);
+    int tmp;
+    fscanf(settingsFile.get(), "%d\n", &tmp);
+    switch (tmp)
+    {
+    case 0:
+      players[iPlayer].participates = false;
+      break;
+    case 1:
+      players[iPlayer].participates = true;
+      break;
+    default:
+      throw ERR_FILE_CORRUPTED; // TODO: format
+    }
+    for (int key = 0; key < N_PLAYER_KEYS; ++key)
+      fscanf_s(settingsFile.get(), "%d\n", &players[iPlayer].controls.keyArray[key]);
+  }
 }
 
 void Game::saveSettings()
@@ -105,7 +129,7 @@ void Game::loadDefaultSettings()
   players[0].controls.keyByName.keyRotateCW = 'E';
   players[0].controls.keyByName.keyDown = 'S';
   players[0].controls.keyByName.keyDrop = VK_TAB;
-  players[0].controls.keyByName.keyChangeVictim = 'Q';
+  players[0].controls.keyByName.keyNextVictim = 'Q';
 
   players[1].participates = false;
   players[1].accountNumber = 1;
@@ -115,7 +139,7 @@ void Game::loadDefaultSettings()
   players[1].controls.keyByName.keyRotateCW = 'I';
   players[1].controls.keyByName.keyDown = 'J';
   players[1].controls.keyByName.keyDrop = VK_SPACE;
-  players[1].controls.keyByName.keyChangeVictim = 'L';
+  players[1].controls.keyByName.keyNextVictim = 'L';
 
   players[2].participates = true;
   players[2].accountNumber = 2;
@@ -125,7 +149,7 @@ void Game::loadDefaultSettings()
   players[2].controls.keyByName.keyRotateCW = VK_DELETE;
   players[2].controls.keyByName.keyDown = VK_DOWN;
   players[2].controls.keyByName.keyDrop = VK_RSHIFT;
-  players[2].controls.keyByName.keyChangeVictim = VK_RCONTROL;
+  players[2].controls.keyByName.keyNextVictim = VK_RCONTROL;
 
   players[3].participates = false;
   players[3].accountNumber = 3;
@@ -135,7 +159,7 @@ void Game::loadDefaultSettings()
   players[3].controls.keyByName.keyRotateCW = VK_NUMPAD9;
   players[3].controls.keyByName.keyDown = VK_NUMPAD5;
   players[3].controls.keyByName.keyDrop = VK_NUMPAD0;
-  players[3].controls.keyByName.keyChangeVictim = VK_ADD;
+  players[3].controls.keyByName.keyNextVictim = VK_ADD;
 }
 
 void Game::newMatch()
@@ -146,6 +170,7 @@ void Game::newMatch()
 void Game::newRound(Time currentTime__)
 {
   currentTime = currentTime__;
+  globalEffects.clear();
   activePlayers.clear();
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
@@ -366,7 +391,8 @@ void Player::applyBonus(Bonus bonus)
       case bnEnlargeHintQueue:
         resizePieceQueue(BONUS_ENLARGED_HINT_QUEUE_SIZE);
         break;
-      // ...
+      case bnPieceTheft:
+        break;
       SKIP_ALL_BUT_BUFFS;
     }
     buffs.add(bonus);
@@ -414,6 +440,8 @@ void Player::disenchant(Bonus bonus)
     {
       case bnEnlargeHintQueue:
         resizePieceQueue(NORMAL_HINT_QUEUE_SIZE);
+        break;
+      case bnPieceTheft:
         break;
       // ...
       SKIP_ALL_BUT_BUFFS;
@@ -467,7 +495,7 @@ void Player::onKeyPress(PlayerKey key)
     case keyDrop:
       dropPiece();
       break;
-    case keyChangeVictim:
+    case keyNextVictim:
       cycleVictim();
       break;
   }
@@ -478,28 +506,35 @@ void Player::onTimer()
   while ((!events.empty()) && (currentTime() >= events.top().activationTime))
   {
     EventSet::iterator curentEvent = events.topIterator();
+    bool eventDelayed = false;
     switch (events.top().type)
     {
-      case etPieceLowering:
-        lowerPiece();
-        break;
-      case etLineCollapse:
-        collapseLine(events.top().parameters.lineCollapse.row);
-        break;
-      case etNewPiece:
+    case etPieceLowering:
+      lowerPiece();
+      break;
+    case etLineCollapse:
+      collapseLine(events.top().parameters.lineCollapse.row);
+      break;
+    case etNewPiece:
+      if (canSendNewPiece())
         sendNewPiece();
-        break;
-      case etRoutineSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
-        routineSpeedUp();
-        break;
-      case etBonusAppearance:
-        // ...
-        break;
-      case etBonusDisappearance:
-        // ...
-        break;
+      else
+        eventDelayed = true;
+      break;
+    case etRoutineSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
+      routineSpeedUp();
+      break;
+    case etBonusAppearance:
+      // ...
+      break;
+    case etBonusDisappearance:
+      // ...
+      break;
     }
-    events.erase(curentEvent);
+    if (eventDelayed)
+      events.delay(curentEvent);
+    else
+      events.erase(curentEvent);
   }
   redraw();
 }
@@ -517,6 +552,29 @@ void Player::redraw()
 }
 
 
+
+bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
+{
+  for (size_t i = 0; i < piece.blocks.size(); ++i)
+    if (field(position + piece.blocks[i]).isBlocked())
+      return false;
+  return true;
+}
+
+bool Player::canSendNewPiece() const
+{
+  return disappearingLines.empty();
+}
+
+Piece Player::randomPiece() const
+{
+  Piece piece;
+  piece.pieceTemplate = &game->pieceTemplates[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
+  piece.rotationState = rand() % N_PIECE_ROTATION_STATES;
+  piece.position.row = FIELD_HEIGHT + piece.currentStructure().bounds.bottom;
+  piece.position.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // TODO: modify the formula
+  return piece;
+}
 
 void Player::setUpPiece()
 {
@@ -536,34 +594,19 @@ void Player::setUpPiece()
     // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
     field(cell).setBlock(fallingPiece.color());
 
-    // TODO: copy with motion (?)
+    // TODO: copy images from one array to another with motion (?)
     removeBlockImage(fallingBlockImages, cell);
     addStandingBlockImage(lyingBlockImages, fallingPiece.color(), cell);
   }
   fallingPieceState = psAbsent;
 
-  if (!removeFullLines())  // There was it least one full line
+  removeFullLines();
+  events.pushWithUniquenessCheck(etNewPiece, currentTime());
+
+  /*if (!removeFullLines())  // There was it least one full line
     sendNewPiece();
   else  // There were no full lines
-    events.push(etNewPiece, currentTime() + LINE_DISAPPEAR_TIME);
-}
-
-bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
-{
-  for (size_t i = 0; i < piece.blocks.size(); ++i)
-    if (field(position + piece.blocks[i]).isBlocked())
-      return false;
-  return true;
-}
-
-Piece Player::randomPiece()
-{
-  Piece piece;
-  piece.pieceTemplate = &game->pieceTemplates[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
-  piece.rotationState = rand() % N_PIECE_ROTATION_STATES;
-  piece.position.row = FIELD_HEIGHT - piece.currentStructure().bounds.bottom;
-  piece.position.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // TODO: modify the formula
-  return piece;
+    events.push(etNewPiece, currentTime() + LINE_DISAPPEAR_TIME);*/
 }
 
 void Player::initPieceQueue(int size)
@@ -629,7 +672,9 @@ void Player::lowerPiece()
     setUpPiece();
 }
 
-bool Player::removeFullLines() // TODO: optimize: don't check all lines
+// TODO: Pptimize Player::removeFullLines: don't check all lines
+// TODO: Does Player::removeFullLines have to return a bool any more?
+bool Player::removeFullLines()
 {
   bool fullLinesExisted = false;
 
@@ -853,7 +898,7 @@ void Player::enableBonusVisualEffect(Bonus bonus)
       // no effect
       break;
     case bnClearField:
-      visualEffects.clearGlass.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
+      visualEffects.fieldCleaning.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
       break;
     case bnFlippedScreen:
       visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
@@ -864,7 +909,7 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     case bnCrazyPieces:
       // no effect
       break;
-    case bnCutBlocks:
+    case bnTruncatedBlocks:
       visualEffects.semicubes.enable(BONUS_CUTTING_BLOCKS_DURATION);
       break;
     case bnNoHint:
@@ -891,7 +936,7 @@ void Player::disableBonusVisualEffect(Bonus bonus)
       // no effect
       break;
     case bnClearField:
-      visualEffects.clearGlass.disable();
+      visualEffects.fieldCleaning.disable();
       break;
     case bnFlippedScreen:
       visualEffects.flippedScreen.disable();
@@ -902,7 +947,7 @@ void Player::disableBonusVisualEffect(Bonus bonus)
     case bnCrazyPieces:
       // no effect
       break;
-    case bnCutBlocks:
+    case bnTruncatedBlocks:
       visualEffects.semicubes.disable();
       break;
     case bnNoHint:
@@ -918,7 +963,19 @@ void Player::disableBonusVisualEffect(Bonus bonus)
   }
 }
 
+void Player::stealPiece()
+{
+  if (victim() == NULL)
+    return;
+  PieceTheftEffect pieceTheftEffect;
+  pieceTheftEffect.enable(currentTime());
+  pieceTheftEffect.sender = number;
+  pieceTheftEffect.target = victimNumber;
+  game->globalEffects.pieceThefts.push_back(pieceTheftEffect);
+  visualEffects.pieceTheftPtr = &game->globalEffects.pieceThefts.back();
+}
+
 void Player::flipBlocks()
 {
-  // TODO: implement  Player::flipBlocks()
+  // TODO: implement  Player::flipBlocks()  OR  remove it
 }

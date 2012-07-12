@@ -5,6 +5,7 @@
 
 //=============================== Recource files ===============================
 
+// TODO: add ..._NAME to file name constants
 // Hmmm... I hope something will work :-)
 #if defined(_WINDOWS) || defined(WINDOWS) || defined(_WIN32) ||  defined(WIN32) ||  defined(_WIN64) ||  defined(WIN64)
 const std::string  PATH_DELIMITER = "\\";

@@ -1,7 +1,8 @@
 #ifndef CRAZYTETRIS_VISUALEFFECTS_H
 #define CRAZYTETRIS_VISUALEFFECTS_H
 
-#include <map>
+#include <vector>
+#include <list>
 #include "Declarations.h"
 
 //================================== General ===================================
@@ -299,7 +300,16 @@ public:
 
 
 
-typedef SingleEffectType ClearGlassEffect; // --> FlashEffectType (?)
+class DirectedEffectExtraType
+{
+public:
+  int sender;
+  int target;
+};
+
+
+
+typedef SingleEffectType FieldCleaningEffect; // --> FlashEffectType (?)
 
 // if can't actually fade out :-)
 typedef FadingEffectType PlayerDyingEffect;
@@ -316,12 +326,27 @@ typedef PeriodicalEffectType WaveEffect; // += FadingEffectType (?)
 
 class LanternEffect : public FadingEffectType, public MovingObject { };
 
-
-
-class VisualEffects
+// TODO: try to rewrite to   operator=() = default  when C++0x is out
+class PieceTheftEffect : public SingleEffectType, public DirectedEffectExtraType
 {
 public:
-  ClearGlassEffect clearGlass;
+  /*PieceTheftEffect& operator=(const PieceTheftEffect& a)
+  {
+    progress_ = a.progress_;
+    lastTime_ = a.lastTime_;
+    duration = a.duration;
+    sender = a.sender;
+    target = a.target;
+    return *this;
+  }*/
+};
+
+
+
+class PlayerVisualEffects
+{
+public:
+  FieldCleaningEffect fieldCleaning;
   PlayerDyingEffect playerDying;
   NoHintEffect noHint;
   FlippedScreenEffect flippedScreen;
@@ -329,10 +354,12 @@ public:
   SemicubesEffect semicubes;
   WaveEffect wave;
   LanternEffect lantern;
+//  std::list<PieceTheftEffect>::iterator pieceTheftPtr;
+  PieceTheftEffect* pieceTheftPtr; 
 
   void clear()
   {
-    clearGlass.clear();
+    fieldCleaning.clear();
     playerDying.clear();
     noHint.clear();
     flippedScreen.clear();
@@ -340,9 +367,22 @@ public:
     semicubes.clear();
     wave.clear();
     lantern.clear();
+    pieceTheftPtr = NULL;
   }
 };
 
+
+
+class GlobalVisualEffects
+{
+public:
+  std::list<PieceTheftEffect> pieceThefts;
+
+  void clear()
+  {
+    pieceThefts.clear();
+  }
+};
 
 
 

@@ -1,3 +1,7 @@
+// TODO: use more throw's instead of assertions
+
+// TODO: reformat switches (?)
+
 // TODO: Add range checking everywhere
 
 // TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
@@ -24,7 +28,9 @@ using std::set;
 
 
 
-// Continuous mode :-)
+//================================ Time & speed ================================
+
+// Continuous mode
 
 /*const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
@@ -55,12 +61,12 @@ const int    MAX_PLAYER_NAME_LENGTH = 16;*/
 
 
 
-//================================ Time & speed ================================
+// Discrete mode
 
-const float  STARTING_SPEED = 1.0;
+/*const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
-// Speed limit can be excedeed via bonus
+// Speed limit can be excedeed via bonus (?)
 const float  SPEED_LIMIT = 5.0;
 
 const Time   NORMAL_LOWERING_TIME = 0.8f;
@@ -73,6 +79,30 @@ const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.03f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;
+
+const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
+const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
+const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
+const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;*/
+
+
+
+const float  STARTING_SPEED = 1.0;
+const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
+const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
+// Speed limit can be excedeed via bonus (?)
+const float  SPEED_LIMIT = 5.0;
+
+const Time   NORMAL_LOWERING_TIME = 0.8f;
+// Time necessary for a dropping piece to move one line down
+const Time   DROPPING_PIECE_LOWERING_TIME = 0.02f;
+const Time   LINE_DISAPPEAR_TIME = 0.6f;
+const Time   LINE_COLLAPSE_TIME = 0.06f;
+
+const Time   PIECE_LOWERING_ANIMATION_TIME = 0.1f;
+const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
+const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.08f;
 
 const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
 const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
@@ -93,13 +123,14 @@ enum PlayerKey
   keyRotateCW,
   keyDown,
   keyDrop,
-  keyChangeVictim
+  keyNextVictim
 };
 
 // TODO: find optimal value for KEY_REACTIVATION_TIMEs
 const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
 const Time   ROTATE_KEY_REACTIVATION_TIME = 0.18f;
-const Time   DOWN_KEY_REACTIVATION_TIME = 0.08f;
+//const Time   DOWN_KEY_REACTIVATION_TIME = 0.08f;
+const Time   DOWN_KEY_REACTIVATION_TIME = 0.1f;
 const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
 const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
@@ -149,7 +180,7 @@ struct PlayerKeyList
   KeyboardKey keyRotateCW;
   KeyboardKey keyDown;
   KeyboardKey keyDrop;
-  KeyboardKey keyChangeVictim;
+  KeyboardKey keyNextVictim;
 };
 
 union Controls
@@ -177,6 +208,7 @@ enum Bonus
 {
   // buffs
   bnEnlargeHintQueue,
+  bnPieceTheft,
 
   // kind sorceries
   bnHeal,
@@ -187,7 +219,7 @@ enum Bonus
   bnFlippedScreen,
   bnInverseControls,
   bnCrazyPieces,
-  bnCutBlocks, // name --> (?)
+  bnTruncatedBlocks, // name --> (?)
   bnNoHint,
   
   // evil sorceries
@@ -198,12 +230,12 @@ enum Bonus
   bnNoBonus
 };
 
-#define SKIP_BUFFS          case bnEnlargeHintQueue:
+#define SKIP_BUFFS          case bnEnlargeHintQueue:  case bnPieceTheft:
 
 #define SKIP_KIND_SORCERIES case bnHeal:  case bnSlowDown:  case bnClearField:
 
 #define SKIP_DEBUFFS        case bnFlippedScreen:  case bnInverseControls:  case bnCrazyPieces: \
-                            case bnCutBlocks:  case bnNoHint:
+                            case bnTruncatedBlocks:  case bnNoHint:
 
 #define SKIP_EVIL_SORCERIES case bnSpeedUp:  case bnFlipField:
 
@@ -234,13 +266,14 @@ const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
 const string BONUS_NAME[N_BONUSES] =
 {
   "EnlargeHintQueue",
+  "PieceTheft",
   "Heal",
   "SlowDown",
   "ClearField",
   "FlippedScreen",
   "InverseControls",
   "CrazyPieces",
-  "CutBlocks",
+  "TruncatedBlocks",
   "NoHint",
   "SpeedUp",
   "FlipField"
@@ -249,13 +282,14 @@ const string BONUS_NAME[N_BONUSES] =
 const int    BONUS_CHANCE[N_BONUSES] =
 {
   1, // bnEnlargeHintQueue
+  2, // bnPieceTheft
   5, // bnHeal
   2, // bnSlowDown
   1, // bnClearField
   2, // bnFlippedScreen
   2, // bnInverseControls
   2, // bnCrazyPieces
-  2, // bnCutBlocks
+  2, // bnTruncatedBlocks
   2, // bnNoHint
   2, // bnSpeedUp
   2  // bnFlipField
@@ -527,6 +561,8 @@ const char   PIECE_TEMPLATE_FREE_CHAR  = '.';
 
 //=================================== Events ===================================
 
+const Time   EVENT_DELAY_TIME = 0.01f; // (?)
+
 enum EventType
 {
   etPieceLowering,
@@ -570,6 +606,7 @@ struct Event
 
 
 
+// TODO: reorganize that (may be add counter of events of a certain type or use several sets ot maps)
 class EventSet
 {
 public:
@@ -593,6 +630,13 @@ public:
   void push(const EventType eventType, Time activationTime)
   {
     events_.insert(Event(eventType, activationTime));
+  }
+  
+  void pushWithUniquenessCheck(const EventType eventType, Time activationTime)
+  {
+    for (set<Event>::iterator i = events_.begin(); i != events_.end(); ++i)
+      assert(i->type != eventType);
+    push(eventType, activationTime);
   }
   
   const Event& top()
@@ -624,6 +668,14 @@ public:
       else
         ++i;
     }
+  }
+  
+  void delay(iterator it)
+  {
+    Event event = *it;
+    erase(it);
+    event.activationTime += EVENT_DELAY_TIME;
+    push(event);
   }
   
   void clear()
@@ -705,7 +757,7 @@ public:
   vector<BlockImage>        lyingBlockImages;     // N
   vector<BlockImage>        fallingBlockImages;   // N
   vector<DisappearingLine>  disappearingLines;    // R
-  VisualEffects             visualEffects;        // R
+  PlayerVisualEffects       visualEffects;        // R
   
   FixedZeroBasedArray<Time, N_PLAYER_KEYS> nextKeyActivationTable; // C
 
@@ -720,7 +772,7 @@ public:
   
   Player*       victim();
   
-  // TODO: standardize terminology:  fantasy  OR  formal
+  // TODO: standardize terminology:  fantasy  OR  formal (?)
   void          takesBonus(Bonus bonus);
   void          applyBonus(Bonus bonus);
   void          disenchant(Bonus bonus);
@@ -731,10 +783,13 @@ public:
   void          onTimer();
   void          redraw();
   
+  void          stealPiece();  // (!) make private
 private:
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
+  bool          canSendNewPiece() const;
+  Piece         randomPiece() const;
+
   void          setUpPiece();
-  Piece         randomPiece();
   void          initPieceQueue(int size);
   void          resizePieceQueue(int newSize);
   void          sendNewPiece();
@@ -756,6 +811,7 @@ private:
   
   void          enableBonusVisualEffect(Bonus bonus);
   void          disableBonusVisualEffect(Bonus bonus);
+//  void          stealPiece();
   void          flipBlocks();
 };
 
@@ -775,8 +831,9 @@ public:
   vector<int>   randomPieceTable;
   
   Time          currentTime;
-  
-//  FixedZeroBasedArray<Time, N_GLOBAL_KEYS> nextGlobalKeyActivationTable[N_GLOBAL_KEYS];
+  GlobalVisualEffects   globalEffects;
+
+//  FixedZeroBasedArray<Time, N_GLOBAL_KEYS> nextGlobalKeyActivationTable;
   FixedZeroBasedArray<Time, 1> nextGlobalKeyActivationTable;
   GlobalControls globalControls;
   
