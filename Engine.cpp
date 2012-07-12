@@ -710,7 +710,6 @@ void Player::setUpPiece()
 
   removeFullLines();
   events.pushWithUniquenessCheck(etNewPiece, currentTime() + HINT_MATERIALIZATION_TIME);
-  visualEffects.hint.disable();
   visualEffects.hintMaterialization.enable(HINT_MATERIALIZATION_TIME);
 
   /*if (!removeFullLines())  // There was it least one full line
@@ -741,6 +740,8 @@ bool Player::sendNewPiece()
 
   fallingPiece = nextPieces[0];
   assert(!fallingPiece.empty());
+  visualEffects.hint.disable();
+  visualEffects.hintMaterialization.disable();
 
   /*if (!fallingPiece.empty())    // Is it necessary?
   {
