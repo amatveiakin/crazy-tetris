@@ -73,7 +73,7 @@ void Game::loadDefaultAccounts()
 {
   accounts.resize(MAX_PLAYERS);
   for (size_t iAccount = 0; iAccount < accounts.size(); ++iAccount)
-    accounts[iAccount].name = "Player " + char(iAccount + '1');  // TODO: rewrite
+    accounts[iAccount].name = L"Player " + wchar_t(iAccount + '1');  // TODO: rewrite
 }
 
 void Game::loadSettings()
@@ -397,12 +397,12 @@ void Player::applyBonus(Bonus bonus)
   {
     switch (bonus)
     {
-      case bnEnlargeHintQueue:
-        resizePieceQueue(BONUS_ENLARGED_HINT_QUEUE_SIZE);
-        break;
-      case bnPieceTheft:
-        break;
-      SKIP_ALL_BUT_BUFFS;
+    case bnEnlargeHintQueue:
+      resizePieceQueue(BONUS_ENLARGED_HINT_QUEUE_SIZE);
+      break;
+    case bnPieceTheft:
+      break;
+    SKIP_ALL_BUT_BUFFS;
     }
     buffs.add(bonus);
   }
@@ -410,8 +410,8 @@ void Player::applyBonus(Bonus bonus)
   {
     switch (bonus)
     {
-      // ...
-      SKIP_ALL_BUT_DEBUFFS;
+    // ...
+    SKIP_ALL_BUT_DEBUFFS;
     }
     debuffs.add(bonus);
   }
@@ -419,22 +419,22 @@ void Player::applyBonus(Bonus bonus)
   {
     switch (bonus)
     {
-      case bnHeal:
-        heal();
-        break;
-      case bnSlowDown:
-        // ...
-        break;
-      case bnClearField:
-        // ...
-        break;
-      case bnSpeedUp:
-        // ...
-        break;
-//      case bnFlipField:
-//        // ...
-//        break;
-      SKIP_ALL_BUT_SORCERIES;
+    case bnHeal:
+      heal();  // TODO: Can we heal immediately or it it better to say events.push(etHeal, currentTime()); ?
+      break;
+    case bnSlowDown:
+      // ...
+      break;
+    case bnClearField:
+      // ...
+      break;
+    case bnSpeedUp:
+      // ...
+      break;
+//    case bnFlipField:
+//      // ...
+//      break;
+    SKIP_ALL_BUT_SORCERIES;
     }
   }
   enableBonusVisualEffect(bonus);
@@ -447,13 +447,13 @@ void Player::disenchant(Bonus bonus)
   {
     switch (bonus)
     {
-      case bnEnlargeHintQueue:
-        resizePieceQueue(NORMAL_HINT_QUEUE_SIZE);
-        break;
-      case bnPieceTheft:
-        break;
-      // ...
-      SKIP_ALL_BUT_BUFFS;
+    case bnEnlargeHintQueue:
+      resizePieceQueue(NORMAL_HINT_QUEUE_SIZE);
+      break;
+    case bnPieceTheft:
+      break;
+    // ...
+    SKIP_ALL_BUT_BUFFS;
     }
     buffs.remove(bonus);
   }
@@ -461,8 +461,8 @@ void Player::disenchant(Bonus bonus)
   {
     switch (bonus)
     {
-      // ...
-      SKIP_ALL_BUT_DEBUFFS;
+    // ...
+    SKIP_ALL_BUT_DEBUFFS;
     }
     debuffs.remove(bonus);
   }
@@ -485,28 +485,28 @@ void Player::kill()
 void Player::onKeyPress(PlayerKey key)
 {
   switch (key) {
-    case keyLeft:
-      movePiece(-1);
-      break;
-    case keyRight:
-      movePiece(1);
-      break;
-    case keyRotateCW:
-      rotatePiece(-1);
-      break;
-    case keyRotateCCW:
-      rotatePiece(1);
-      break;
-    case keyDown:
-      events.eraseEventType(etPieceLowering);
-      lowerPiece(true /* forced */);
-      break;
-    case keyDrop:
-      dropPiece();
-      break;
-    case keyNextVictim:
-      cycleVictim();
-      break;
+  case keyLeft:
+    movePiece(-1);
+    break;
+  case keyRight:
+    movePiece(1);
+    break;
+  case keyRotateCW:
+    rotatePiece(-1);
+    break;
+  case keyRotateCCW:
+    rotatePiece(1);
+    break;
+  case keyDown:
+    events.eraseEventType(etPieceLowering);
+    lowerPiece(true /* forced */);
+    break;
+  case keyDrop:
+    dropPiece();
+    break;
+  case keyNextVictim:
+    cycleVictim();
+    break;
   }
 }
 
@@ -991,9 +991,20 @@ void Player::removeBlockImage(vector<BlockImage>& imageArray, FieldCoords positi
 
 void Player::routineSpeedUp()
 {
-  speed *= ROUTINE_SPEED_UP_MULTIPLIER;
+  speed += ROUTINE_SPEED_UP_VALUE;
   speed = myMin(speed, SPEED_LIMIT);
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+}
+
+void Player::bonusSpeedUp()
+{
+  speed *= BONUS_SPEED_UP_MULTIPLIER;
+}
+
+void Player::bonusSlowDown()
+{
+  speed *= BONUS_SLOW_DOWN_MULTIPLIER;
+  speed = myMax(speed, STARTING_SPEED);
 }
 
 void Player::cycleVictim()
@@ -1010,37 +1021,40 @@ void Player::enableBonusVisualEffect(Bonus bonus)
 {
   switch (bonus)
   {
-    case bnHeal:
-      // no effect
-      break;
-    case bnSlowDown:
-      // no effect
-      break;
-    case bnClearField:
-      visualEffects.fieldCleaning.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
-      break;
-    case bnFlippedScreen:
-      visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
-      break;
-    case bnRotatingScreen:
-      visualEffects.rotatingField.enable(BONUS_ROTATING_SCREEN_PERIOD);
-      break;
-    case bnCrazyPieces:
-      // no effect
-      break;
-    case bnTruncatedBlocks:
-      visualEffects.semicubes.enable(BONUS_CUTTING_BLOCKS_DURATION);
-      break;
-    case bnNoHint:
-      visualEffects.noHint.enable(BONUS_REMOVING_HINT_DURATION);
-      break;
-    case bnSpeedUp:
-      // no effect
-      break;
-//    case bnFlipField:
-//      // no effect *at this moment*
-//      break;
-    case bnNoBonus: ;
+  case bnHeal:
+    // no effect
+    break;
+  case bnSlowDown:
+    // no effect
+    break;
+  case bnClearField:
+    visualEffects.fieldCleaning.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
+    break;
+  case bnFlippedScreen:
+    visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
+    break;
+  case bnRotatingScreen:
+    visualEffects.rotatingField.enable(BONUS_ROTATING_SCREEN_PERIOD);
+    break;
+  case bnLantern:
+    visualEffects.lantern.enable(BONUS_LANTERN_ANIMATION_TIME);
+    break;
+  case bnCrazyPieces:
+    // no effect
+    break;
+  case bnTruncatedBlocks:
+    visualEffects.semicubes.enable(BONUS_CUTTING_BLOCKS_DURATION);
+    break;
+  case bnNoHint:
+    visualEffects.noHint.enable(BONUS_REMOVING_HINT_DURATION);
+    break;
+  case bnSpeedUp:
+    // no effect
+    break;
+//  case bnFlipField:
+//    // no effect *at this moment*
+//    break;
+  case bnNoBonus: ;
   }
 }
 
@@ -1048,37 +1062,40 @@ void Player::disableBonusVisualEffect(Bonus bonus)
 {
   switch (bonus)
   {
-    case bnHeal:
-      // no effect
-      break;
-    case bnSlowDown:
-      // no effect
-      break;
-    case bnClearField:
-      visualEffects.fieldCleaning.disable();
-      break;
-    case bnFlippedScreen:
-      visualEffects.flippedScreen.disable();
-      break;
-    case bnRotatingScreen:
-      visualEffects.rotatingField.disable();
-      break;
-    case bnCrazyPieces:
-      // no effect
-      break;
-    case bnTruncatedBlocks:
-      visualEffects.semicubes.disable();
-      break;
-    case bnNoHint:
-      visualEffects.noHint.disable();
-      break;
-    case bnSpeedUp:
-      // no effect
-      break;
-//    case bnFlipField:
-//      // no effect *at this moment*
-//      break;
-    case bnNoBonus: ;
+  case bnHeal:
+    // no effect
+    break;
+  case bnSlowDown:
+    // no effect
+    break;
+  case bnClearField:
+    visualEffects.fieldCleaning.disable();
+    break;
+  case bnFlippedScreen:
+    visualEffects.flippedScreen.disable();
+    break;
+  case bnRotatingScreen:
+    visualEffects.rotatingField.disable();
+    break;
+  case bnLantern:
+    visualEffects.lantern.disable();
+    break;
+  case bnCrazyPieces:
+    // no effect
+    break;
+  case bnTruncatedBlocks:
+    visualEffects.semicubes.disable();
+    break;
+  case bnNoHint:
+    visualEffects.noHint.disable();
+    break;
+  case bnSpeedUp:
+    // no effect
+    break;
+//  case bnFlipField:
+//    // no effect *at this moment*
+//    break;
+  case bnNoBonus: ;
   }
 }
 

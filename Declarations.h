@@ -54,6 +54,7 @@ enum Bonus
   // debuffs
   bnFlippedScreen,
   bnRotatingScreen,
+  bnLantern,
   bnCrazyPieces,
   bnTruncatedBlocks, // name --> (?)
   bnNoHint,
@@ -87,6 +88,7 @@ const std::wstring BONUS_NAME[N_BONUSES] =
   L"ClearField",
   L"FlippedScreen",
   L"RotatingScreen",
+  L"Lantern",
   L"CrazyPieces",
   L"TruncatedBlocks",
   L"NoHint",
@@ -305,7 +307,8 @@ public:
   
   ~SmartFileHandler()
   {
-    fclose(file_handle_);
+    if (file_handle_ != NULL)
+      fclose(file_handle_);
   }
   
   FILE* get()

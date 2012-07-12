@@ -2,15 +2,13 @@
 
 // TODO: use more throw's instead of assertions
 
-// TODO: reformat switches
-
 // TODO: Add range checking everywhere
 
 // TODO: Realize  field.lock() / field.unlock():  the field may be make immutable for some time
 //       add all events that what to change the field are delayed  (?)
 // No, looks like it's better to check specific conditions before any change
 
-// TODO: change speed up algorithm
+// TODO: speed up algorithm -- ?
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -25,7 +23,6 @@
 #include "IOFunctions.h"
 #include "VisualEffects.h"
 
-using std::string;  // TODO: remove
 using std::wstring;
 using std::vector;
 using std::bitset;
@@ -79,7 +76,7 @@ const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;*/
 
 
 const float  STARTING_SPEED = 1.0;
-const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
+const float  ROUTINE_SPEED_UP_VALUE = 0.01f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
 // Speed limit can be excedeed via bonus (?)
 const float  SPEED_LIMIT = 5.0;
@@ -122,15 +119,15 @@ const Time   DOWN_KEY_REACTIVATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;
 const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
 const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
-const string PLAYER_KEY_NAMES[N_PLAYER_KEYS] =
+const wstring PLAYER_KEY_NAMES[N_PLAYER_KEYS] =
 {
-  "Влево: ",
-  "Вправо: ",
-  "Вращать против часовой: ",
-  "Вращать по часовой: ",
-  "Вниз: ",
-  "Бросить: ",
-  "Следующая цель: "
+  L"Влево: ",
+  L"Вправо: ",
+  L"Вращать против часовой: ",
+  L"Вращать по часовой: ",
+  L"Вниз: ",
+  L"Бросить: ",
+  L"Следующая цель: "
 };
 
 const Time   PLAYER_KEY_REACTIVATION_TIME[N_PLAYER_KEYS] =
@@ -154,7 +151,7 @@ enum GlobalKey { };
 
 // const Time   GLOBAL_KEY_REACTIVATION_TIME[N_GLOBAL_KEYS] = { };
 
-const string GLOBAL_KEY_NAME[1] = { "qwerty" };
+const wstring GLOBAL_KEY_NAME[1] = { L"qwerty" };
 
 const Time   GLOBAL_KEY_REACTIVATION_TIME[1] = { 123.0 };
 
@@ -224,6 +221,7 @@ const int    BONUS_CHANCES[N_REAL_BONUSES] =
   1, // bnClearField
   2, // bnFlippedScreen
   2, // bnRotatingScreen
+  200, // bnLantern
   2, // bnCrazyPieces
   2, // bnTruncatedBlocks
   2, // bnNoHint
@@ -241,6 +239,7 @@ const Time   BONUS_ROTATING_SCREEN_PERIOD = 5.0f;
 const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
+const Time   BONUS_LANTERN_FADING_TIME = 2.0f;
 const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
 
 const Time   MIN_BONUS_APPEAR_TIME = 4.0f;
@@ -652,7 +651,7 @@ struct Statistics
 
 struct AccountInfo
 {
-  string name;
+  wstring name;
 //  Statistics totalStatistics;
   // TODO: other stats
 };
@@ -754,6 +753,8 @@ private:
   void          removeBlockImage(vector<BlockImage>& imageArray, FieldCoords position);
 
   void          routineSpeedUp();
+  void          bonusSpeedUp();
+  void          bonusSlowDown();
   void          cycleVictim();
   
   void          enableBonusVisualEffect(Bonus bonus);
