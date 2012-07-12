@@ -1,3 +1,5 @@
+// TODO: add  #error  commands
+
 // TODO: make more animations nonlinear
 
 // TODO: change active player list
@@ -18,15 +20,19 @@
 #include <vector>
 #include <bitset>
 #include <set>
+#include <map>
 #include "Strings.h"
 #include "Declarations.h"
 #include "IOFunctions.h"
 #include "VisualEffects.h"
 
 using std::wstring;
+using std::pair;
+using std::make_pair;
 using std::vector;
 using std::bitset;
 using std::multiset;
+using std::map;
 
 
 
@@ -36,25 +42,30 @@ using std::multiset;
 // Continuous mode
 
 /*const float  STARTING_SPEED = 1.0;
-const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
+const float  ROUTINE_SPEED_UP_VALUE = 0.007f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
-// Speed limit can be excedeed via bonus (?)
-const float  SPEED_LIMIT = 5.0;
+const float  NORMAL_SPEED_LIMIT = 5.0;
+const float  ABSOLUTE_SPEED_LIMIT = 10.0;
 
 const Time   AUTO_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
-const Time   DROPPING_PIECE_LOWERING_TIME = 0.1f;
+const Time   DROPPING_PIECE_LOWERING_TIME = 0.04f;
 const Time   LINE_DISAPPEAR_TIME = 1.0f;
 const Time   LINE_COLLAPSE_TIME = 0.05f;
 
-const Time   PIECE_LOWERING_ANIMATION_TIME = 0.8f;
+const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = 0.8f;
+const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTIVATION_TIME
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.3f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.4f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.4f;*/
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.4f;
+
+const Time   HINT_APPERAING_TIME = 0.3f;
+const Time   HINT_MATERIALIZATION_TIME = 0.2f;
+const Time   PLAYER_DYING_ANIMATION_TIME = 1.0f;*/
 
 
 
-// Discrete mode
+// Discrete mode  [ OLD! ]
 
 /*const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
@@ -76,7 +87,7 @@ const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;*/
 
 
 const float  STARTING_SPEED = 1.0;
-const float  ROUTINE_SPEED_UP_VALUE = 0.01f;
+const float  ROUTINE_SPEED_UP_VALUE = 0.007f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
 const float  NORMAL_SPEED_LIMIT = 5.0;
 const float  ABSOLUTE_SPEED_LIMIT = 10.0;
@@ -93,8 +104,10 @@ const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTI
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
+
 const Time   HINT_APPERAING_TIME = 0.3f;
 const Time   HINT_MATERIALIZATION_TIME = 0.2f;
+const Time   PLAYER_DYING_ANIMATION_TIME = 1.0f;
 
 
 
@@ -236,7 +249,7 @@ const int    BONUS_CHANCES[N_BONUSES] =
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
 const Time   BONUS_FADING_DURATION = 0.5f;
 
-const float  BONUS_SPEED_UP_VALUE = 1.0f;
+const float  BONUS_SPEED_UP_VALUE = 0.8f;
 const float  BONUS_SLOW_DOWN_VALUE = 1.0f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
@@ -246,18 +259,23 @@ const Time   BONUS_CLEAR_FIELD_DURATION = 1.0f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
 const Time   BONUS_LANTERN_FADING_TIME = 1.5f;
-const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
-const Time   BONUS_PLAYER_DYING_ANIMATION_TIME = 1.0f;
+// const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
+const Time   BONUS_LANTERN_MAX_SPEED = 100.0f; // Requirements: BONUS_LANTERN_MAX_SPEED >= 1.0 / DROPPING_PIECE_LOWERING_TIME
 
 const Time   MIN_BONUS_APPEAR_TIME = 4.0f;
 const Time   MAX_BONUS_APPEAR_TIME = 6.0f;
 const Time   MIN_BONUS_LIFE_TIME = 20.0;
 const Time   MAX_BONUS_LIFE_TIME = 25.0;
 
-const int    N_BONUS_CHOOSE_ATTEMPTS = 10;
+/*const int    N_BONUS_CHOOSE_ATTEMPTS = 10;
 const int    N_BONUS_GENERATION_ATTEMPTS = 5;
 const float  BONUS_ONE_ROW_CHANCE = 0.3f;
-const int    N_BONUS_ONE_ROW_ATTEMPTS = 2;
+const int    N_BONUS_ONE_ROW_ATTEMPTS = 2;*/
+
+const int    N_BONUS_CHOOSE_ATTEMPTS = 10;
+const int    N_BONUS_GENERATION_ATTEMPTS = 5;
+const float  BONUS_ONE_ROW_CHANCE = 0.4f;
+const int    N_BONUS_ONE_ROW_ATTEMPTS = 1;
 
 const int    BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL = FIELD_HEIGHT / 2;
 
@@ -315,8 +333,8 @@ const int    CENTRAL_PIECE_COL = (MAX_PIECE_SIZE - 1) / 2; // is it necessary (?
 const int    N_PIECE_ROTATION_STATES = 4;
 
 const int    SKY_HEIGHT = MAX_PIECE_SIZE;
-// MAX_PIECE_SIZE / 2  is enough for  WALL_WIDTH  in most cases, but that's safe
-const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;
+// MAX_PIECE_SIZE / 2  is enough for  WALL_WIDTH  in most cases, but that's perfectly safe
+const int    WALL_WIDTH = MAX_PIECE_SIZE - 1;  // TODO: may be, abadon walls and modify Field::operator(int, int)  ?
 
 const int    BORDERED_FIELD_ROW_BEGIN = -WALL_WIDTH;
 const int    BORDERED_FIELD_ROW_END   = FIELD_HEIGHT + SKY_HEIGHT;
@@ -432,15 +450,13 @@ struct FieldCell
   bool blocked;
   Color color;
   Bonus bonus;
-  int iBlockImage;   // TODO: store an iterator (or a pointer) to indicate array too
-  int iNewBlockImage;   // TODO:  ------//------
   
-  void assign(const FieldCell& a)
+  /*void assign(const FieldCell& a)
   {
     blocked = a.blocked;
     color = a.color;
     bonus = a.bonus;
-  }
+  }*/
 
   void clear()
   {
@@ -463,10 +479,6 @@ struct FieldCell
   {
     return blocked;
   }
-
-private:
-  // prevent full copy
-  FieldCell& operator=(const FieldCell& a);
 };
 
 
@@ -501,8 +513,6 @@ struct Field : public Fixed2DArray<FieldCell, -WALL_WIDTH, -WALL_WIDTH,
   }
 
   void clear();
-
-  void clearImageIndices();
 };
 
 
@@ -714,10 +724,12 @@ public:
   
   EventSet      events;         // R
   
-  vector<BlockImage>        lyingBlockImages;     // R
-  vector<BlockImage>        fallingBlockImages;   // R
-  vector<DisappearingLine>  disappearingLines;    // R
-  PlayerVisualEffects       visualEffects;        // R
+  vector<BlockImage>            lyingBlockImages;   // R  // TODO: make be, simply use an  std::map  of  lyingBlockImages ?
+  map<FieldCoords, int>         lyingBlockIndices;  // R
+  MovingObject                  fallingPieceFrame;  // R
+  vector<BlockImage>            fallingBlockImages; // R  (based on fallingPieceFrame)
+  vector<DisappearingLine>      disappearingLines;  // R
+  PlayerVisualEffects           visualEffects;      // R
   
   FixedZeroBasedArray<Time, N_PLAYER_KEYS> nextKeyActivationTable; // C
 
@@ -742,7 +754,6 @@ public:
 
   void          onKeyPress(PlayerKey key);
   void          onTimer();
-  void          redraw();
   
   void          stealPiece();  // (!) make private
 
@@ -774,11 +785,12 @@ private:
   void          planBonusAppearance();
   void          planBonusDisappearance(FieldCoords bonusCoords);
 
-  void          applyBlockImagesMovements(vector<BlockImage>& imageArray);
-  void          addStandingBlockImage(vector<BlockImage>& imageArray, Color color, FieldCoords position);  // name (?)
+  /*void          addStandingBlockImage(vector<BlockImage>& imageArray, VisualObject* parent,
+                                      Color color, FieldCoords position);  // name (?)
   void          moveBlockImage(vector<BlockImage>& imageArray, FieldCoords movingFrom,
                                FieldCoords movingTo, Time movingDuration);
-  void          removeBlockImage(vector<BlockImage>& imageArray, FieldCoords position);
+  void          removeBlockImage(vector<BlockImage>& imageArray, FieldCoords position);*/
+  void          moveLyingBlockImage(FieldCoords movingFrom, FieldCoords movingTo, Time movingDuration);
 
   void          routineSpeedUp();
   void          bonusSpeedUp();

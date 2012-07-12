@@ -19,6 +19,18 @@ T myMax(T x, T y)
   return (x > y) ? x : y;
 }
 
+template<typename T>  // TODO: isn't there a standard function?
+T boundValue(T value, T minValue, T maxValue)
+{
+  return (value < minValue) ? minValue : ((value > maxValue) ? maxValue : value);
+}
+
+template<typename T>
+T mySqr(T x)
+{
+  return x * x;
+}
+
 
 
 const int    FIELD_WIDTH = 10;
@@ -34,7 +46,9 @@ const int    MAX_PLAYERS = 4;
 
 
 typedef float Time;
-const Time NEVER = -1000.0f;
+const Time NEVER_HAPPENED = -1e30f;  // TODO: replace with MINFLOAT
+const Time WILL_NEVER_HAPPEN = 1e30f;  // TODO: replace with MAXFLOAT
+// TODO: declare Speed type too
 
 
 
@@ -71,7 +85,7 @@ enum Bonus
 //  bnFlipField
 };
 
-inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
+inline Bonus& operator++(Bonus& bonus)  // (?) Isn't there really a better way?
 {
   bonus = Bonus(int(bonus) + 1);
   return bonus;
@@ -171,13 +185,22 @@ struct Coord2D
     col -= a.col;
     return *this;
   }
+
+  // To use is  std::set
+  bool operator<(const Coord2D& a) const
+  {
+    if (row != a.row)
+      return row < a.row;
+    else
+      return col < a.col;
+  }
 };
 
 typedef Coord2D<int> FieldCoords;
 
 //typedef Coord2D<float> FloatFieldCoords;
 
-struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
+struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?! Why should I declare constuctors myself?
 {
   FloatFieldCoords() { }
 
@@ -210,6 +233,11 @@ struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
   {
     row = float(row__);
     col = float(col__);
+  }
+
+  float vectorLength() const
+  {
+    return sqrt(mySqr(row) + mySqr(col));
   }
 };
 

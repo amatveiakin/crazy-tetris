@@ -1,3 +1,8 @@
+// TODO: make more class members protected and private
+
+// TODO: stop ignoring such OOP features as virtual functions and abandon these template tricks (?)
+//       (if it will get us close to KISS principle)
+
 #ifndef CRAZYTETRIS_VISUALEFFECTS_H
 #define CRAZYTETRIS_VISUALEFFECTS_H
 
@@ -5,53 +10,65 @@
 #include <list>
 #include "Declarations.h"
 
-//================================== General ===================================
+//============================= Auxiliary classes ==============================
 
-class MovingObject {
+class LinearMotion
+{
 public:
-  FloatFieldCoords movingFrom;
-  FloatFieldCoords movingTo;
+  FloatFieldCoords aimingShiftVector;
   Time movingStartTime;
   Time movingDuration;
-  
-  void setMotion(FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
-                 Time movingStartTime__, Time movingDuration__)
+
+  LinearMotion(FloatFieldCoords aimingShiftVector__, Time movingStartTime__, Time movingDuration__) :
+          aimingShiftVector(aimingShiftVector__), movingStartTime(movingStartTime__),
+          movingDuration(movingDuration__) { }
+
+  bool begun(Time currentTime) const
   {
-    movingFrom = movingFrom__;
-    movingTo = movingTo__;
-    movingStartTime = movingStartTime__;
-    movingDuration = movingDuration__;
+    return currentTime >= movingStartTime;
   }
-  
-  void moveTo(FloatFieldCoords movingTo__, Time currentTime, Time movingDuration__)
+
+  bool finished(Time currentTime) const
   {
-    movingFrom = position(currentTime);
-    movingTo = movingTo__;
-    movingStartTime = currentTime;
-    movingDuration = movingDuration__;
+    return currentTime >= movingStartTime + movingDuration;
   }
-  
-  void placeAt(FloatFieldCoords position)
+
+  FloatFieldCoords shiftVector(Time currentTime) const
   {
-    setMotion(position, position, 0.0, 1.0);
+    float multiplier = boundValue((currentTime - movingStartTime) / movingDuration, 0.0f, 1.0f);
+    return aimingShiftVector * multiplier;
   }
-  
-  FloatFieldCoords position(Time currentTime)
+};
+
+
+
+//================================== Objects ===================================
+
+class VisualObject
+{
+public:
+  VisualObject* parent;
+
+  virtual FloatFieldCoords relativePosition(Time currentTime) = 0;
+
+  // TODO: Test whether VS' optimizator is smart enough to remove unnecessary calculations in the following functions
+
+  float relativePositionX(Time currentTime)
   {
-    if (currentTime < movingStartTime)
-    {
-      return movingFrom;
-    }
-    else if (currentTime < movingStartTime + movingDuration)
-    {
-      return (movingFrom * (movingStartTime + movingDuration - currentTime) +
-              movingTo   * (currentTime - movingStartTime)) /
-             movingDuration;
-    }
+    return relativePosition(currentTime).col;
+  }
+
+  float relativePositionY(Time currentTime)
+  {
+    return relativePosition(currentTime).row;
+  }
+
+  FloatFieldCoords position(Time currentTime)  // TODO: rename (?)
+  {
+    if (parent)
+      return parent->position(currentTime) + relativePosition(currentTime);
     else
-    {
-      return movingTo;
-    }
+      return relativePosition(currentTime);
   }
 
   float positionX(Time currentTime)
@@ -63,44 +80,115 @@ public:
   {
     return position(currentTime).row;
   }
+};
 
-  // TODO: Test whether VS' optimizator is smart enough to remove unnecessary calculations
 
-  /*float positionX(Time currentTime)
+
+class AffixmentPointObject : public VisualObject  // name -> (?)
+{
+public:
+  virtual void placeAt(FloatFieldCoords newPosition)
   {
-    if (currentTime < movingStartTime)
-    {
-      return movingFrom.col;
-    }
-    else if (currentTime < movingStartTime + movingDuration)
-    {
-      return (movingFrom.col * (movingStartTime + movingDuration - currentTime) +
-              movingTo.col   * (currentTime - movingStartTime)) /
-             movingDuration;
-    }
-    else
-    {
-      return movingTo.col;
-    }
+    position_ = newPosition;
+  }
+  
+  virtual FloatFieldCoords relativePosition(Time currentTime)
+  {
+    return position_;
   }
 
-  float positionY(Time currentTime)
+protected:
+  FloatFieldCoords position_;
+};
+
+
+
+typedef AffixmentPointObject ReferenceFrame; // (?) Is it necessary?
+
+
+
+class MovingObject : public AffixmentPointObject
+{
+public:
+  std::vector<LinearMotion> motions;
+
+  void addMotion(FloatFieldCoords aimingShiftVector, Time movingStartTime, Time movingDuration)
   {
-    if (currentTime < movingStartTime)
+    motions.push_back(LinearMotion(aimingShiftVector, movingStartTime, movingDuration));
+  }
+  
+  virtual void placeAt(FloatFieldCoords newPosition)
+  {
+    AffixmentPointObject::placeAt(newPosition);
+    motions.clear();
+  }
+  
+  virtual FloatFieldCoords relativePosition(Time currentTime)
+  {
+    FloatFieldCoords currentPosition = position_;
+    for (std::vector<LinearMotion>::iterator motion = motions.begin(); motion != motions.end(); )
     {
-      return movingFrom.row;
+      if (motion->finished(currentTime))
+      {
+        currentPosition += motion->shiftVector(currentTime);
+        position_ += motion->shiftVector(currentTime);
+        motion = motions.erase(motion);
+      }
+      else
+      {
+        currentPosition += motion->shiftVector(currentTime);
+        ++motion;
+      }
     }
-    else if (currentTime < movingStartTime + movingDuration)
-    {
-      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
-              movingTo.row   * (currentTime - movingStartTime)) /
-             movingDuration;
-    }
+    return currentPosition;
+  }
+};
+
+//TODO: make bonus, changing player's name to "fat bitch"!!!
+
+class MagnetObject : public AffixmentPointObject
+{
+public:
+  VisualObject* binding;
+  float maxSpeed;
+  
+  MagnetObject() : binding(NULL) { }
+
+  void bindTo(VisualObject* newBinding)
+  {
+    binding = newBinding;
+  }
+  
+  void resetBinding()
+  {
+    binding = NULL;
+  }
+  
+  void clear()
+  {
+    resetBinding();
+  }
+
+  virtual FloatFieldCoords relativePosition(Time currentTime)
+  {
+    float deltaTime = currentTime - lastUpdated_;
+    lastUpdated_ = currentTime;
+    if (binding == NULL)
+      return position_;
+    FloatFieldCoords shiftVector = binding->position(currentTime) - position_;
+    float deltaDistance = shiftVector.vectorLength();
+    float maxDistance = maxSpeed * deltaTime;
+    FloatFieldCoords newPosition;
+    if (deltaDistance <= maxDistance)
+      newPosition = binding->position(currentTime);
     else
-    {
-      return movingTo.row;
-    }
-  }*/
+      newPosition = position_ + shiftVector * maxDistance / deltaDistance;  // (?)
+    position_ = newPosition;
+    return newPosition;
+  }
+
+protected:
+  Time lastUpdated_;
 };
 
 
@@ -123,7 +211,7 @@ class SmoothEffectType : public BaseEffectType
 public:
   SmoothEffectType() : INITIAL_TIME(0.0), MIN_PROGRESS(0.0), MAX_PROGRESS(1.0),
                        PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
-                       progress_(MIN_PROGRESS), lastTime_(INITIAL_TIME) { }
+                       progress_(MIN_PROGRESS), lastUpdated_(INITIAL_TIME) { }
 
   bool fullyInactive() const
   {
@@ -144,17 +232,18 @@ public:
   {
     active_ = false;
     progress_ = MIN_PROGRESS;
-    lastTime_ = INITIAL_TIME;
+    lastUpdated_ = INITIAL_TIME;
   }
 
 protected:
-  const float INITIAL_TIME;
+  // Remove these constants (?)
+  const Time  INITIAL_TIME;
   const float MIN_PROGRESS;
   const float MAX_PROGRESS;
   const float PROGRESS_RANGE;
 
   float progress_;
-  Time lastTime_;
+  Time lastUpdated_;
 };
 
 
@@ -163,7 +252,7 @@ protected:
 class PeriodicalEffectType : public SmoothEffectType 
 {
 public:
-  float period;
+  Time period;
 
   PeriodicalEffectType() : STOPPING_ACCELERATION_COEFF(0.05f), period(1.0), isStopping_(false) { }
 
@@ -184,11 +273,11 @@ public:
   {
     if (!active_)
     {
-      lastTime_ = currentTime;
+      lastUpdated_ = currentTime;
       return MIN_PROGRESS;
     }
 
-    float progress_increment = float(currentTime - lastTime_) / period;
+    float progress_increment = float(currentTime - lastUpdated_) / period;
     progress_ += progress_increment;
     if (isStopping_)
     {
@@ -206,7 +295,7 @@ public:
       else
         progress_ -= PROGRESS_RANGE;
     }
-    lastTime_ = currentTime;
+    lastUpdated_ = currentTime;
     return progress_;
   }
 
@@ -219,64 +308,17 @@ protected:
 
 
 
-/*class PeriodicalEffectType : public SmoothEffectType 
-{
-public:
-  float period;
-
-  PeriodicalEffectType() : period(1.0), stopping_(false) { }
-
-  void enable(float newPeriod) 
-  {
-    active_ = true;
-    stopping_ = false;
-    period = newPeriod;
-  }
-
-  void disable() 
-  {
-    stopping_ = true;
-  }
-
-  float progress(Time currentTime) 
-  {
-    if (!active_)
-    {
-      lastTime_ = currentTime;
-      return MIN_PROGRESS;
-    }
-    progress_ += float(currentTime - lastTime_) / period;
-    while (progress_ > MAX_PROGRESS)
-    {
-      if (stopping_)
-      {
-        progress_ = MIN_PROGRESS;
-        active_ = false;
-      }
-      else
-        progress_ -= PROGRESS_RANGE;
-    }
-    lastTime_ = currentTime;
-    return progress_;
-  }
-
-protected:
-  bool stopping_;
-};*/
-
-
-
 // An effect that can fade in and (or) out. If (active == true) the effect is turned on
 // and thus is either functioning normally [if (current_time > endTime] or is being
 // activated now [if (current time <= endTime)]. If (active == false) everything is vice versa.
 class FadingEffectType : public SmoothEffectType
 {
 public:
-  float duration;
+  Time duration;
 
   FadingEffectType() : duration(1.0) { }
 
-  void enable(float newDuration)
+  void enable(Time newDuration)
   {
     active_ = true;
     duration = newDuration;
@@ -289,44 +331,13 @@ public:
 
   float progress(Time currentTime)
   {
-    float progressChange = float(currentTime - lastTime_) / duration;
+    float progressChange = float(currentTime - lastUpdated_) / duration;
     if (active_)
       progress_ = myMin(progress_ + progressChange, MAX_PROGRESS);
     else
       progress_ = myMax(progress_ - progressChange, MIN_PROGRESS);
-    lastTime_ = currentTime;
+    lastUpdated_ = currentTime;
     return progress_;
-  }
-};
-
-
-
-// An effects that fades out automatically at a specified time
-class FiniteFadingEffectType : public FadingEffectType
-{
-public:
-  float fadeOutStartTime;
-
-  FiniteFadingEffectType& operator=(const FiniteFadingEffectType& a)
-  {
-    active_ = a.active_;
-    progress_ = a.progress_;
-    lastTime_ = a.lastTime_;
-    duration = a.duration;
-    fadeOutStartTime = a.fadeOutStartTime;
-    return *this;
-  }
-
-  void setFadeOutStartTime(float newFadeOutStartTime)
-  {
-    fadeOutStartTime = newFadeOutStartTime;
-  }
-
-  float progress(Time currentTime)
-  {
-    if (currentTime > fadeOutStartTime)
-      disable();
-    return FadingEffectType::progress(currentTime);
   }
 };
 
@@ -336,11 +347,11 @@ public:
 class SingleEffectType : public SmoothEffectType   // Name (?)
 {
 public:
-  float duration;
+  Time duration;
 
   SingleEffectType() : duration(1.0) { }
 
-  void enable(float newDuration)
+  void enable(Time newDuration)
   {
     active_ = true;
     duration = newDuration;
@@ -351,7 +362,7 @@ public:
 
   float progress(Time currentTime)
   {
-    float progressChange = float(currentTime - lastTime_) / duration;
+    float progressChange = float(currentTime - lastUpdated_) / duration;
     if (active_) {
       progress_ += progressChange;
       if (progress_ > MAX_PROGRESS)
@@ -360,7 +371,7 @@ public:
         active_ = false;
       }
     }
-    lastTime_ = currentTime;
+    lastUpdated_ = currentTime;
     return progress_;
   }
 };
@@ -371,11 +382,11 @@ public:
 class FlashEffectType : public SmoothEffectType
 {
 public:
-  float halfDuration;
+  Time halfDuration;
 
   FlashEffectType() : halfDuration(1.0) { }
 
-  void enable(float newDuration)
+  void enable(Time newDuration)
   {
     active_ = true;
     halfDuration = newDuration / 2.0f;
@@ -388,7 +399,7 @@ public:
 
   float progress(Time currentTime)
   {
-    float progressChange = float(currentTime - lastTime_) / halfDuration;
+    float progressChange = float(currentTime - lastUpdated_) / halfDuration;
     if (active_) {
       progress_ += progressChange;
       if (progress_ > MAX_PROGRESS)
@@ -399,7 +410,7 @@ public:
     }
     else
       progress_ = myMax(progress_ - progressChange, MIN_PROGRESS);
-    lastTime_ = currentTime;
+    lastUpdated_ = currentTime;
     return progress_;
   }
 };
@@ -412,11 +423,11 @@ public:
 class PermanentEffectType : public SmoothEffectType   // Name (?)
 {
 public:
-  float duration;
+  Time duration;
 
   PermanentEffectType() : duration(1.0) { }
 
-  void enable(float newDuration)
+  void enable(Time newDuration)
   {
     active_ = true;
     duration = newDuration;
@@ -428,7 +439,7 @@ public:
     progress_ = MIN_PROGRESS;
   }
 
-  /*void restart(float newDuration)
+  /*void restart(Time newDuration)
   {
     disable();
     enable(newDuration);
@@ -436,15 +447,82 @@ public:
 
   float progress(Time currentTime)
   {
-    float progressChange = float(currentTime - lastTime_) / duration;
+    float progressChange = float(currentTime - lastUpdated_) / duration;
     if (active_) {
       progress_ += progressChange;
       if (progress_ > MAX_PROGRESS)
         progress_ = MAX_PROGRESS;
     }
-    lastTime_ = currentTime;
+    lastUpdated_ = currentTime;
     return progress_;
   }
+};
+
+
+
+template<class EffectT__>
+class AutoStartingEffectType : public EffectT__
+{
+public:
+  AutoStartingEffectType() : startTime_(WILL_NEVER_HAPPEN) { }
+  
+  void startAt(Time startTime)
+  {
+    startTime_ = startTime;
+  }
+
+  void enable(Time newDuration)
+  {
+    startTime_ = WILL_NEVER_HAPPEN;
+    EffectT__::enable();
+  }
+
+  float progress(Time currentTime)
+  {
+    if (currentTime > startTime_)
+      enable();
+    return EffectT__::progress(currentTime);
+  }
+
+protected:
+  Time startTime_;
+};
+
+
+
+template<class EffectT__>
+class AutoStoppingEffectType : public EffectT__
+{
+public:
+  AutoStoppingEffectType() : stopTime_(WILL_NEVER_HAPPEN) { }
+
+  // TODO: find out why operator= isn't declared automatically.
+  AutoStoppingEffectType& operator=(const AutoStoppingEffectType& source)
+  {
+    memcpy(this, &source, sizeof(AutoStoppingEffectType));  // (?)
+    return *this;
+  }
+  
+  void stopAt(Time stopTime)
+  {
+    stopTime_ = stopTime;
+  }
+
+  void disable()
+  {
+    stopTime_ = WILL_NEVER_HAPPEN;
+    EffectT__::disable();
+  }
+
+  float progress(Time currentTime)
+  {
+    if (currentTime > stopTime_)
+      disable();
+    return EffectT__::progress(currentTime);
+  }
+
+protected:
+  Time stopTime_;
 };
 
 
@@ -457,6 +535,8 @@ public:
 };
 
 
+
+class BlockImage;
 
 typedef PermanentEffectType HintEffect;
 
@@ -477,7 +557,15 @@ typedef FadingEffectType SemicubesEffect;
 
 typedef PeriodicalEffectType WaveEffect; // += FadingEffectType (?)
 
-class LanternEffect : public FadingEffectType, public MovingObject { };
+class LanternEffect : public FadingEffectType, public MagnetObject
+{
+public:
+  void clear()
+  {
+    FadingEffectType::clear();
+    MagnetObject::clear();
+  }
+};
 
 class PieceTheftEffect : public SingleEffectType, public DirectedEffectExtraType { };
 
@@ -509,7 +597,7 @@ public:
     rotatingField.clear();
     semicubes.clear();
     wave.clear();
-    lantern.clear();
+    lantern.clear();  // (based on fallingPieceFrame)
     pieceTheftPtr = NULL;
   }
 };
@@ -531,61 +619,44 @@ public:
 
 //================================== Objects ===================================
 
-class VisualObject { };
-
-
-
-class BlockImage : public VisualObject, private MovingObject {
+class BlockImage : public MovingObject {
 public:
   Color color;
   Bonus bonus;
-  FiniteFadingEffectType bonusImage;
-  FieldCoords binding;
+  AutoStoppingEffectType<FadingEffectType> bonusImage;
 //  bool motionBlur;
   
-  using MovingObject::position;
-  using MovingObject::positionX;
-  using MovingObject::positionY;
+  BlockImage(VisualObject* parent__, Color color__, FieldCoords position) :
+          color(color__), bonus(bnNoBonus)
+  {
+    parent = parent__;
+    bonusImage.clear();
+    placeAt(position);
+  }
 
-  void placeAt(FieldCoords position)
+  /*void placeNewImageAt(VisualObject* parent__, Color color__, FieldCoords position)
   {
-    binding = position;
-    MovingObject::placeAt(FloatFieldCoords(position));
-  }
-  
-  void moveTo(FieldCoords movingTo__, Time currentTime, Time movingDuration__)
-  {
-    binding = movingTo__;
-    MovingObject::moveTo(FloatFieldCoords(movingTo__), currentTime, movingDuration__);
-  }
-  
-  void placeNewImageAt(Color color__, FieldCoords position)
-  {
+    parent = parent__;
     color = color__;
     bonus = bnNoBonus;
     bonusImage.clear();
     placeAt(position);
-  }
+  }*/
 };
 
 
 
-class DisappearingLine : public VisualObject {
+class DisappearingLine {
 public:
   Color blockColor[FIELD_WIDTH];
   int row;
   Time startTime;
   Time duration;
 
-  // TODO: declare constants
+  // TODO: declare constants (?)
   float progress(Time currentTime)
   {
-    if (currentTime <= startTime)
-      return 0.0f;
-    else if (currentTime < startTime + duration)
-      return (currentTime - startTime) / duration;
-    else
-      return 1.0f;
+    return boundValue((currentTime - startTime) / duration, 0.0f, 1.0f);
   }
 };
 

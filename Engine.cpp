@@ -32,22 +32,14 @@ void Field::clear()
       operator()(row, col).clear();
 }
 
-void Field::clearImageIndices()
-{
-  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
-    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
-    {
-      operator()(row, col).iBlockImage = NO_BLOCK_IMAGE;
-      operator()(row, col).iNewBlockImage = NO_CHANGE;
-    }
-}
-
 
 
 //==================================== Game ====================================
 
 void Game::init()
 {
+  assert(PIECE_FORCED_LOWERING_ANIMATION_TIME <= DOWN_KEY_REACTIVATION_TIME);
+
   loadPieces();
   loadBonuses();
   loadAccounts();
@@ -349,26 +341,30 @@ void Player::prepareForNewRound()
 {
   statistics.clear();
   events.clear();
-  events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
-  backgroundSeed = rand();
   fieldLocks.clear();
-  planBonusAppearance();
   buffs.clear();
   debuffs.clear();
   field.clear();
-  field.clearImageIndices();
   lyingBlockImages.clear();
+  lyingBlockIndices.clear();
+  fallingPieceFrame.parent = NULL;  // TODO: move to initialization?
   fallingBlockImages.clear();
-  speed = STARTING_SPEED;
-  initPieceQueue(NORMAL_HINT_QUEUE_SIZE);
-  sendNewPiece();
   disappearingLines.clear();
-  latestLineCollapse = NEVER;
+  visualEffects.clear();
+  visualEffects.lantern.parent = NULL;  // TODO: move to initialization?
+  visualEffects.lantern.bindTo(&fallingPieceFrame);  // TODO: move to initialization?
+  visualEffects.lantern.placeAt(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f, (FIELD_WIDTH  - 1.0f) / 2.0f));
+  visualEffects.lantern.maxSpeed = BONUS_LANTERN_MAX_SPEED;
+  latestLineCollapse = NEVER_HAPPENED;
   victimNumber = number;
   cycleVictim();
-  visualEffects.clear();
-  visualEffects.lantern.placeAt(FloatFieldCoords((FIELD_HEIGHT - 1.0f) / 2.0f, (FIELD_WIDTH  - 1.0f) / 2.0f));
-  // ...
+  speed = STARTING_SPEED;
+
+  backgroundSeed = rand();
+  events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+  initPieceQueue(NORMAL_HINT_QUEUE_SIZE);
+  planBonusAppearance();
+  sendNewPiece();
 }
 
 Time Player::currentTime()
@@ -503,6 +499,7 @@ void Player::endClearField()
 {
   fieldLocks.isBeingCleared = false;
   lyingBlockImages.clear();
+  lyingBlockIndices.clear();
 }
 
 void Player::kill()
@@ -529,7 +526,7 @@ void Player::kill()
   if (game->activePlayers.empty())
     game->endRound();
 
-  visualEffects.playerDying.enable(BONUS_PLAYER_DYING_ANIMATION_TIME);
+  visualEffects.playerDying.enable(PLAYER_DYING_ANIMATION_TIME);
   active = false;
 }
 
@@ -652,18 +649,6 @@ void Player::onTimer()
       events.push(currentEvent);
     }
   }
-  redraw();
-}
-
-void Player::redraw()
-{
-  if (fallingPieceState != psAbsent)
-  {
-    visualEffects.lantern.setMotion(FloatFieldCoords(visualEffects.lantern.positionY(currentTime()),
-                                                     visualEffects.lantern.positionX(currentTime())),
-                                    fallingPiece.position,
-                                    currentTime(), BONUS_LANTERN_ANIMATION_TIME);
-  }
 }
 
 
@@ -784,9 +769,11 @@ void Player::setUpPiece()
     field(cell).setBlock(fallingPiece.color());
 
     // TODO: copy images from one array to another with motion (?)
-    removeBlockImage(fallingBlockImages, cell);
-    addStandingBlockImage(lyingBlockImages, fallingPiece.color(), cell);
+
+    lyingBlockImages.push_back(BlockImage(NULL, fallingPiece.color(), cell));
+    lyingBlockIndices.insert(make_pair(cell, lyingBlockImages.size() - 1));
   }
+  fallingBlockImages.clear();
   fallingPieceState = psAbsent;
   
   bool fullLinesFound = removeFullLines();
@@ -795,6 +782,7 @@ void Player::setUpPiece()
   events.pushWithUniquenessCheck(etNewPiece, currentTime() + newPieceDelay);
   visualEffects.hintMaterialization.enable(newPieceDelay);
   visualEffects.hint.enable(HINT_APPERAING_TIME);
+//  visualEffects.lantern.resetBinding();
 }
 
 void Player::initPieceQueue(int size)
@@ -819,26 +807,22 @@ bool Player::sendNewPiece()
 
   fallingPiece = nextPieces[0];
   assert(!fallingPiece.empty());
+
   visualEffects.hint.disable();
   visualEffects.hintMaterialization.disable();
 
-  /*if (!fallingPiece.empty())    // Is it necessary?
-  {
-    fallingPieceState = psNormal;
-    events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
-    for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
-      addStandingBlockImage(fallingBlockImages, fallingPiece.color(), fallingPiece.absoluteCoords(i));
-  }
-  else
-    fallingPieceState = psAbsent;*/
-
   fallingPieceState = psNormal;
-  events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
+  fallingPieceFrame.placeAt(fallingPiece.position);
   for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
-    addStandingBlockImage(fallingBlockImages, fallingPiece.color(), fallingPiece.absoluteCoords(i));
-  for (size_t i = 0; i < nextPieces.size() - 1; ++i)
+    fallingBlockImages.push_back(BlockImage(&fallingPieceFrame, fallingPiece.color(), fallingPiece.relativeCoords(i)));
+//  visualEffects.lantern.bindTo(&fallingPieceFrame);
+  events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
+
+  nextPieces.erase(nextPieces.begin());
+  nextPieces.push_back(randomPiece());
+  /*for (size_t i = 0; i < nextPieces.size() - 1; ++i)
     nextPieces[i] = nextPieces[i + 1];
-  nextPieces.back() = randomPiece();
+  nextPieces.back() = randomPiece();*/
   return true;
 }
 
@@ -853,15 +837,10 @@ void Player::lowerPiece(bool forced)
   if (canDisposePiece(fallingPiece.position, fallingPiece.currentStructure()) &&
       canDisposePiece(newPosition,           fallingPiece.currentStructure()))
   {
-    for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
-    {
-      Time loweringTime = (fallingPieceState == psDropping) ? DROPPING_PIECE_LOWERING_TIME :
-                          (forced ? PIECE_FORCED_LOWERING_ANIMATION_TIME :
-                                    PIECE_AUTO_LOWERING_ANIMATION_TIME);
-      moveBlockImage(fallingBlockImages, fallingPiece.absoluteCoords(i),
-                     newPosition + fallingPiece.relativeCoords(i), loweringTime);
-    }
-    applyBlockImagesMovements(fallingBlockImages);
+    Time loweringTime = (fallingPieceState == psDropping) ? DROPPING_PIECE_LOWERING_TIME :
+                        (forced ? PIECE_FORCED_LOWERING_ANIMATION_TIME :
+                                  PIECE_AUTO_LOWERING_ANIMATION_TIME);
+    fallingPieceFrame.addMotion(newPosition - fallingPiece.position, currentTime(), loweringTime);
 
     fallingPiece.position = newPosition;
 
@@ -914,7 +893,18 @@ bool Player::removeFullLines()
         }
         disappearingLines.back().blockColor[col] = field(row, col).color;
         field(row, col).clear();
-        removeBlockImage(lyingBlockImages, FieldCoords(row, col));
+
+        lyingBlockImages[lyingBlockIndices[FieldCoords(row, col)]] = lyingBlockImages.back();
+        // TODO: No, *that* was not the point of  lyingBlockIndices !
+        for (map<FieldCoords, int>::iterator it = lyingBlockIndices.begin(); it != lyingBlockIndices.end(); ++it)
+        {
+          if (it->second == lyingBlockImages.size() - 1) {
+            it->second = lyingBlockIndices[FieldCoords(row, col)];
+            break;
+          }
+        }
+        lyingBlockImages.pop_back();
+        lyingBlockIndices.erase(FieldCoords(row, col));
       }
 
       if (latestLineCollapse < currentTime() + LINE_DISAPPEAR_TIME)
@@ -929,21 +919,17 @@ bool Player::removeFullLines()
   return fullLinesExisted;
 }
 
-void Player::collapseLine(int row) // TODO: optimize  AND  animate
+void Player::collapseLine(int row)  // TODO: optimize
 {
   for (int curRow = row; curRow < FIELD_HEIGHT; ++curRow)
   {
     for (int col = 0; col < FIELD_WIDTH; ++col)
     {
-      field(curRow, col).assign(field(curRow + 1, col));
+      field(curRow, col) = field(curRow + 1, col);
       if (field(curRow, col).isBlocked())
-      {
-        moveBlockImage(lyingBlockImages, FieldCoords(curRow + 1, col), FieldCoords(curRow, col),
-                       LINE_COLLAPSE_ANIMATION_TIME);
-      }
+        moveLyingBlockImage(FieldCoords(curRow + 1, col), FieldCoords(curRow, col), LINE_COLLAPSE_ANIMATION_TIME);
     }
   }
-  applyBlockImagesMovements(lyingBlockImages);
 
   for (vector<DisappearingLine>::iterator i = disappearingLines.begin();
        i != disappearingLines.end(); ++i)
@@ -970,12 +956,7 @@ void Player::movePiece(int direction)
   FieldCoords newPosition = fallingPiece.position + FieldCoords(0, direction);
   if (canDisposePiece(newPosition, fallingPiece.currentStructure()))
   {
-    for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
-    {
-      moveBlockImage(fallingBlockImages, fallingPiece.absoluteCoords(i),
-                     newPosition + fallingPiece.relativeCoords(i), PIECE_MOVING_ANIMATION_TIME);
-    }
-    applyBlockImagesMovements(fallingBlockImages);
+    fallingPieceFrame.addMotion(newPosition - fallingPiece.position, currentTime(), PIECE_MOVING_ANIMATION_TIME);
     fallingPiece.position = newPosition;
   }
 }
@@ -1020,12 +1001,11 @@ void Player::rotatePiece(int direction)
 
   for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
   {
-    moveBlockImage(fallingBlockImages,
-                   oldPosition + fallingPiece.pieceTemplate->structure[oldRotationState].blocks[i],
-                   fallingPiece.absoluteCoords(i),
-                   PIECE_ROTATING_ANIMATION_TIME);
+    fallingBlockImages[i].addMotion(
+            fallingPiece.absoluteCoords(i) -
+            (oldPosition + fallingPiece.pieceTemplate->structure[oldRotationState].blocks[i]),
+            currentTime(), PIECE_ROTATING_ANIMATION_TIME);
   }
-  applyBlockImagesMovements(fallingBlockImages);
 }
 
 bool Player::generateBonus()  // TODO: remake
@@ -1046,8 +1026,8 @@ bool Player::generateBonus()  // TODO: remake
         if (field(row, col).isBlocked())
         {
           field(row, col).bonus = bonus;
-          lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
-          lyingBlockImages[field(row, col).iBlockImage].bonusImage.enable(BONUS_FADING_DURATION);
+          lyingBlockImages[lyingBlockIndices[FieldCoords(row, col)]].bonus = bonus;
+          lyingBlockImages[lyingBlockIndices[FieldCoords(row, col)]].bonusImage.enable(BONUS_FADING_DURATION);
           planBonusDisappearance(FieldCoords(row, col));
           return true;
         }
@@ -1066,8 +1046,7 @@ void Player::removeBonuses()
       if (field(row, col).isBlocked())
       {
         field(row, col).bonus = bnNoBonus;
-        //lyingBlockImages[field(row, col).iBlockImage].bonus = bnNoBonus;
-        lyingBlockImages[field(row, col).iBlockImage].bonusImage.disable();
+        lyingBlockImages[lyingBlockIndices[FieldCoords(row, col)]].bonusImage.disable();
       }
     }
   }
@@ -1083,21 +1062,12 @@ void Player::planBonusDisappearance(FieldCoords bonusCoords)
 {
   Time bonusDisappearTime = currentTime() + randomRange(MIN_BONUS_LIFE_TIME, MAX_BONUS_LIFE_TIME);
   events.push(etBonusDisappearance, bonusDisappearTime);
-  lyingBlockImages[field(bonusCoords).iBlockImage].bonusImage.setFadeOutStartTime(
+  lyingBlockImages[lyingBlockIndices[bonusCoords]].bonusImage.stopAt(
           bonusDisappearTime - BONUS_FADING_DURATION);
 }
 
-void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)
+/*void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)
 {
-  /*FILE* logFile = fopen("debug.log", "a");
-  fprintf(logFile, "BEFORE (old):\n");
-  for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
-  {
-    for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
-      fprintf(logFile, "%d ", field(row, col).iBlockImage);
-    fprintf(logFile, "\n");
-  }*/
-
   for (int row = BORDERED_FIELD_ROW_BEGIN; row < BORDERED_FIELD_ROW_END; ++row)
     for (int col = BORDERED_FIELD_COL_BEGIN; col < BORDERED_FIELD_COL_END; ++col)
       if (field(row, col).iNewBlockImage != NO_CHANGE)
@@ -1107,10 +1077,11 @@ void Player::applyBlockImagesMovements(vector<BlockImage>& imageArray)
       }
 }
 
-void Player::addStandingBlockImage(vector<BlockImage>& imageArray, Color color, FieldCoords position)
+void Player::addStandingBlockImage(vector<BlockImage>& imageArray, VisualObject* parent,
+                                   Color color, FieldCoords position)
 {
   imageArray.resize(imageArray.size() + 1);
-  imageArray.back().placeNewImageAt(color, position);
+  imageArray.back().placeNewImageAt(parent, color, position);
   field(position).iBlockImage = imageArray.size() - 1;
 }
 
@@ -1134,10 +1105,18 @@ void Player::removeBlockImage(vector<BlockImage>& imageArray, FieldCoords positi
   else
   {
     imageArray[field(position).iBlockImage] = imageArray.back();
-    field(imageArray.back().binding).iBlockImage = field(position).iBlockImage;
+    field(imageArray.back().bindingCell).iBlockImage = field(position).iBlockImage;
     field(position).iBlockImage = NO_BLOCK_IMAGE;
   }
   imageArray.erase(imageArray.end() - 1);
+}*/
+
+void Player::moveLyingBlockImage(FieldCoords movingFrom, FieldCoords movingTo, Time movingDuration) {
+  if (movingFrom == movingTo)
+    return;
+  lyingBlockImages[lyingBlockIndices[movingFrom]].addMotion(movingTo - movingFrom, currentTime(), movingDuration);
+  lyingBlockIndices[movingTo] = lyingBlockIndices[movingFrom];
+  lyingBlockIndices.erase(movingFrom);
 }
 
 void Player::routineSpeedUp()
@@ -1156,7 +1135,7 @@ void Player::bonusSpeedUp()
 
 void Player::bonusSlowDown()
 {
-  speed += BONUS_SLOW_DOWN_VALUE;
+  speed -= BONUS_SLOW_DOWN_VALUE;
   speed = myMax(speed, STARTING_SPEED);
 }
 
