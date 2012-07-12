@@ -246,5 +246,3 @@ float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
   }
   return float3(0.0f, 0.0f, 0.0f);
  }
-
-

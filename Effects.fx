@@ -235,4 +235,3 @@ technique10 techTextured
         SetPixelShader( CompileShader( ps_4_0, psTextured() ) );
     }
 }
-
