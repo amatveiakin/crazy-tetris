@@ -196,10 +196,10 @@ union GlobalControls
 
 #define SKIP_KIND_SORCERIES case bnHeal:  case bnSlowDown:  case bnClearField:
 
-#define SKIP_DEBUFFS        case bnFlippedScreen:  case bnInverseControls:  case bnCrazyPieces: \
+#define SKIP_DEBUFFS        case bnFlippedScreen:  case bnCrazyPieces: \
                             case bnTruncatedBlocks:  case bnNoHint:
 
-#define SKIP_EVIL_SORCERIES case bnSpeedUp:  case bnFlipField:
+#define SKIP_EVIL_SORCERIES case bnSpeedUp:  // case bnFlipField:
 
 #define SKIP_ENCHANTMENTS  SKIP_BUFFS  SKIP_DEBUFFS
 
@@ -223,12 +223,11 @@ const int    BONUS_CHANCES[N_BONUSES] =
   2, // bnSlowDown
   1, // bnClearField
   2, // bnFlippedScreen
-  2, // bnInverseControls
   2, // bnCrazyPieces
   2, // bnTruncatedBlocks
   2, // bnNoHint
   2, // bnSpeedUp
-  2  // bnFlipField
+//  2  // bnFlipField
 };
 
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
@@ -256,14 +255,14 @@ const Bonus  LAST_BUFF          = bnEnlargeHintQueue;
 const int    N_BUFFS            = LAST_BUFF - FIRST_BUFF + 1;
 
 const Bonus  FIRST_DEBUFF       = bnFlippedScreen;
-const Bonus  LAST_DEBUFF        = bnFlipField;
+const Bonus  LAST_DEBUFF        = bnSpeedUp;
 const int    N_DEBUFFS          = LAST_DEBUFF - FIRST_DEBUFF + 1;
 
 const Bonus  FIRST_KIND_BONUS   = FIRST_BUFF;
 const Bonus  LAST_KIND_BONUS    = bnClearField;
 
 const Bonus  FIRST_EVIL_BONUS   = FIRST_DEBUFF;
-const Bonus  LAST_EVIl_BONUS    = bnFlipField;
+const Bonus  LAST_EVIl_BONUS    = bnSpeedUp;
 
 inline bool isKind(Bonus bonus)
 {

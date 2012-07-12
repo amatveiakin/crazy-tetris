@@ -429,9 +429,9 @@ void Player::applyBonus(Bonus bonus)
       case bnSpeedUp:
         // ...
         break;
-      case bnFlipField:
-        // ...
-        break;
+//      case bnFlipField:
+//        // ...
+//        break;
       SKIP_ALL_BUT_SORCERIES;
     }
   }
@@ -967,9 +967,6 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     case bnFlippedScreen:
       visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
       break;
-    case bnInverseControls:
-      // no effect
-      break;
     case bnCrazyPieces:
       // no effect
       break;
@@ -982,9 +979,9 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     case bnSpeedUp:
       // no effect
       break;
-    case bnFlipField:
-      // no effect *at this moment*
-      break;
+//    case bnFlipField:
+//      // no effect *at this moment*
+//      break;
     case bnNoBonus: ;
   }
 }
@@ -1005,9 +1002,6 @@ void Player::disableBonusVisualEffect(Bonus bonus)
     case bnFlippedScreen:
       visualEffects.flippedScreen.disable();
       break;
-    case bnInverseControls:
-      // no effect
-      break;
     case bnCrazyPieces:
       // no effect
       break;
@@ -1020,9 +1014,9 @@ void Player::disableBonusVisualEffect(Bonus bonus)
     case bnSpeedUp:
       // no effect
       break;
-    case bnFlipField:
-      // no effect *at this moment*
-      break;
+//    case bnFlipField:
+//      // no effect *at this moment*
+//      break;
     case bnNoBonus: ;
   }
 }
