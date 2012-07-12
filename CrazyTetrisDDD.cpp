@@ -63,6 +63,7 @@ private:
 	ID3D10EffectMatrixVariable* fxVPVar;
 	ID3D10EffectMatrixVariable* fxWorldVar;
 	ID3D10EffectMatrixVariable* fxGlobalRotationVar;
+  ID3D10EffectMatrixVariable* fxLightWVPVar;
   
   ID3D10EffectScalarVariable* fxTimeVar;
 	ID3D10EffectScalarVariable* fxLightTypeVar;
@@ -77,6 +78,7 @@ private:
   ID3D10EffectVariable*       fxClippingPlaneVar;
 
   ID3D10EffectShaderResourceVariable* fxDiffuseMapVar;
+  ID3D10EffectShaderResourceVariable* fxDiffuseMapVar2;
 
 
 	//Rasterizer state - clean up
@@ -87,8 +89,8 @@ private:
 
  
   //Textures and texture views
-  //ID3D10Texture2D            texBackWal;l
   ID3D10ShaderResourceView* texBackWallRV;
+  ID3D10ShaderResourceView* texSearchLightRV;
   
   ID3D10Buffer* cubeInstancesBuffer;
 
@@ -101,7 +103,7 @@ private:
   D3DXMATRIX mWorld;
 	D3DXMATRIX mView;
 	D3DXMATRIX mProj;
-	D3DXMATRIX mWVP;
+	D3DXMATRIX mLightWVP;
 	D3DXMATRIX mVP;
   D3DXMATRIX mGlobalRotation;
 
@@ -132,10 +134,10 @@ CrazyTetrisApp::CrazyTetrisApp(HINSTANCE hInstance)
   D3DXMatrixIdentity(&mWorld);
 	D3DXMatrixIdentity(&mView);
 	D3DXMatrixIdentity(&mProj);
-	D3DXMatrixIdentity(&mWVP);
-	D3DXMatrixIdentity(&mVP); 
+		D3DXMatrixIdentity(&mVP); 
   D3DXMatrixIdentity(&mGlobalRotation); 
-
+  srand(202302);
+  
 }
 
 CrazyTetrisApp::~CrazyTetrisApp()
@@ -280,14 +282,22 @@ void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
   Lights[1].pos.x = fieldToWorldX(player->visualEffects.lantern.positionX(currTime));
   Lights[1].pos.y = fieldToWorldY(player->visualEffects.lantern.positionY(currTime));
   //Lights[1].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[1].pos.y)  * 0.33;
-  Lights[1].pos.z = -1.0f;
+  Lights[1].pos.z = -1.5f;
   Lights[1].dir = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 0.0f);
   
   Lights[2].pos.x = fieldToWorldX(player->visualEffects.lantern.positionX(currTime));
   Lights[2].pos.y = fieldToWorldY(player->visualEffects.lantern.positionY(currTime));
   //Lights[2].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[2].pos.y)  * 0.33;
-  Lights[2].pos.z =  1.0f;
+  Lights[2].pos.z =  1.5f;
   Lights[2].dir = D3DXVECTOR4(0.0f, 0.0f,  -1.0f, 0.0f);
+ 
+  D3DXVECTOR3 target = Lights[1].pos + Lights[1].dir;
+	D3DXVECTOR3 up(0.0f, 1.0f, 0.0f);
+	D3DXVECTOR3 pos(Lights[1].pos.x, Lights[1].pos.y, Lights[1].pos.z);
+  D3DXMatrixLookAtLH(&tempX, &pos, &target, &up);
+	D3DXMatrixPerspectiveFovLH(&tempY, PI / 5, 1, 1.0f, 1000.0f);
+  mLightWVP = tempX * tempY;
+  fxLightWVPVar->SetMatrix((float*) mLightWVP);
 
   Lights[0].brightness = 1 - player->visualEffects.lantern.progress(currTime);
   Lights[1].brightness =     player->visualEffects.lantern.progress(currTime);
@@ -394,8 +404,7 @@ void CrazyTetrisApp::buildFX()
 		}
 		DXTrace(__FILE__, (DWORD)__LINE__, hr, L"D3DX10CreateEffectFromFile", true);
 	} 
-
-	techCubes             = FX->GetTechniqueByName("techCubes");
+  techCubes             = FX->GetTechniqueByName("techCubes");
   techSemicubes         = FX->GetTechniqueByName("techSemicubes");
 	techTextured          = FX->GetTechniqueByName("techTextured");
   techDisappearingLine  = FX->GetTechniqueByName("techDisappearingLine");
@@ -407,6 +416,7 @@ void CrazyTetrisApp::buildFX()
   fxWorldVar = FX->GetVariableByName("gWorld")->AsMatrix();
 	fxVPVar = FX->GetVariableByName("gVP")->AsMatrix();
   fxGlobalRotationVar = FX->GetVariableByName("gGlobalRotation")->AsMatrix();
+  fxLightWVPVar = FX->GetVariableByName("gLightWVP")->AsMatrix();
 	
 	//Lights and camera position
   fxLightVar = FX->GetVariableByName("gLight");
@@ -421,6 +431,7 @@ void CrazyTetrisApp::buildFX()
 
   //Textures
   fxDiffuseMapVar = FX->GetVariableByName("gDiffuseMap")->AsShaderResource();
+  fxDiffuseMapVar2 = FX->GetVariableByName("gDiffuseMap2")->AsShaderResource();
 
   //Visual effect's progress
   fxWaveProgressVar      = FX->GetVariableByName("gWaveProgress")->AsScalar();
@@ -434,6 +445,7 @@ void CrazyTetrisApp::setConstantBuffers()
   fxCUBE_SCALE_INVERTED->SetFloat(2.0f/CUBE_SCALE);
 
   fxDiffuseMapVar->SetResource(texBackWallRV);
+  fxDiffuseMapVar2->SetResource(texSearchLightRV);
 
 }
 
@@ -603,6 +615,7 @@ void CrazyTetrisApp::buildBuffers()
 void CrazyTetrisApp::buildTextures()
 {
   D3DX10CreateShaderResourceViewFromFile(md3dDevice, L"Resources/Textures/Wall.dds", 0, 0, &texBackWallRV, 0);
+  D3DX10CreateShaderResourceViewFromFile(md3dDevice, L"Resources/Textures/SearchLight.jpg", 0, 0, &texSearchLightRV, 0);
 }
 
 void CrazyTetrisApp::buildViewports()

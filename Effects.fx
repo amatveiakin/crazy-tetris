@@ -71,6 +71,7 @@ cbuffer cbPerObject
 
 Texture2D gDiffuseMap;
 
+
 SamplerState gAnisotropicSam
 {
     Filter = ANISOTROPIC;

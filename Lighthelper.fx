@@ -1,4 +1,16 @@
 #include "DirectXConstants.h"
+cbuffer perFrame
+{
+  float4x4 gLightWVP;
+}
+Texture2D gDiffuseMap2;
+SamplerState gAnisotropicSam1
+{
+    Filter = ANISOTROPIC;
+    AddressU = BORDER;
+    AddressV = BORDER;
+    BorderColor = float4(0.0f, 0.0f, 1.0f, 1.0f);
+};
 
 struct Light
 {
@@ -136,17 +148,24 @@ float3 SearchLight(SurfaceInfo v, Light L, float3 eyePos)
 	// The vector from the surface to the light.
 	float3 lightVec = normalize(L.pos - v.pos);
 	
+  float4 projTexC = mul(float4(v.pos, 1.0f), gLightWVP);
+  projTexC.xyz /= projTexC.w;
+  // Transform from NDC space to texture space.
+  projTexC.x = +0.5f*projTexC.x + 0.5f;
+  projTexC.y = -0.5f*projTexC.y + 0.5f;
+  
+  float s = gDiffuseMap2.Sample(gAnisotropicSam1, projTexC.xy); 
 	float angle = acos(dot(-lightVec, normalize(L.dir)));
-  float s;
+  
   if (angle < searchAlpha)
   {
-    s = 1;
+    s *= 1;
   } 
   else if (angle > searchBeta)
   {
-    s = 0;
+    s *= 0;
   } else
-    s = cos (PI / 2 * (angle - searchAlpha)/(searchBeta-searchAlpha));
+    s *= cos (PI / 2 * (angle - searchAlpha)/(searchBeta-searchAlpha));
 
   return litColor*s;
 }
