@@ -26,7 +26,7 @@
 using std::wstring;
 using std::vector;
 using std::bitset;
-using std::set;
+using std::multiset;
 
 
 
@@ -221,7 +221,7 @@ const int    BONUS_CHANCES[N_REAL_BONUSES] =
   1, // bnClearField
   2, // bnFlippedScreen
   2, // bnRotatingScreen
-  200, // bnLantern
+  2, // bnLantern
   2, // bnCrazyPieces
   2, // bnTruncatedBlocks
   2, // bnNoHint
@@ -236,11 +236,12 @@ const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
 const Time   BONUS_ROTATING_SCREEN_PERIOD = 5.0f;
-const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
+const Time   BONUS_CLEAR_FIELD_DURATION = 1.0f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
 const Time   BONUS_LANTERN_FADING_TIME = 2.0f;
 const Time   BONUS_LANTERN_ANIMATION_TIME = PIECE_FORCED_LOWERING_ANIMATION_TIME;  // (?)
+const Time   BONUS_PLAYER_DYING_ANIMATION_TIME = 1.0f;
 
 const Time   MIN_BONUS_APPEAR_TIME = 4.0f;
 const Time   MAX_BONUS_APPEAR_TIME = 6.0f;
@@ -502,6 +503,18 @@ const char   PIECE_TEMPLATE_FREE_CHAR  = '.';
 
 
 
+struct FieldLocks
+{
+  bool isBeingCleared;
+
+  void clear()
+  {
+    isBeingCleared = false;
+  }
+};
+
+
+
 //=================================== Events ===================================
 
 const Time   EVENT_DELAY_TIME = 0.01f; // (?)
@@ -513,7 +526,11 @@ enum EventType
   etNewPiece,
   etRoutineSpeedUp,
   etBonusAppearance,
-  etBonusDisappearance
+  etBonusDisappearance,
+  etHeal,
+  etBeginClearField,
+  etEndClearField,
+  etDefeat
 };
 
 
@@ -553,7 +570,7 @@ struct Event
 class EventSet
 {
 public:
-  typedef set<Event>::iterator iterator;
+  typedef multiset<Event>::iterator iterator;
 
   iterator begin()
   {
@@ -577,7 +594,7 @@ public:
   
   void pushWithUniquenessCheck(const EventType eventType, Time activationTime)
   {
-    for (set<Event>::iterator i = events_.begin(); i != events_.end(); ++i)
+    for (iterator i = begin(); i != end(); ++i)
       assert(i->type != eventType);
     push(eventType, activationTime);
   }
@@ -599,7 +616,7 @@ public:
   
   void eraseEventType(EventType eventType)
   {
-    for (set<Event>::iterator i = events_.begin(); i != events_.end(); )
+    for (iterator i = begin(); i != end(); )
     {
       if (i->type == eventType)
         events_.erase(i++);
@@ -627,7 +644,7 @@ public:
   }
   
 private:
-  set<Event> events_;
+  multiset<Event> events_;
 };
 
 
@@ -673,15 +690,8 @@ public:
   
   float         speed;          // R
   Field         field;          // C (boders) / R (content)
+  FieldLocks    fieldLocks;     // R
   Time          latestLineCollapse; // R
-  
-//  const PieceTemplate*  fallingPiece;             // R
-//  int                   fallingPieceRotationState; // R
-//  FieldCoords           fallingPiecePosition;     // R    [``center'' coordinates]
-  
-//  const PieceTemplate*  nextPiece;                // R
-//  int                   nextPieceRotationState;   // R
-//  FieldCoords           nextPiecePosition;        // R    [``center'' coordinates]
   
   FallingPieceState     fallingPieceState;  // R
   Piece                 fallingPiece;       // R
@@ -715,20 +725,23 @@ public:
   void          takesBonus(Bonus bonus);
   void          applyBonus(Bonus bonus);
   void          disenchant(Bonus bonus);
-  void          heal();
-  void          kill();
+  void          heal();  // make private (?)
+  void          deactivate();
 
   void          onKeyPress(PlayerKey key);
   void          onTimer();
   void          redraw();
   
   void          stealPiece();  // (!) make private
+
 private:
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   bool          canSendNewPiece() const;
   Piece         randomPiece() const;
   Bonus         randomBonus() const;
 
+  void          beginClearField();
+  void          endClearField();
   void          setUpPiece();
   void          initPieceQueue(int size);
   void          resizePieceQueue(int newSize);

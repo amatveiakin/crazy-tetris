@@ -25,6 +25,7 @@ const std::wstring  BONUS_IMAGES_FOLDER = TEXTURES_FOLDER + L"Bonuses" + PATH_DE
 
 //=============================== Error messages ===============================
 
+const std::wstring  ERR_INTERNAL_ERROR = L"Внутренняя ошибка: \"%s\"";
 const std::wstring  ERR_FILE_NOT_FOUND = L"Файл \"%s\" не найден.";
 const std::wstring  ERR_FILE_CORRUPTED = L"Файл \"%s\" повреждён.";
 // const std::wstring  ERR_FILE_READ_ERROR = L"Не удаётся прочитать файл \"%s\".";

@@ -125,6 +125,16 @@ public:
                        PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
                        progress_(MIN_PROGRESS), lastTime_(INITIAL_TIME) { }
 
+  bool fullyInactive() const
+  {
+    return (progress_ == MIN_PROGRESS);
+  }
+
+  bool fullyActive() const
+  {
+    return (progress_ == MAX_PROGRESS);
+  }
+
   void clear()
   {
     active_ = false;

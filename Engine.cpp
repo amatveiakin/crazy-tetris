@@ -346,6 +346,7 @@ void Player::prepareForNewRound()
   statistics.clear();
   events.clear();
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+  fieldLocks.clear();
   planBonusAppearance();
   buffs.clear();
   debuffs.clear();
@@ -420,13 +421,14 @@ void Player::applyBonus(Bonus bonus)
     switch (bonus)
     {
     case bnHeal:
-      heal();  // TODO: Can we heal immediately or it it better to say events.push(etHeal, currentTime()); ?
+      events.push(etHeal, currentTime());
+//      heal();
       break;
     case bnSlowDown:
       // ...
       break;
     case bnClearField:
-      // ...
+      events.push(etBeginClearField, currentTime());
       break;
     case bnSpeedUp:
       // ...
@@ -451,6 +453,7 @@ void Player::disenchant(Bonus bonus)
       resizePieceQueue(NORMAL_HINT_QUEUE_SIZE);
       break;
     case bnPieceTheft:
+      // ...
       break;
     // ...
     SKIP_ALL_BUT_BUFFS;
@@ -477,8 +480,24 @@ void Player::heal()
       disenchant(i);
 }
 
-void Player::kill()
+void Player::beginClearField()
 {
+  //  TODO: also handle a case when the bonus is taken somehow but the pieces is still falling
+  fieldLocks.isBeingCleared = true;
+  field.clear();
+  visualEffects.fieldCleaning.enable(BONUS_CLEAR_FIELD_DURATION);
+  events.push(etEndClearField, currentTime() + BONUS_CLEAR_FIELD_DURATION);
+}
+
+void Player::endClearField()
+{
+  fieldLocks.isBeingCleared = false;
+  lyingBlockImages.clear();
+}
+
+void Player::deactivate()
+{
+  visualEffects.playerDying.enable(BONUS_PLAYER_DYING_ANIMATION_TIME);
   active = false;
 }
 
@@ -578,8 +597,22 @@ void Player::onTimer()
         eventDelayed = true;
       break;
     case etBonusDisappearance:
-      removeBonuses();  // TODO: remove only one (?)
+      removeBonuses();   // TODO: remove only one (?)
       break;
+    case etHeal:
+      heal();
+      break;
+    case etBeginClearField:
+      beginClearField();
+      break;
+    case etEndClearField:
+      endClearField();
+      break;
+    case etDefeat:
+      deactivate();
+      break;
+    default:
+      throw ERR_INTERNAL_ERROR;  // TODO: formal  "Events queue crashed (event %d found)"
     }
     if (eventDelayed)
     {
@@ -614,7 +647,7 @@ bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) 
 
 bool Player::canSendNewPiece() const
 {
-  return disappearingLines.empty();
+  return disappearingLines.empty() && !fieldLocks.isBeingCleared;
 }
 
 Piece Player::randomPiece() const
@@ -1028,7 +1061,8 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     // no effect
     break;
   case bnClearField:
-    visualEffects.fieldCleaning.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
+    // (!) It is enabled in clearField().  May be the conceptions needs changing
+    //visualEffects.fieldCleaning.enable(BONUS_CLEAR_FIELD_DURATION / 2);  // (!) Change if effect type is changed
     break;
   case bnFlippedScreen:
     visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
@@ -1069,7 +1103,7 @@ void Player::disableBonusVisualEffect(Bonus bonus)
     // no effect
     break;
   case bnClearField:
-    visualEffects.fieldCleaning.disable();
+    // the effect ends itself
     break;
   case bnFlippedScreen:
     visualEffects.flippedScreen.disable();
