@@ -95,7 +95,7 @@ const Time   PIECE_AUTO_LOWERING_ANIMATION_TIME = 0.2f;
 const Time   PIECE_FORCED_LOWERING_ANIMATION_TIME = 0.1f;   // = DOWN_KEY_REACTIVATION_TIME
 const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.06f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.08f;
-const Time   PIECE_ROTATING_ANIMATION_TIME = 0.1f;
+const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
 
 
 
@@ -223,6 +223,7 @@ const int    BONUS_CHANCES[N_REAL_BONUSES] =
   2, // bnSlowDown
   1, // bnClearField
   2, // bnFlippedScreen
+  2, // bnRotatingScreen
   2, // bnCrazyPieces
   2, // bnTruncatedBlocks
   2, // bnNoHint
@@ -236,6 +237,7 @@ const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
 const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
+const Time   BONUS_ROTATING_SCREEN_PERIOD = 5.0f;
 const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
 const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
 const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;

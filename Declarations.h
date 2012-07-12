@@ -53,6 +53,7 @@ enum Bonus
   
   // debuffs
   bnFlippedScreen,
+  bnRotatingScreen,
   bnCrazyPieces,
   bnTruncatedBlocks, // name --> (?)
   bnNoHint,
@@ -85,6 +86,7 @@ const std::wstring BONUS_NAME[N_BONUSES] =
   L"SlowDown",
   L"ClearField",
   L"FlippedScreen",
+  L"RotatingScreen",
   L"CrazyPieces",
   L"TruncatedBlocks",
   L"NoHint",

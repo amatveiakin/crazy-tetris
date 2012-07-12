@@ -1022,6 +1022,9 @@ void Player::enableBonusVisualEffect(Bonus bonus)
     case bnFlippedScreen:
       visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
       break;
+    case bnRotatingScreen:
+      visualEffects.rotatingField.enable(BONUS_ROTATING_SCREEN_PERIOD);
+      break;
     case bnCrazyPieces:
       // no effect
       break;
@@ -1056,6 +1059,9 @@ void Player::disableBonusVisualEffect(Bonus bonus)
       break;
     case bnFlippedScreen:
       visualEffects.flippedScreen.disable();
+      break;
+    case bnRotatingScreen:
+      visualEffects.rotatingField.disable();
       break;
     case bnCrazyPieces:
       // no effect
