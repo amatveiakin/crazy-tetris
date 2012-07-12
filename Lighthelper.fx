@@ -128,5 +128,24 @@ float3 Spotlight(SurfaceInfo v, Light L, float3 eyePos)
 	return litColor*s;
 }
 
- 
+
+float3 litColor(SurfaceInfo v, Light L, float3 eyePos)
+{
+  if (L.brightness > 0)
+  {
+    if (L.lightType == 1) // Parallel
+    {
+      return ParallelLight(v, L, eyePos);
+    }
+    else if (L.lightType == 2) // Point
+    {
+      return PointLight(v, L, eyePos);
+    }
+    else if (L.lightType == 3)// Spot
+    {
+      return Spotlight(v, L, eyePos);
+    }  
+  }
+  return float3(0.0f, 0.0f, 0.0f);
+ }  
  

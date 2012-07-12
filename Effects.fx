@@ -1,6 +1,6 @@
 #include "lighthelper.fx"
 #include "DirectXConstants.h"
-
+  
 struct VS_IN
 {
 	float3 posL    : POSITION;
@@ -99,9 +99,8 @@ float4 psTextured(TexturedVS_OUT pIn) : SV_Target
   //Interpolating normal can make it not be of unit length so normalize it.
   float4 diffuse  =       gDiffuseMap.Sample(gAnisotropicSam, pIn.texC);
   float4 specular = 0.2 * gDiffuseMap.Sample(gAnisotropicSam, pIn.texC);
-  
+  //During linear interpolation length of normal changed
   pIn.normalW = normalize(pIn.normalW);
-  
   //move to psTransparent?
   if (diffuse.a < 1.0f - MATH_EPS) //if makes faster (?)
   {    
@@ -109,36 +108,13 @@ float4 psTextured(TexturedVS_OUT pIn) : SV_Target
     if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
   }
 
-
   SurfaceInfo v = {pIn.posW, pIn.normalW, diffuse, specular};
+  float3 litCol = float3(0., 0., 0.);
   
-  float3 litColor = float3(0.0, 0.0, 0.0);
-  
-  int i;
-
-  for (i = 0; i < MAX_LIGHTS; ++i)
-  {
-    if (gLight[i].brightness > 0)
-    {
-      if (gLight[i].lightType == 1) // Parallel
-      {
-	      litColor += ParallelLight(v, gLight[i], gEyePosW);
-      }
-      else if (gLight[i].lightType == 2) // Point
-      {
-	      litColor += PointLight(v, gLight[i], gEyePosW);
-	    }
-	    else if (gLight[i].lightType == 3)// Spot
-	    {
-	      litColor += Spotlight(v, gLight[i], gEyePosW);
-	    }
-    }
-  }   
-  
-  //return float4(1., 1., 1., 1.);
-  return float4(litColor, diffuse.a);
-
-
+  for (int i = 0; i < MAX_LIGHTS; ++i)
+    litCol += litColor(v, gLight[i], gEyePosW);
+     
+  return float4(litCol, diffuse.a);
 }
 
 
@@ -146,22 +122,17 @@ float4 psTextured(TexturedVS_OUT pIn) : SV_Target
 StandardVS_OUT vsCubes(CubesVS_IN vIn)
 {
 	StandardVS_OUT vOut;
-	
-	vOut.posL = vIn.posL;
-	
+
+  vOut.posL = vIn.posL;
 	// Translate to world space space.
 	vOut.posW    = vIn.posL + vIn.offset;
-  
   //Make wave effect
   vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
-  
   vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation);
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
-
   // Transform to homogeneous clip space.
 	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
-
   // Output vertex attributes for interpolation across triangle.
 	vOut.diffuse = vIn.diffuseColor;
 	vOut.spec    = vIn.specularColor;
@@ -174,40 +145,20 @@ float4 psCubes(StandardVS_OUT pIn) : SV_Target
 {
   //Interpolating normal can make it not be of unit length so normalize it.
   pIn.normalW = normalize(pIn.normalW);
-  
-  //move to psTransparent?
+    //move to psTransparent?
   if (pIn.diffuse.a < 1.0f - MATH_EPS) //if makes faster (?)
   {    
     //rendering transparent or sliced object, so normal may have wrong direction
     if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
   }
-
-
+  
   SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
+  float3 litCol = float3(0., 0., 0.);
   
-  float3 litColor = float3(0., 0., 0.);
-  
-  int i;
-
-  for (i = 0; i < MAX_LIGHTS; ++i)
-  {
-    if (gLight[i].brightness > 0)
-    {
-      if (gLight[i].lightType == 1) // Parallel
-      {
-	      litColor += ParallelLight(v, gLight[i], gEyePosW);
-      }
-      else if (gLight[i].lightType == 2) // Point
-      {
-	      litColor += PointLight(v, gLight[i], gEyePosW);
-	    }
-	    else if (gLight[i].lightType == 3)// Spot
-	    {
-	      litColor += Spotlight(v, gLight[i], gEyePosW);
-	    }
-    }
-  }   
-  return float4(litColor, pIn.diffuse.a);
+  for (int i = 0; i < MAX_LIGHTS; ++i)
+    litCol += litColor(v, gLight[i], gEyePosW);
+     
+  return float4(litCol, pIn.diffuse.a);
 }
 
 
@@ -235,31 +186,12 @@ float4 psSemicubes(StandardVS_OUT pIn) : SV_Target
   if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
 
   SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
+  float3 litCol = float3(0., 0., 0.);
   
-  float3 litColor = float3(0., 0., 0.);
-  
-  int i;
-
-  for (i = 0; i < MAX_LIGHTS; ++i)
-  {
-    if (gLight[i].brightness > 0)
-    {
-      if (gLight[i].lightType == 1) // Parallel
-      {
-	      litColor += ParallelLight(v, gLight[i], gEyePosW);
-      }
-      else if (gLight[i].lightType == 2) // Point
-      {
-	      litColor += PointLight(v, gLight[i], gEyePosW);
-	    }
-	    else if (gLight[i].lightType == 3)// Spot
-	    {
-	      litColor += Spotlight(v, gLight[i], gEyePosW);
-	    }
-    }
-  }       
-  return float4(litColor, pIn.diffuse.a);
-  //return float4(1., 1., 1., 1.);
+  for (int i = 0; i < MAX_LIGHTS; ++i)
+    litCol += litColor(v, gLight[i], gEyePosW);
+     
+  return float4(litCol, pIn.diffuse.a);
 }
 
 technique10 techCubes
@@ -271,7 +203,17 @@ technique10 techCubes
         SetPixelShader( CompileShader( ps_4_0, psCubes() ) );
     }
 }
-
+/*
+technique10 techDisapearingLine
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, psDissapearingLine() ) );
+    }
+}
+*/
 technique10 techSemicubes
 {
     pass P0
@@ -293,3 +235,4 @@ technique10 techTextured
         SetPixelShader( CompileShader( ps_4_0, psTextured() ) );
     }
 }
+

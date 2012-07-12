@@ -28,14 +28,16 @@ public:
   float fieldToWorldY(float fieldY);
 
 private:
-	void buildFX();
+	void drawPlayer(Player* player, float currTime);
+  
+  void buildFX();
 	void buildVertexLayouts();
   void buildBuffers();
 	void buildLights();
 	void buildRasterizerStates();
   void buildBlendingStates();
   void buildTextures();
-
+  void buildViewports();
   void setConstantBuffers();
  
 private:
@@ -89,7 +91,11 @@ private:
 	
   ID3D10BlendState* transparentBS;
 
-	D3DXMATRIX mWorld;
+  D3D10_VIEWPORT vpPlayers[MAX_PLAYERS];
+  D3D10_VIEWPORT vpScreen;
+
+  
+  D3DXMATRIX mWorld;
 	D3DXMATRIX mView;
 	D3DXMATRIX mProj;
 	D3DXMATRIX mWVP;
@@ -108,13 +114,16 @@ private:
   float WORLD_FIELD_HEIGHT;
   float CUBE_SCALE;
 
+  const float vpAspect;
+
 };
 
 CrazyTetrisApp::CrazyTetrisApp(HINSTANCE hInstance)
 : D3DApp(hInstance), FX(0), techCubes(0), techSemicubes(0),
   fxVPVar(0), currTime(0.f), mPhi(PI / 2.f), mTheta(0.f), 
   WORLD_FIELD_HEIGHT(3.), WORLD_FIELD_WIDTH(4.),
-  CUBE_SCALE(min (WORLD_FIELD_WIDTH / (float) FIELD_WIDTH, WORLD_FIELD_HEIGHT / (float) FIELD_HEIGHT))
+  CUBE_SCALE(min (WORLD_FIELD_WIDTH / (float) FIELD_WIDTH, WORLD_FIELD_HEIGHT / (float) FIELD_HEIGHT)),
+  vpAspect((FIELD_WIDTH + 1.0f) / (FIELD_HEIGHT + 2.0f))
   
 {
   D3DXMatrixIdentity(&mWorld);
@@ -162,6 +171,7 @@ void CrazyTetrisApp::initApp()
   mGame.newMatch();
   mGame.newRound(0);
   mGame.saveSettings(); // for test purposes
+  int a = 1;
 
 }
 
@@ -191,20 +201,20 @@ void CrazyTetrisApp::updateScene(float dt)
     mTheta = 0;
   }
   
-  if(GetAsyncKeyState(VK_F1) & 0x8000)	mGame.player[0].visualEffects.flippedScreen.enable(1.0f);
-  if(GetAsyncKeyState(VK_F2) & 0x8000)	mGame.player[0].visualEffects.flippedScreen.disable();
+  if(GetAsyncKeyState(VK_F1) & 0x8000)	mGame.players[0].visualEffects.flippedScreen.enable(1.0f);
+  if(GetAsyncKeyState(VK_F2) & 0x8000)	mGame.players[0].visualEffects.flippedScreen.disable();
 
-  if(GetAsyncKeyState(VK_F3) & 0x8000)	mGame.player[0].visualEffects.rotatingField.enable(10.0f);
-  if(GetAsyncKeyState(VK_F4) & 0x8000)	mGame.player[0].visualEffects.rotatingField.disable();
+  if(GetAsyncKeyState(VK_F3) & 0x8000)	mGame.players[0].visualEffects.rotatingField.enable(10.0f);
+  if(GetAsyncKeyState(VK_F4) & 0x8000)	mGame.players[0].visualEffects.rotatingField.disable();
 	
-  if(GetAsyncKeyState(VK_F5) & 0x8000)	mGame.player[0].visualEffects.wave.enable(2.0f);
-  if(GetAsyncKeyState(VK_F6) & 0x8000)	mGame.player[0].visualEffects.wave.disable();
+  if(GetAsyncKeyState(VK_F5) & 0x8000)	mGame.players[0].visualEffects.wave.enable(2.0f);
+  if(GetAsyncKeyState(VK_F6) & 0x8000)	mGame.players[0].visualEffects.wave.disable();
 
-  if(GetAsyncKeyState(VK_F7) & 0x8000)	mGame.player[0].visualEffects.semicubes.enable(1.f);
-  if(GetAsyncKeyState(VK_F8) & 0x8000)	mGame.player[0].visualEffects.semicubes.disable();
+  if(GetAsyncKeyState(VK_F7) & 0x8000)	mGame.players[0].visualEffects.semicubes.enable(1.f);
+  if(GetAsyncKeyState(VK_F8) & 0x8000)	mGame.players[0].visualEffects.semicubes.disable();
 
-  if(GetAsyncKeyState('1') & 0x8000)	 mGame.player[0].visualEffects.lantern.enable(2.0f);
-  if(GetAsyncKeyState('2')& 0x8000)	   mGame.player[0].visualEffects.lantern.disable();
+  if(GetAsyncKeyState('1') & 0x8000)	 mGame.players[0].visualEffects.lantern.enable(2.0f);
+  if(GetAsyncKeyState('2')& 0x8000)	   mGame.players[0].visualEffects.lantern.disable();
 
   if(GetAsyncKeyState(VK_NUMPAD6) & 0x8000)	Lights[1].pos.x += 2.f * dt;
   if(GetAsyncKeyState(VK_NUMPAD4) & 0x8000) Lights[1].pos.x -= 2.f * dt;
@@ -233,53 +243,59 @@ void CrazyTetrisApp::updateScene(float dt)
 
 void CrazyTetrisApp::drawScene()
 {
-	
-  D3DXCOLOR diffuseColors[] =
-  {
-    RED, RED, RED,  GREEN,
-    BLUE, BLUE, RED,  GREEN,
-    YELLOW, BLUE, BLUE,  GREEN,
-    YELLOW,  YELLOW, YELLOW,  GREEN
-  };
-  D3DApp::drawScene();
-	// Restore default states, input layout and primitive topology 
-	// because mFont->DrawText changes them.  Note that we can 
-	// restore the default states by passing null.
-	md3dDevice->OMSetDepthStencilState(0, 0);
-	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
-
-  //md3dDevice->RSSetState(rsSolidCullNone);
-	  
-	//Getting current time once
+  D3DApp::drawScene(); //Cleaning screen
+  //Getting current time once
   currTime = mTimer.getGameTime();
   
-  //Set constants
+  //Set time for this frame
 	fxTimeVar->SetFloat(currTime);
+
+  for (int i = 0; i < MAX_PLAYERS; ++i)
+  {
+    md3dDevice->RSSetViewports(1, &vpPlayers[i]);
+    drawPlayer(mGame.activePlayers[i], currTime);
+  }
+
+  md3dDevice->RSSetViewports(1, &vpScreen);
+	md3dDevice->RSSetState(0);
+	// We specify DT_NOCLIP, so we do not care about width/height of the rect.
+	RECT R = {5, 5, 0, 0};
+	mFont->DrawText(0, mFrameStats.c_str(), -1, &R, DT_NOCLIP, WHITE);
+
+	mSwapChain->Present(0, 0);
+}
+
+void CrazyTetrisApp::drawPlayer(Player* player, float currTime)
+{
+  //Reseting states
+  md3dDevice->OMSetDepthStencilState(0, 0);
+	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
+
   mVP = mView * mProj;
 	fxVPVar->SetMatrix((float*)&mVP);
 
   D3DXMATRIX temp, tempX, tempY;
   D3DXMatrixMultiply(&mGlobalRotation, 
-                     D3DXMatrixRotationY(&tempY, 2 * PI * mGame.player[0].visualEffects.rotatingField.progress(currTime)),
-                     D3DXMatrixRotationX(&tempX,     PI * mGame.player[0].visualEffects.flippedScreen.progress(currTime)));
+                     D3DXMatrixRotationY(&tempY, 2 * PI * player->visualEffects.rotatingField.progress(currTime)),
+                     D3DXMatrixRotationX(&tempX,     PI * player->visualEffects.flippedScreen.progress(currTime)));
   
   
   //Calculating lights
-  Lights[1].pos.x = fieldToWorldX(mGame.player[0].visualEffects.lantern.positionX(currTime));
-  Lights[1].pos.y = fieldToWorldY(mGame.player[0].visualEffects.lantern.positionY(currTime));
-  //Lights[1].pos.x += sin(TWO_PI * mGame.player[0].visualEffects.wave.progress(currTime)) * sin(2 *  Lights[1].pos.y)  * 0.33;
+  Lights[1].pos.x = fieldToWorldX(player->visualEffects.lantern.positionX(currTime));
+  Lights[1].pos.y = fieldToWorldY(player->visualEffects.lantern.positionY(currTime));
+  //Lights[1].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[1].pos.y)  * 0.33;
   Lights[1].pos.z = -1.0f;
   Lights[1].dir = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 0.0f);
   
-  Lights[2].pos.x = fieldToWorldX(mGame.player[0].visualEffects.lantern.positionX(currTime));
-  Lights[2].pos.y = fieldToWorldY(mGame.player[0].visualEffects.lantern.positionY(currTime));
-  //Lights[2].pos.x += sin(TWO_PI * mGame.player[0].visualEffects.wave.progress(currTime)) * sin(2 *  Lights[2].pos.y)  * 0.33;
+  Lights[2].pos.x = fieldToWorldX(player->visualEffects.lantern.positionX(currTime));
+  Lights[2].pos.y = fieldToWorldY(player->visualEffects.lantern.positionY(currTime));
+  //Lights[2].pos.x += sin(TWO_PI * player->visualEffects.wave.progress(currTime)) * sin(2 *  Lights[2].pos.y)  * 0.33;
   Lights[2].pos.z =  1.0f;
   Lights[2].dir = D3DXVECTOR4(0.0f, 0.0f,  -1.0f, 0.0f);
 
-  Lights[0].brightness = 1 - mGame.player[0].visualEffects.lantern.progress(currTime);
-  Lights[1].brightness =     mGame.player[0].visualEffects.lantern.progress(currTime);
-  Lights[2].brightness =     mGame.player[0].visualEffects.lantern.progress(currTime);
+  Lights[0].brightness = 1 - player->visualEffects.lantern.progress(currTime);
+  Lights[1].brightness =     player->visualEffects.lantern.progress(currTime);
+  Lights[2].brightness =     player->visualEffects.lantern.progress(currTime);
 
   D3DXVec4Transform(&Lights[1].pos, &Lights[1].pos, &mGlobalRotation);
   D3DXVec4Transform(&Lights[1].dir, &Lights[1].dir, &mGlobalRotation);
@@ -290,9 +306,9 @@ void CrazyTetrisApp::drawScene()
   fxLightVar->SetRawValue(&Lights, 0, MAX_LIGHTS * sizeof(Light) );
 	fxEyePosVar->SetRawValue(&eyePosW,0,sizeof(D3DXVECTOR3));
    
-  float semicubesProgress = mGame.player[0].visualEffects.semicubes.progress(currTime);
+  float semicubesProgress = player->visualEffects.semicubes.progress(currTime);
 
-  fxWaveProgressVar->SetFloat(mGame.player[0].visualEffects.wave.progress(currTime));
+  fxWaveProgressVar->SetFloat(player->visualEffects.wave.progress(currTime));
   fxSemicubesProgressVar->SetFloat(semicubesProgress);
   
   fxGlobalRotationVar->SetMatrix((float*) &mGlobalRotation);
@@ -320,57 +336,25 @@ void CrazyTetrisApp::drawScene()
   
   //Real picture
   
-  for (int i = 0; i < mGame.player[0].nBlockImages; ++i)
+  for (int i = 0; i < player->blockImages.size(); ++i)
   {
-    cubeInstances[i].offset.x = fieldToWorldX(mGame.player[0].blockImage[i].positionX(currTime));
-    cubeInstances[i].offset.y = fieldToWorldY(mGame.player[0].blockImage[i].positionY(currTime));
+    cubeInstances[i].offset.x = fieldToWorldX(player->blockImages[i].positionX(currTime));
+    cubeInstances[i].offset.y = fieldToWorldY(player->blockImages[i].positionY(currTime));
     cubeInstances[i].offset.z = 0;
 
-    cubeInstances[i].diffuseColor  = mGame.player[0].blockImage[i].color; 
-    cubeInstances[i].specularColor = mGame.player[0].blockImage[i].color * 0.5f + WHITE * 0.5f;
+    cubeInstances[i].diffuseColor  = player->blockImages[i].color; 
+    cubeInstances[i].specularColor = player->blockImages[i].color * 0.5f + WHITE * 0.5f;
     cubeInstances[i].specularColor.a = 128.f;
 
   }
   cubeInstancesBuffer->Unmap();
   
-  mBox.draw(mGame.player[0].nBlockImages);
+  mBox.draw(player->blockImages.size());
   
-  
-  //Test picture
-  /*
-  for (int i =  0; i < FIELD_WIDTH; ++i)
-  {
-    //int maxJ = FIELD_HEIGHT;//std::rand() % (FIELD_HEIGHT);
-    for (int j = 0; j < FIELD_HEIGHT; ++j)
-    {
-      cubeInstances[i* FIELD_HEIGHT + j].offset.x = (i - (FIELD_WIDTH - 1.0) / 2.) * CUBE_SCALE;
-      cubeInstances[i* FIELD_HEIGHT + j].offset.y = (j - (FIELD_HEIGHT - 1.0) / 2.) * CUBE_SCALE;
-      cubeInstances[i* FIELD_HEIGHT + j].offset.z = 0;
-
-      cubeInstances[i* FIELD_HEIGHT + j].diffuseColor  = diffuseColors[(4 * i + j) % 15];
-      cubeInstances[i* FIELD_HEIGHT + j].specularColor = diffuseColors[(4 * i + j) % 15] * 0.5f + WHITE * 0.5f;
-      cubeInstances[i* FIELD_HEIGHT + j].specularColor.a = 128.f;
-    }
-   }
- 
-  cubeInstancesBuffer->Unmap();
- 
- 
-  mBox.draw(MAX_BLOCKS);
-  */
-  
-
     
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
-  //упорядочиваем по удаленности и рисуем непрозрачные объекты
+  //упорядочиваем по удаленности и рисуем прозрачные объекты
       
-  
-	md3dDevice->RSSetState(0);
-	// We specify DT_NOCLIP, so we do not care about width/height of the rect.
-	RECT R = {5, 5, 0, 0};
-	mFont->DrawText(0, mFrameStats.c_str(), -1, &R, DT_NOCLIP, WHITE);
-
-	mSwapChain->Present(0, 0);
 }
 
 void CrazyTetrisApp::buildFX()
@@ -519,7 +503,7 @@ void CrazyTetrisApp::buildLights()
   Lights[1].dir = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 0.0f);
   Lights[1].pos = D3DXVECTOR4(0.0f, 0.0f, -1.0f, 1.0f);
   Lights[1].att.y = 1;
-  Lights[1].spotPow = 4.f;
+  Lights[1].spotPow = 16.f;
   Lights[1].range = 10;
   Lights[1].lightType = 3;
   Lights[1].brightness = 0.0f;
@@ -527,7 +511,7 @@ void CrazyTetrisApp::buildLights()
   Lights[2].dir = D3DXVECTOR4(0.0f, 0.0f, -1.0f, 0.0f);
   Lights[2].pos = D3DXVECTOR4(0.0f, 0.0f,  1.0f, 1.0f);
   Lights[2].att.y = 1;
-  Lights[2].spotPow = 4.f;
+  Lights[2].spotPow = 16.f;
   Lights[2].range = 10;
   Lights[2].lightType = 3;
   Lights[2].brightness = 0.0f;
@@ -557,8 +541,13 @@ void CrazyTetrisApp::onResize()
 {
 	D3DApp::onResize();
 
-	float aspect = (float)mClientWidth/mClientHeight;
-	D3DXMatrixPerspectiveFovLH(&mProj, 0.25f*PI, aspect, 1.0f, 1000.0f);
+  buildViewports();
+
+	//md3dDevice->RSSetViewports(1, &vpPlayers[1]);
+
+
+	//float aspect = (float)mClientWidth/mClientHeight;
+	D3DXMatrixPerspectiveFovLH(&mProj, 0.25f*PI, vpAspect, 1.0f, 1000.0f);
 }
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 				   PSTR cmdLine, int showCmd)
@@ -595,6 +584,37 @@ void CrazyTetrisApp::buildBuffers()
 void CrazyTetrisApp::buildTextures()
 {
   D3DX10CreateShaderResourceViewFromFile(md3dDevice, L"Resources/Textures/Wall.dds", 0, 0, &texBackWallRV, 0);
+}
+
+void CrazyTetrisApp::buildViewports()
+{
+    //Updating viewports
+  int nActivePlayers = MAX_PLAYERS; //Сделать нормально
+	float vpWidth  = mClientWidth / nActivePlayers; 
+  float vpHeight = mClientHeight;
+
+  vpWidth  = Min(vpWidth,  vpHeight * vpAspect);
+  vpHeight = Min(vpHeight, vpWidth  / vpAspect);
+  
+  float leftIndent = (mClientWidth - nActivePlayers * vpWidth) / 2.0f;
+  float topIndent  = (mClientHeight - vpHeight) / 2.0f;
+  for (int i = 0; i < nActivePlayers; ++i)
+  {
+    vpPlayers[i].TopLeftX = leftIndent + i * vpWidth;
+    vpPlayers[i].TopLeftY = topIndent;
+    vpPlayers[i].Width = vpWidth;
+    vpPlayers[i].Height = vpHeight;
+    vpPlayers[i].MinDepth = 0.0f;
+    vpPlayers[i].MaxDepth = 1.0f;
+  }
+
+  vpScreen.TopLeftX = 0;
+  vpScreen.TopLeftY = 0;
+  vpScreen.Width = mClientWidth;
+  vpScreen.Height = mClientHeight;
+  vpScreen.MinDepth = 0.0f;
+  vpScreen.MaxDepth = 1.0f;
+
 }
 float CrazyTetrisApp::fieldToWorldX(float fieldX)
 {
