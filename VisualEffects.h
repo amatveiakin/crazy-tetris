@@ -1,7 +1,7 @@
 #ifndef CRAZYTETRIS_VISUALEFFECTS_H
 #define CRAZYTETRIS_VISUALEFFECTS_H
 
-#include <vector>
+#include <map>
 #include "Declarations.h"
 
 //================================== Effects ===================================
@@ -10,13 +10,12 @@
 class BaseEffectType
 {
 public:
-  BaseEffectType() : active_(false), progress_(MIN_PROGRESS), MIN_PROGRESS(0.0f), MAX_PROGRESS(1.0f),
-                     PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS) { }
+  BaseEffectType() : MIN_PROGRESS(0.0f), MAX_PROGRESS(1.0f), PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS),
+                     active_(false), progress_(MIN_PROGRESS), lastTime_(0.0f) { }
 protected:
   const float MIN_PROGRESS;
   const float MAX_PROGRESS;
   const float PROGRESS_RANGE;
-  const int TIME_UNITS_PER_SECONDS;
 
   bool active_;
   float progress_;
@@ -26,29 +25,33 @@ protected:
 
 
 // An effect that repeats periodically (starting from zero moment)
-class PeriodicalEffectType : public BaseEffectType
+class PeriodicalEffectType : public BaseEffectType 
 {
 public:
   float period;
-  
-  void enable(Time currentTime, float newPeriod)
+
+  PeriodicalEffectType() : stopping_(false), period(1.0f) { }
+
+  void enable(float newPeriod) 
   {
     active_ = true;
+    stopping_ = false;
     period = newPeriod;
-    lastTime_ = currentTime;
   }
-  
-  void disable(Time currentTime)
+
+  void disable() 
   {
     stopping_ = true;
-    lastTime_ = currentTime;
   }
-  
-  float progress(Time currentTime)
+
+  float progress(Time currentTime) 
   {
     if (!active_)
+    {
+      lastTime_ = currentTime;
       return MIN_PROGRESS;
-    progress_ += (currentTime - lastTime_) / period;
+    }
+    progress_ += float(currentTime - lastTime_) / period;
     while (progress_ > MAX_PROGRESS)
     {
       if (stopping_)
@@ -59,6 +62,7 @@ public:
       else
         progress_ -= PROGRESS_RANGE;
     }
+    lastTime_ = currentTime;
     return progress_;
   }
 
@@ -74,28 +78,64 @@ protected:
 class FadingEffectType : public BaseEffectType
 {
 public:
-  float animationDuration;
-  
-  void enable(Time currentTime, float newAnimationDuration)
+  float duration;
+
+  FadingEffectType() : duration(1.0f) { }
+
+  void enable(float newDuration)
   {
     active_ = true;
-    animationDuration = newAnimationDuration;
-    lastTime_ = currentTime;
+    duration = newDuration;
   }
-  
-  void disable(Time currentTime)
+
+  void disable()
   {
     active_ = false;
-    lastTime_ = currentTime;
   }
-  
+
   float progress(Time currentTime)
   {
-    float progressChange = float(currentTime - lastTime_) / animationDuration;
+    float progressChange = float(currentTime - lastTime_) / duration;
     if (active_)
       progress_ = min(progress_ + progressChange, MAX_PROGRESS);
     else
       progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+    lastTime_ = currentTime;
+    return progress_;
+  }
+};
+
+
+
+// Effect that acts once     // words (?)
+class SingleEffectType : public BaseEffectType   // Name (?)
+{
+public:
+  float duration;
+
+  SingleEffectType() : duration(1.0f) { }
+
+  void enable(float newDuration)
+  {
+    active_ = true;
+    duration = newDuration;
+  }
+
+  // TODO: SingleEffectType::disable should it be simply ignored?
+  void disable() { }
+
+  float progress(Time currentTime)
+  {
+    float progressChange = float(currentTime - lastTime_) / duration;
+    if (active_) {
+      progress_ += progressChange;
+      if (progress_ > MAX_PROGRESS)
+      {
+        progress_ = MIN_PROGRESS;
+        active_ = false;
+      }
+    }
+    lastTime_ = currentTime;
     return progress_;
   }
 };
@@ -103,46 +143,47 @@ public:
 
 
 // Effect that fades in for some time and than immediately fades out.    <-- spelling (?)
-class BlinkEffectType : public BaseEffectType
+class FlashEffectType : public BaseEffectType
 {
 public:
   float halfDuration;
-  
-  void enable(Time currentTime, float newHalfDuration)
+
+  FlashEffectType() : halfDuration(1.0f) { }
+
+  void enable(float newHalfDuration)
   {
     active_ = true;
     halfDuration = newHalfDuration;
-    lastTime_ = currentTime;
   }
-  
-  void disable(Time currentTime)
+
+  void disable()
   {
     active_ = false;
-    lastTime_ = currentTime;
   }
-  
+
   float progress(Time currentTime)
   {
     float progressChange = float(currentTime - lastTime_) / halfDuration;
     if (active_) {
       progress_ += progressChange;
-      if (progress > MAX_PROGRESS)
+      if (progress_ > MAX_PROGRESS)
       {
-        progress = MAX_PROGRESS;
+        progress_ = MAX_PROGRESS;
         active_ = false;
       }
     }
     else
       progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+    lastTime_ = currentTime;
     return progress_;
   }
 };
 
 
 
-typedef BlinkEffectType ClearGlassEffect;
+typedef SingleEffectType ClearGlassEffect; // --> FlashEffectType (?)
 
-// if actually can't fade out :-)
+// if can't actually fade out :-)
 typedef FadingEffectType PlayerDyingEffect; // spelling -- (?)
 
 typedef FadingEffectType NoHintEffect;
@@ -171,27 +212,69 @@ public:
 
 
 
+
 // =================================== Blocks ==================================
 
 class VisualObject { };
 
-class Block : public VisualObject
-{
+class Block : public VisualObject {
 public:
   Color color;
-  FieldCoords movingFrom;
-  FieldCoords movingTo;
+  FloatFieldCoords movingFrom;
+  FloatFieldCoords movingTo;
   Time movingStartTime;
-  Time movingEndTime;
+  Time movingDuration;
   bool motionBlur;
+  
+  void setMotion(Color color__, FloatFieldCoords movingFrom__, FloatFieldCoords movingTo__,
+                 Time movingStartTime__, Time movingDuration__, bool motionBlur__ = false)
+  {
+    color = color__;
+    movingFrom = movingFrom__;
+    movingTo = movingTo__;
+    movingStartTime = movingStartTime__;
+    movingDuration = movingDuration__;
+    motionBlur = motionBlur__;
+  }
+  
+  void setStanding(Color color__, FloatFieldCoords position)
+  {
+    setMotion(color__, position, position, 0.0f, 1.0f, false);
+  }
+  
+  float row(Time currentTime)
+  {
+    if (currentTime > movingStartTime + movingDuration) // (?)
+    {
+      return (movingFrom.row * (movingStartTime + movingDuration - currentTime) +
+              movingTo.row   * (currentTime - movingStartTime)) /
+             movingDuration;
+    }
+    else
+      return movingTo.row;
+  }
+  
+  float col(Time currentTime)
+  {
+    if (currentTime > movingStartTime + movingDuration) // (?)
+    {
+      return (movingFrom.col * (movingStartTime + movingDuration - currentTime) +
+              movingTo.col   * (currentTime - movingStartTime)) /
+             movingDuration;
+    }
+    else
+      return movingTo.col;
+  }
 };
 
-class DisappearingLine : public VisualObject
-{
-  std::vector<Color> blockColor;
+class DisappearingLine : public VisualObject {
+public:
+  Color blockColor[FIELD_WIDTH];
   int row;
   Time startTime;
-  Time endTime;
+  Time duration;
 };
+
+typedef std::map<FieldCoords, VisualObject> VisualObjects;
 
 #endif

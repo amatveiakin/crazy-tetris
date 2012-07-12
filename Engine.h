@@ -18,24 +18,21 @@ using std::bitset;
 
 //================================== General ===================================
 
-const int    FIELD_WIDTH = 10;
-const int    FIELD_HEIGHT = 20;
-
 const double STARTING_SPEED = 1.0;
 const double SPEED_UP_MULTIPLIER = 1.004;
-const Time   SPEED_UP_INTERVAL = 500;
+const Time   SPEED_UP_INTERVAL = 0.5f;
 // Speed limit can be excedeed via bonus
 const double SPEED_LIMIT = 5.0;
 
-const Time   NORMAL_LOWERING_TIME = 500;
+const Time   NORMAL_LOWERING_TIME = 0.5f;
 // Time necessary for a dropping piece to move one line down
-const Time   DROPPING_PIECE_LOWERING_TIME = 7;
-const Time   LINE_DISAPPEAR_TIME = 10;
+const Time   DROPPING_PIECE_SPEED = 0.01f;
+const Time   LINE_DISAPPEAR_TIME = 0.05f;
 
-const Time   MIN_BONUS_APPEAR_INTERVAL = 4000;
-const Time   MAX_BONUS_APPEAR_INTERVAL = 6000;
-const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15000;
-const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20000;
+const Time   MIN_BONUS_APPEAR_INTERVAL = 4.0f;
+const Time   MAX_BONUS_APPEAR_INTERVAL = 6.0f;
+const Time   MIN_BONUS_DISAPPEAR_INTERVAL = 15.0f;
+const Time   MAX_BONUS_DISAPPEAR_INTERVAL = 20.0f;
 
 const int    MAX_PLAYERS = 4;
 const int    MAX_PLAYER_NAME_LENGTH = 16;
@@ -44,14 +41,12 @@ const int    MAX_PLAYER_NAME_LENGTH = 16;
 
 //================================== Keyboard ==================================
 
-const int    N_CONTROL_KEYS = 8;
-
-const Time   MOVE_KEY_REACTIVATE_TIME = 120;
-const Time   ROTATE_KEY_REACTIVATE_TIME = 180;
-const Time   DOWN_KEY_REACTIVATE_TIME = 100;
-const Time   DROP_KEY_REACTIVATE_TIME = 300;
-const Time   HEAL_KEY_REACTIVATE_TIME = 200;
-const Time   CHANGE_VICTIM_KEY_REACTIVATE_TIME = 200;
+const Time   MOVE_KEY_REACTIVATE_TIME = 0.12f;
+const Time   ROTATE_KEY_REACTIVATE_TIME = 0.18f;
+const Time   DOWN_KEY_REACTIVATE_TIME = 0.1f;
+const Time   DROP_KEY_REACTIVATE_TIME = 0.3f;
+// const Time   HEAL_KEY_REACTIVATE_TIME = 0.2f;
+const Time   CHANGE_VICTIM_KEY_REACTIVATE_TIME = 0.2f;
 
 const string CONTROL_KEY_NAME[N_CONTROL_KEYS] =
 {
@@ -61,7 +56,7 @@ const string CONTROL_KEY_NAME[N_CONTROL_KEYS] =
   "Вращать пр. ч.: ",
   "Вниз: ",
   "Бросить: ",
-  "Лечиться: ",
+//   "Лечиться: ",
   "Менять цель: "
 };
 
@@ -73,7 +68,7 @@ const Time   KEY_REACTIVATE_TIME[N_CONTROL_KEYS] =
   ROTATE_KEY_REACTIVATE_TIME,
   DOWN_KEY_REACTIVATE_TIME,
   DROP_KEY_REACTIVATE_TIME,
-  HEAL_KEY_REACTIVATE_TIME,
+//   HEAL_KEY_REACTIVATE_TIME,
   CHANGE_VICTIM_KEY_REACTIVATE_TIME
 };
 
@@ -85,111 +80,114 @@ const int    N_BONUSES = 10;
 
 enum Bonus
 {
+  // Kind buffs
+  
+  // Kind soceries
+  bnHeal,
+  bnSlowDown,
+  bnClearField,
+  
+  // Evil buffs
   bnFlippedScreen,
   bnInverseControls,
   bnCrazyPieces,
   bnCutBlocks, // name --> (?)
   bnNoHint,
-  bnHeal,
+  
+  // Evil soceries
   bnSpeedUp,
-  bnSlowDown,
-  bnClearField,
-  bnFlipField,
+  bnFlipField
 };
    
 const string BONUS_NAME[N_BONUSES] =
 {
+  "Heal",
+  "SlowDown",
+  "ClearField",
   "FlippedScreen",
   "InverseControls",
   "CrazyPieces",
   "CutBlocks",
   "NoHint",
-  "Heal",
   "SpeedUp",
-  "SlowDown",
-  "ClearField",
   "FlipField"
 };
 
 const int    BONUS_CHANCE[N_BONUSES] =
 {
+  5, // bnHeal
+  2, // bnSlowDown
+  1, // bnClearField
   2, // bnFlippedScreen
   2, // bnInverseControls
   2, // bnCrazyPieces
   2, // bnCutBlocks
   2, // bnNoHint
-  5, // bnHeal
   2, // bnSpeedUp
-  2, // bnSlowDown
-  1, // bnClearField
   2  // bnFlipField
 };
 
 const double BONUS_SPEED_UP_MULTIPLIER = 1.4;
 const double BONUS_SLOW_DOWN_MULTIPLIER = 0.7;
 
-const Time   BONUS_FLIP_SCREEN_TIME = 800;
-const Time   BONUS_CLEAR_SCREEN_TIME = 500;
+const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
+const Time   BONUS_CLEAR_SCREEN_DURATION = 0.5f;
+const Time   BONUS_CUTTING_BLOCKS_DURATION = 0.5f;
+const Time   BONUS_REMOVING_HINT_DURATION = 1.0f;
 
-const Bonus  BEGIN_ENCHANTMENT = bnFlippedScreen;
-const Bonus  END_ENCHANTMENT   = bnNoHint + 1;
-const int    N_ENCHANTMENTS    = END_ENCHANTMENT - BEGIN_ENCHANTMENT;
 
-const Bonus  BEGIN_BUFF        = BEGIN_ENCHANTMENT;
-const Bonus  END_BUFF          = bnFlippedScreen;
 
-const Bonus  BEGIN_DEBUFF      = END_BUFF;
-const Bonus  END_DEBUFF        = END_ENCHANTMENT;
+const Bonus  BEGIN_KIND         = bnFlippedScreen;
+const Bonus  END_KIND           = Bonus(bnClearField + 1);
 
-bool isEnchantment(Bonus bonus)
+const Bonus  BEGIN_EVIL         = bnFlippedScreen;
+const Bonus  END_EVIl           = Bonus(bnFlipField + 1);
+
+const Bonus  BEGIN_BUFFS        = bnHeal;
+const Bonus  END_BUFFS          = bnHeal;
+const int    N_BUFFS            = END_BUFFS - BEGIN_BUFFS;
+
+const Bonus  BEGIN_DEBUFFS      = bnFlippedScreen;
+const Bonus  END_DEBUFFS        = Bonus(bnFlipField + 1);
+const int    N_DEBUFFS          = END_DEBUFFS - BEGIN_DEBUFFS;
+
+inline bool isKind(Bonus bonus)
 {
-  return (BEGIN_ENCHANTMENT <= bonus) && (bonus < END_ENCHANTMENT);
+  return (BEGIN_KIND <= bonus) && (bonus < END_KIND);
 }
 
-bool isBuff(Bonus bonus) // spelling (?)
+inline bool isEvil(Bonus bonus)
 {
-  return (BEGIN_BUFF <= bonus) && (bonus < END_BUFF);
+  return (BEGIN_EVIL <= bonus) && (bonus < END_EVIl);
 }
 
-bool isDebuff(Bonus bonus)
+inline bool isBuff(Bonus bonus)
 {
-  return (BEGIN_DEBUFF <= bonus) && (bonus < END_DEBUFF);
+  return (BEGIN_BUFFS <= bonus) && (bonus < END_BUFFS);
 }
 
-class Enchantment : private bitset<N_ENCHANTMENTS>
+inline bool isDebuff(Bonus bonus)
 {
-public:
-  bool operator[](size_t pos) const
-  {
-    return bitset<N_ENCHANTMENTS>::operator[](pos);
-  }
-  reference operator[](size_t pos)
-  {
-    return bitset<N_ENCHANTMENTS>::operator[](pos);
-  }
-  void clear()
-  {
-    reset();
-  }
-};
+  return (BEGIN_DEBUFFS <= bonus) && (bonus < END_DEBUFFS);
+}
+
+typedef ShiftedBitSet<N_BUFFS, BEGIN_BUFFS> Buffs;
+
+typedef ShiftedBitSet<N_DEBUFFS, BEGIN_DEBUFFS> Debuffs;
 
 
 
 //==================================== Game ====================================
 
 const int    MAX_PIECE_SIZE = 4;
-const int    N_PIECE_ROTATION_STATES = 4;
+const int    N_ROTATION_STATES = 4;
 
-typedef Table<bool, MAX_PIECE_SIZE, MAX_PIECE_SIZE> BlockStructre; // (?) is it slower with bool?
+typedef FixedSizeTable<bool, MAX_PIECE_SIZE, MAX_PIECE_SIZE> BlockStructre;
 
 class PieceTemplate
 {
 public:
   Color color;
-  Piece()
-  {
-    structure_.resize(N_ROTATION_STATES);
-  }
   BlockStructre& operator[](int index)
   {
     return structure_[index];
@@ -198,7 +196,7 @@ public:
     return structure_[index];
   }
 protected:
-  vector<BlockStructre> structure_;
+  BlockStructre structure_[N_ROTATION_STATES];
 };
 
 enum FieldCellType { ctEmpty, ctSky, ctBlock, ctWall };
@@ -209,17 +207,17 @@ struct FieldCell
   Color color;
   Bonus bonus;
   
-  bool free()
+  bool isFree()
   {
     return (cellType == ctEmpty) || (cellType == ctSky);
   }
-  bool blocked()
+  bool isBlocked()
   {
-    return !free();
+    return !isFree();
   }
 };
 
-typedef Table<FieldCell, FIELD_WIDTH, FIELD_HEIGHT> Field;
+typedef FixedSizeTable<FieldCell, FIELD_WIDTH, FIELD_HEIGHT> Field;
 
 const char   PIECE_TEMPLATE_BLOCK_CHAR = '*';
 const char   PIECE_TEMPLATE_FREE_CHAR  = '-';
@@ -228,28 +226,39 @@ const char   PIECE_TEMPLATE_FREE_CHAR  = '-';
 
 struct ControlKeyList
 {
-  ControlKey keyLeft, keyRight;
-  ControlKey keyRotateCW, keyRotateCCW;
-  ControlKey keyDown;
-  ControlKey keyDrop;
-//   ControlKey keyHeal;
-  ControlKey keyChangeVictim;
+  RealKey keyLeft;
+  RealKey keyRight;
+  RealKey keyRotateCW;
+  RealKey keyRotateCCW;
+  RealKey keyDown;
+  RealKey keyDrop;
+//   RealKey keyHeal;
+  RealKey keyChangeVictim;
 };
 
-union Controls
+union Controls    // (?) Is it necessary?
 {
   ControlKeyList keyList;
-  ControlKey keyArray[N_CONTROL_KEY];
+  RealKey keyArray[N_CONTROL_KEYS];
+};
+
+struct KeyMapping
+{
+  ControlKey controlKey;
+  int iPlayer;
 };
 
 
+
+class Game;
 
 class PlayerInfo
 {
 public:
   string name;
-  int totalWins; // (?)
-  int totalLosts; // (?)
+//   int totalWins;
+//   int totalLosts;
+  // TODO: other stats
 };
 
 class Player
@@ -275,16 +284,18 @@ public:
   PieceTemplate* fallingPiece;
   int fallingPieceRotationState;
   // Left top corner coordinates
-  FieldCoords fallingPiecePosition;
+  FieldCoords fallingPiecePos;
   
   Time nextBonusTime;
   
-  Diseases diseases;
+  Buffs buffs;
+  Debuffs debuffs;
   Player* victim;
   
-  VisualEffects effects;
+  VisualObjects visualObjects;
+  VisualEffects visualEffects;
   
-  void init(Game* game, int number);
+  void init(Game* game__, int number__);
   void loadPlayerInfo(PlayerInfo* playerInfo);
   void prepareForNewRound();
   
@@ -298,9 +309,9 @@ public:
   void onTimer();
   
 private:
-  void sendNewPiece();
+  void generateNewPiece();
   void lowerPiece();
-  void removeFullLines();
+  void checkFullLines();
   // 1 -- right, -1 -- left
   void movePiece(int direction);
   void dropPiece();
@@ -322,22 +333,27 @@ private:
 class Game
 {
 public:
-  void Game();
-  
   int lastWinner;
   Time lastSpeedUp;
   Time startTime;
-  vector<Player> player;
+  Player player[MAX_PLAYERS];
   
-  vector<PieceTemplate> pieceTemplate;
+  std::vector<PieceTemplate> pieceTemplate;
   int nPieceTemplates;
   int nNormalPieceTemplates;
+  
+  KeyMapping keyMap[N_REAL_KEYS];
+  
+  Game();
   
   void newRound();
   void endRound();
   
-  void onKeyPress();
+  void onKeyPress(RealKey key);
   void onTimer();
+  
+private:
+  void buildKeyMap();
 };
 
 #endif

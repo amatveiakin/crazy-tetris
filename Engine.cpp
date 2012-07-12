@@ -3,9 +3,8 @@
 
 //==================================== Game ====================================
 
-void Game::Game()
+Game::Game()
 {
-  player.resize(MAX_PLAYERS);
   for (int i = 0; i < MAX_PLAYERS; ++i)
     player[i].init(this, i);
 }
@@ -22,13 +21,14 @@ void Game::endRound()
 
 }
 
-void Game::onKeyPress(ControlKey key, int iPlayer = -1)
+void Game::onKeyPress(RealKey key)
 {
-  if (playerKey(key))
+  ControlKey controlKey;
+  int iPlayer;
+  if (playerKey(controlKey))
   {
-    for (int i = 0; i < MAX_PLAYERS; ++i)
-      if (player[i].active)
-        player[i].onKeyPress(key);
+//     if (player[iPlayer].active)
+    player[iPlayer].onKeyPress(controlKey);
   }
   else
   {
@@ -43,13 +43,33 @@ void Game::onTimer()
 
 }
 
+void Game::buildKeyMap()
+{
+  for (RealKey realKey = BEGIN_REAL_KEY; realKey < END_REAL_KEY; ++realKey)
+  {
+    keyMap[realKey].controlKey = keyUnassigned;
+    keyMap[realKey].iPlayer = -1;
+  }
+  
+  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+    if (player[iPlayer].active)
+      for (int controlKey = 0; controlKey < N_CONTROL_KEYS; ++controlKey)
+      {
+        RealKey realKey = player[iPlayer].controls.keyArray[controlKey];
+        keyMap[realKey].controlKey = ControlKey(controlKey);
+        keyMap[realKey].iPlayer = iPlayer;
+      }
+}
+
+
 
 
 //=================================== Player ===================================
 
-void Player::init(Game* game, int number)
+void Player::init(Game* game__, int number__)
 {
-
+  game = game__;
+  number = number__;
 }
 
 void Player::loadPlayerInfo(PlayerInfo* newInfo)
@@ -69,18 +89,25 @@ Time Player::pieceLoweringInterval()
 
 void Player::takesBonus(Bonus bonus)
 {
-
+  if (isKind(bonus))
+    applyBonus(bonus);
+  else
+    victim->applyBonus(bonus);
 }
 
 void Player::applyBonus(Bonus bonus)
 {
-
+  if (isBuff(bonus))
+    buffs.add(bonus);
+  else if (isDebuff(bonus))
+    debuffs.add(bonus);
+  enableBonusEffect(bonus);
 }
 
 void Player::heal()
 {
   // TODO: disable effects
-  diseases.clear();
+  debuffs.clear();
 }
 
 void Player::kill()
@@ -122,32 +149,74 @@ void Player::onTimer()
 
 
 
+void Player::generateNewPiece()
+{
 
-// ...
+}
 
+void Player::lowerPiece()
+{
 
+}
 
+void Player::checkFullLines()
+{
 
+}
 
+void Player::movePiece(int direction)
+{
 
-void Player::enableEffectByBonus(Bonus bonus)
+}
+
+void Player::dropPiece()
+{
+
+}
+
+void Player::rotatePiece(int direction)
+{
+
+}
+
+void Player::cycleVictim()
+{
+
+}
+
+void Player::setNextBonusAppearTime()
+{
+
+}
+
+void Player::setNextBonusDisappearTime()
+{
+
+}
+
+void Player::refreshBonus()
+{
+
+}
+
+void Player::enableBonusEffect(Bonus bonus)
 {
   switch (bonus)
   {
     case bnHeal:
       // no effect
       break;
-    case bnFlipScreen:
-      effects.flippedView.enable(X);
+    case bnFlippedScreen:
+      visualEffects.flippedScreen.enable(BONUS_FLIPPING_SCREEN_DURATION);
       break;
     case bnInverseControls:
       // no effect
       break;
-    case bnTransparentBlocks:
-      effects.semicubes.enable(X);
+    case bnCutBlocks:
+      visualEffects.semicubes.enable(BONUS_CUTTING_BLOCKS_DURATION);
       break;
     case bnNoHint:
-      effects.noHint.enable(X);
+      visualEffects.noHint.enable(BONUS_REMOVING_HINT_DURATION);
       break;
     case bnSpeedUp:
       // no effect
@@ -155,8 +224,8 @@ void Player::enableEffectByBonus(Bonus bonus)
     case bnSlowDown:
       // no effect
       break;
-    case bnClearGlass:
-      effects.clearGlass.enable(X);
+    case bnClearField:
+      visualEffects.clearGlass.enable(BONUS_CLEAR_SCREEN_DURATION / 2);
       break;
     case bnFlipField:
       // no effect (?)
@@ -164,8 +233,12 @@ void Player::enableEffectByBonus(Bonus bonus)
   }
 }
 
-void Player::disableEffectByBonus(Bonus bonus)
+void Player::disableBonusEffect(Bonus bonus)
 {
 
 }
 
+void Player::flipBlocks()
+{
+
+}
