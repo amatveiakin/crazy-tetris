@@ -54,9 +54,9 @@ void Game::init()
   loadAccounts();
   loadSettings();
   for (int key = 0; key < N_GLOBAL_KEYS; ++key)
-    nextGlobalKeyActivation[key] = 0.0;
+    nextGlobalKeyActivationTable[key] = 0.0;
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-    player[iPlayer].init(this, iPlayer);
+    players[iPlayer].init(this, iPlayer);
 }
 
 void Game::loadAccounts()
@@ -72,9 +72,9 @@ void Game::saveAccounts()
 
 void Game::loadDefaultAccounts()
 {
-  account.resize(MAX_PLAYERS);
-  for (size_t iAccount = 0; iAccount < account.size(); ++iAccount)
-    account[iAccount].name = "Player " + char(iAccount + '1');  // TODO: rewrite
+  accounts.resize(MAX_PLAYERS);
+  for (size_t iAccount = 0; iAccount < accounts.size(); ++iAccount)
+    accounts[iAccount].name = "Player " + char(iAccount + '1');  // TODO: rewrite
 }
 
 void Game::loadSettings()
@@ -88,50 +88,50 @@ void Game::saveSettings()
   SmartFileHandler settingsFile(SETTINGS_FILE.c_str(), "w");
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
-    fprintf(settingsFile.get(), "%d\n", player[iPlayer].accountNumber);
-    fprintf(settingsFile.get(), "%d\n", player[iPlayer].participates ? 1 : 0);
+    fprintf(settingsFile.get(), "%d\n", players[iPlayer].accountNumber);
+    fprintf(settingsFile.get(), "%d\n", players[iPlayer].participates ? 1 : 0);
     for (int key = 0; key < N_PLAYER_KEYS; ++key)
-      fprintf(settingsFile.get(), "%d\n", player[iPlayer].controls.keyArray[key]);
+      fprintf(settingsFile.get(), "%d\n", players[iPlayer].controls.keyArray[key]);
   }
 }
 
 void Game::loadDefaultSettings()
 {
-  /*player[0].participates = true;
-  player[0].accountNumber = 0;
-  player[0].controls.keyByName.keyLeft = 'A';
-  player[0].controls.keyByName.keyRight = 'D';
-  player[0].controls.keyByName.keyRotateCCW = 'W';
-  player[0].controls.keyByName.keyRotateCW = 'E';
-  player[0].controls.keyByName.keyDown = 'S';
-  player[0].controls.keyByName.keyDrop = VK_TAB;
-  player[0].controls.keyByName.keyChangeVictim = 'Q';
+  /*players[0].participates = true;
+  players[0].accountNumber = 0;
+  players[0].controls.keyByName.keyLeft = 'A';
+  players[0].controls.keyByName.keyRight = 'D';
+  players[0].controls.keyByName.keyRotateCCW = 'W';
+  players[0].controls.keyByName.keyRotateCW = 'E';
+  players[0].controls.keyByName.keyDown = 'S';
+  players[0].controls.keyByName.keyDrop = VK_TAB;
+  players[0].controls.keyByName.keyChangeVictim = 'Q';
 
-  player[1].participates = false;
-  player[1].accountNumber = 1;
+  players[1].participates = false;
+  players[1].accountNumber = 1;
 
-  player[2].participates = true;
-  player[2].accountNumber = 2;
-  player[2].controls.keyByName.keyLeft = VK_LEFT;
-  player[2].controls.keyByName.keyRight = VK_RIGHT;
-  player[2].controls.keyByName.keyRotateCCW = VK_UP;
-  player[2].controls.keyByName.keyRotateCW = VK_DELETE;
-  player[2].controls.keyByName.keyDown = VK_DOWN;
-  player[2].controls.keyByName.keyDrop = VK_RSHIFT;
-  player[2].controls.keyByName.keyChangeVictim = VK_RCONTROL;
+  players[2].participates = true;
+  players[2].accountNumber = 2;
+  players[2].controls.keyByName.keyLeft = VK_LEFT;
+  players[2].controls.keyByName.keyRight = VK_RIGHT;
+  players[2].controls.keyByName.keyRotateCCW = VK_UP;
+  players[2].controls.keyByName.keyRotateCW = VK_DELETE;
+  players[2].controls.keyByName.keyDown = VK_DOWN;
+  players[2].controls.keyByName.keyDrop = VK_RSHIFT;
+  players[2].controls.keyByName.keyChangeVictim = VK_RCONTROL;
 
-  player[0].participates = false;
-  player[0].accountNumber = 3;*/
+  players[0].participates = false;
+  players[0].accountNumber = 3;*/
 
-  player[0].participates = true;
-  player[0].accountNumber = 2;
-  player[0].controls.keyByName.keyLeft = VK_LEFT;
-  player[0].controls.keyByName.keyRight = VK_RIGHT;
-  player[0].controls.keyByName.keyRotateCCW = VK_UP;
-  player[0].controls.keyByName.keyRotateCW = VK_DELETE;
-  player[0].controls.keyByName.keyDown = VK_DOWN;
-  player[0].controls.keyByName.keyDrop = VK_RSHIFT;
-  player[0].controls.keyByName.keyChangeVictim = VK_RCONTROL;
+  players[0].participates = true;
+  players[0].accountNumber = 2;
+  players[0].controls.keyByName.keyLeft = VK_LEFT;
+  players[0].controls.keyByName.keyRight = VK_RIGHT;
+  players[0].controls.keyByName.keyRotateCCW = VK_UP;
+  players[0].controls.keyByName.keyRotateCW = VK_DELETE;
+  players[0].controls.keyByName.keyDown = VK_DOWN;
+  players[0].controls.keyByName.keyDrop = VK_RSHIFT;
+  players[0].controls.keyByName.keyChangeVictim = VK_RCONTROL;
 }
 
 void Game::newMatch()
@@ -143,15 +143,16 @@ void Game::newRound(Time currentTime__)
 {
   currentTime = currentTime__;
 //   lastSpeedUp = currentTime;
+  activePlayers.clear();
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
-    player[iPlayer].active = player[iPlayer].participates;
-    if (player[iPlayer].active)
-      ++nActivePlayers;
+    players[iPlayer].active = players[iPlayer].participates;
+    if (players[iPlayer].active)
+      activePlayers.push_back(&players[iPlayer]);
   }
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-    if (player[iPlayer].participates)
-      player[iPlayer].prepareForNewRound();
+    if (players[iPlayer].participates)
+      players[iPlayer].prepareForNewRound();
 }
 
 void Game::endRound()
@@ -173,31 +174,31 @@ void Game::onTimer(Time currentTime__)
   for (int key = 0; key < N_GLOBAL_KEYS; ++key)
   {
     if (keyPressed(globalControls.keyArray[key] &&
-        (currentTime >= nextGlobalKeyActivation[key])))
+        (currentTime >= nextGlobalKeyActivationTable[key])))
     {
       onGlobalKeyPress(GlobalKey(key));
-      nextGlobalKeyActivation[key] = currentTime + GLOBAL_KEY_REACTIVATION_TIME[key];
+      nextGlobalKeyActivationTable[key] = currentTime + GLOBAL_KEY_REACTIVATION_TIME[key];
     }
   }
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
-    if (player[iPlayer].active)
+    if (players[iPlayer].active)
     {
       for (int key = 0; key < N_PLAYER_KEYS; ++key)
       {
-        if (keyPressed(player[iPlayer].controls.keyArray[key]) &&
-            (currentTime >= player[iPlayer].nextKeyActivation[key]))
+        if (keyPressed(players[iPlayer].controls.keyArray[key]) &&
+            (currentTime >= players[iPlayer].nextKeyActivationTable[key]))
         {
-          player[iPlayer].onKeyPress(PlayerKey(key));
-          player[iPlayer].nextKeyActivation[key] = currentTime + PLAYER_KEY_REACTIVATION_TIME[key];
+          players[iPlayer].onKeyPress(PlayerKey(key));
+          players[iPlayer].nextKeyActivationTable[key] = currentTime + PLAYER_KEY_REACTIVATION_TIME[key];
         }
       }
     }
   }
   
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
-    if (player[iPlayer].active)
-      player[iPlayer].onTimer();
+    if (players[iPlayer].active)
+      players[iPlayer].onTimer();
 }
 
 
@@ -208,19 +209,19 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
   if (piecesFile.get() == NULL)
     throw ERR_FILE_NOT_FOUND;   // TODO: format
 
-  pieceTemplate.clear();
+  pieceTemplates.clear();
   char pieceBlock[MAX_PIECE_SIZE][MAX_PIECE_SIZE + 1];
   int nPieceTemplates;
   fscanf_s(piecesFile.get(), "%d", &nPieceTemplates);
-  pieceTemplate.resize(nPieceTemplates);
+  pieceTemplates.resize(nPieceTemplates);
 
   for (int iPiece = 0; iPiece < nPieceTemplates; ++iPiece)
   {
-    fscanf_s(piecesFile.get(), "%d", &pieceTemplate[iPiece].chance);
+    fscanf_s(piecesFile.get(), "%d", &pieceTemplates[iPiece].chance);
     skipWhitespace(piecesFile.get());
-    fscanf_s(piecesFile.get(), "(%f,%f,%f)", &pieceTemplate[iPiece].color.r,
-          &pieceTemplate[iPiece].color.g, &pieceTemplate[iPiece].color.b);
-    pieceTemplate[iPiece].color.a = 1.0;
+    fscanf_s(piecesFile.get(), "(%f,%f,%f)", &pieceTemplates[iPiece].color.r,
+          &pieceTemplates[iPiece].color.g, &pieceTemplates[iPiece].color.b);
+    pieceTemplates[iPiece].color.a = 1.0;
 
     for (int rotationState = 0; rotationState < N_PIECE_ROTATION_STATES; ++rotationState)
     {
@@ -248,19 +249,19 @@ void Game::loadPieces()   // TODO: rewrite it cleaner
       if (maxBlockNumber + 1 != nBlockInCurrentPiece)
         throw ERR_FILE_CORRUPTED;    // TODO: format
 
-      pieceTemplate[iPiece].structure[rotationState].block.resize(nBlockInCurrentPiece);
+      pieceTemplates[iPiece].structure[rotationState].blocks.resize(nBlockInCurrentPiece);
       for (int row = 0; row < MAX_PIECE_SIZE; ++row)
         for (int col = 0; col < MAX_PIECE_SIZE; ++col)
           if (pieceBlock[row][col] != PIECE_TEMPLATE_FREE_CHAR)
-            pieceTemplate[iPiece].structure[rotationState].block[pieceBlock[row][col] - '0'] =
+            pieceTemplates[iPiece].structure[rotationState].blocks[pieceBlock[row][col] - '0'] =
                     FieldCoords(row - CENTRAL_PIECE_ROW, col - CENTRAL_PIECE_COL);
-      pieceTemplate[iPiece].structure[rotationState].afterRead();
+      pieceTemplates[iPiece].structure[rotationState].afterRead();
     }
   }
 
   randomPieceTable.clear();
-  for (size_t iPiece = 0; iPiece < pieceTemplate.size(); ++iPiece)
-    for (int i = 0; i < pieceTemplate[iPiece].chance; ++i)
+  for (size_t iPiece = 0; iPiece < pieceTemplates.size(); ++iPiece)
+    for (int i = 0; i < pieceTemplates[iPiece].chance; ++i)
       randomPieceTable.push_back(iPiece);
 }
 
@@ -273,7 +274,7 @@ void Player::init(Game* game__, int number__)
   game = game__;
   number = number__;
   for (int key = 0; key < N_PLAYER_KEYS; ++key)
-    nextKeyActivation[key] = 0.0;
+    nextKeyActivationTable[key] = 0.0;
 }
 
 void Player::loadAccountInfo(int newAccount)
@@ -283,7 +284,7 @@ void Player::loadAccountInfo(int newAccount)
 
 AccountInfo* Player::account()
 {
-  return &game->account[accountNumber];
+  return &game->accounts[accountNumber];
 }
 
 void Player::prepareForNewMatch()
@@ -300,12 +301,12 @@ void Player::prepareForNewRound()
   debuffs.clear();
   field.clear();
   field.clearImageIndices();
-  nBlockImages = 0;
+  blockImages.clear();
   speed = STARTING_SPEED;
   nextPiece = NULL;
   sendNewPiece();
   sendNewPiece();
-  disappearingLine.clear();
+  disappearingLines.clear();
   latestLineCollapse = NEVER;
   victimNumber = number;
   cycleVictim();
@@ -327,7 +328,7 @@ Time Player::pieceLoweringInterval()
 
 Player* Player::victim()
 {
-  return (victimNumber != number) ? &game->player[victimNumber] : NULL;
+  return (victimNumber != number) ? &game->players[victimNumber] : NULL;
 }
 
 void Player::takesBonus(Bonus bonus)
@@ -448,14 +449,14 @@ void Player::redraw()
   for (int row = 0; row < FIELD_HEIGHT; ++row)
     for (int col = 0; col < FIELD_WIDTH; ++col)
       if (field(row, col).isBlocked())
-        blockImage[nBlockImages++].setStanding(field(row, col).color, FieldCoords(row, col));
+        blockImages[nBlockImages++].setStanding(field(row, col).color, FieldCoords(row, col));
   
   if (fallingPieceState != psAbsent)
   {
-    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
     {
-      blockImage[nBlockImages++].setStanding(fallingPiece->color,
-          FieldCoords(fallingBlockStructure().block[i] + fallingPiecePosition));
+      blockImages[nBlockImages++].setStanding(fallingPiece->color,
+          FieldCoords(fallingBlockStructure().blocks[i] + fallingPiecePosition));
     }
   }*/
 
@@ -478,14 +479,20 @@ const BlockStructure& Player::fallingBlockStructure()
 
 void Player::setUpPiece()
 {
-  for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+  for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
   {
-    FieldCoords cell = fallingPiecePosition + fallingBlockStructure().block[i];
+    FieldCoords cell = fallingPiecePosition + fallingBlockStructure().blocks[i];
     if (cell.row >= FIELD_HEIGHT)
     {
+      MessageBox(0, L"Good game :-)", L"The end", 0);
+      exit(0);
+    }
+    /*{
       field.clear();
+      field.clearImageIndices();
       return;
-    } // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
+    }*/
+    // TODO: do something else when player loses (but don't let the field borders to get spoilt!!!)
     field(cell).setBlock(fallingPiece->color);
     setUpBlockImage(fallingPiece->color, cell);
   }
@@ -495,8 +502,8 @@ void Player::setUpPiece()
 
 bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
 {
-  for (size_t i = 0; i < piece.block.size(); ++i)
-    if (field(position + piece.block[i]).isBlocked())
+  for (size_t i = 0; i < piece.blocks.size(); ++i)
+    if (field(position + piece.blocks[i]).isBlocked())
       return false;
   return true;
 }
@@ -511,15 +518,15 @@ void Player::sendNewPiece()
     fallingPiecePosition.row = FIELD_HEIGHT + fallingBlockStructure().lowestBlockRow;
     fallingPiecePosition.col = MAX_PIECE_SIZE + rand() % (FIELD_WIDTH - 2 * MAX_PIECE_SIZE); // (?)
     events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
-    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
     {
       addStandingBlockImage(fallingPiece->color,
-                            fallingPiecePosition + fallingBlockStructure().block[i]);
+                            fallingPiecePosition + fallingBlockStructure().blocks[i]);
     }
   }
   else
     fallingPieceState = psAbsent;
-  nextPiece = &game->pieceTemplate[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
+  nextPiece = &game->pieceTemplates[game->randomPieceTable[rand() % game->randomPieceTable.size()]];
   nextPieceRotationState = rand() % N_PIECE_ROTATION_STATES;
 }
 
@@ -530,10 +537,10 @@ void Player::lowerPiece()
   // field modification. Such pieces should not continue falling.
   if (canDisposePiece(fallingPiecePosition, fallingBlockStructure()) &&
       canDisposePiece(newPosition, fallingBlockStructure())) {
-    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
     {
-      moveBlockImage(fallingPiecePosition + fallingBlockStructure().block[i],
-                     newPosition + fallingBlockStructure().block[i],
+      moveBlockImage(fallingPiecePosition + fallingBlockStructure().blocks[i],
+                     newPosition + fallingBlockStructure().blocks[i],
                      currentTime(), PIECE_LOWERING_ANIMATION_TIME);
     }
     applyBlockImagesMovements();
@@ -563,13 +570,13 @@ void Player::removeFullLines() // TODO: optimize: don't check all lines
     }
     if (rowIsFull)
     {
-      disappearingLine.resize(disappearingLine.size() + 1);
-      disappearingLine.back().startTime = currentTime();
-      disappearingLine.back().duration = LINE_DISAPPEAR_TIME;
-      disappearingLine.back().row = row;
+      disappearingLines.resize(disappearingLines.size() + 1);
+      disappearingLines.back().startTime = currentTime();
+      disappearingLines.back().duration = LINE_DISAPPEAR_TIME;
+      disappearingLines.back().row = row;
       for (int col = 0; col < FIELD_WIDTH; ++col)
       {
-        disappearingLine.back().blockColor[col] = field(row, col).color;
+        disappearingLines.back().blockColor[col] = field(row, col).color;
         field(row, col).clear();
         removeBlockImage(FieldCoords(row, col));
       }
@@ -599,17 +606,17 @@ void Player::collapseLine(int row) // TODO: optimize  AND  animate
   }
   applyBlockImagesMovements();
 
-  for (vector<DisappearingLine>::iterator i = disappearingLine.begin();
-       i != disappearingLine.end(); ++i)
+  for (vector<DisappearingLine>::iterator i = disappearingLines.begin();
+       i != disappearingLines.end(); ++i)
   {
     if (i->row == row)
     {
-      disappearingLine.erase(i);
+      disappearingLines.erase(i);
       break;
     }
   }
-  for (vector<DisappearingLine>::iterator i = disappearingLine.begin();
-       i != disappearingLine.end(); ++i)
+  for (vector<DisappearingLine>::iterator i = disappearingLines.begin();
+       i != disappearingLines.end(); ++i)
     if (i->row > row)
       --(i->row);
   for (EventSet::iterator event = events.begin(); event != events.end(); ++event)
@@ -624,10 +631,10 @@ void Player::movePiece(int direction)
   FieldCoords newPosition = fallingPiecePosition + FieldCoords(0, direction);
   if (canDisposePiece(newPosition, fallingBlockStructure()))
   {
-    for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)
+    for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)
     {
-      moveBlockImage(fallingPiecePosition + fallingBlockStructure().block[i],
-                     newPosition + fallingBlockStructure().block[i],
+      moveBlockImage(fallingPiecePosition + fallingBlockStructure().blocks[i],
+                     newPosition + fallingBlockStructure().blocks[i],
                      currentTime(), PIECE_MOVING_ANIMATION_TIME);
     }
     applyBlockImagesMovements();
@@ -671,10 +678,10 @@ void Player::rotatePiece(int direction)
     fallingPieceRotationState = newFallingPieceRotationState;
   }
 
-  for (size_t i = 0; i < fallingBlockStructure().block.size(); ++i)    // animation
+  for (size_t i = 0; i < fallingBlockStructure().blocks.size(); ++i)    // animation
   {    // animation
-    moveBlockImage(oldPosition + fallingPiece->structure[oldRotationState].block[i],    // animation
-                   fallingPiecePosition + fallingBlockStructure().block[i],    // animation
+    moveBlockImage(oldPosition + fallingPiece->structure[oldRotationState].blocks[i],    // animation
+                   fallingPiecePosition + fallingBlockStructure().blocks[i],    // animation
                    currentTime(), PIECE_ROTATING_ANIMATION_TIME);    // animation
   }    // animation
   applyBlockImagesMovements();    // animation
@@ -722,23 +729,22 @@ void Player::applyBlockImagesMovements()
 
 void Player::addStandingBlockImage(Color color, FieldCoords position)
 {
-  blockImage[nBlockImages].setStanding(color, position);
-  field(position).iBlockImage = nBlockImages;
-  ++nBlockImages;
+  blockImages.resize(blockImages.size() + 1);
+  blockImages.back().setStanding(color, position);
+  field(position).iBlockImage = blockImages.size() - 1;
 }
 
 void Player::addMovingBlockImage(Color color, FieldCoords movingFrom, FieldCoords movingTo,
                                  Time movingStartTime, Time movingDuration)
 {
-  blockImage[nBlockImages].setMotion(color, movingFrom, movingTo,
-                                     movingStartTime, movingDuration);
-  field(movingTo).iBlockImage = nBlockImages;
-  ++nBlockImages;
+  blockImages.resize(blockImages.size() + 1);
+  blockImages.back().setMotion(color, movingFrom, movingTo, movingStartTime, movingDuration);
+  field(movingTo).iBlockImage = blockImages.size() - 1;
 }
 
 void Player::setUpBlockImage(Color color, FieldCoords position)
 {
-  blockImage[field(position).iBlockImage].setStanding(color, position);
+  blockImages[field(position).iBlockImage].setStanding(color, position);
 }
 
 void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
@@ -746,8 +752,8 @@ void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
 {
   if (movingFrom == movingTo)
     return;
-  blockImage[field(movingFrom).iBlockImage].setMotion(  // add version that doesn't change color
-          blockImage[field(movingFrom).iBlockImage].color, movingFrom, movingTo,
+  blockImages[field(movingFrom).iBlockImage].setMotion(  // add version that doesn't change color
+          blockImages[field(movingFrom).iBlockImage].color, movingFrom, movingTo,
           movingStartTime, movingDuration);
   field(movingTo).iNewBlockImage = field(movingFrom).iBlockImage;
   if (field(movingFrom).iNewBlockImage == NO_CHANGE)
@@ -756,28 +762,29 @@ void Player::moveBlockImage(FieldCoords movingFrom, FieldCoords movingTo,
 
 void Player::removeBlockImage(FieldCoords position)
 {
-  --nBlockImages;
-  if (field(position).iBlockImage == nBlockImages)
+  if (field(position).iBlockImage == blockImages.size() - 1)
   {
     field(position).iBlockImage = NO_BLOCK_IMAGE;
-    return;
   }
-  blockImage[field(position).iBlockImage] = blockImage[nBlockImages];
-  // TODO: change it !!!
-  field((blockImage[nBlockImages].movingTo.row),
-        (blockImage[nBlockImages].movingTo.col)).
-       iBlockImage = field(position).iBlockImage;
-  field(position).iBlockImage = NO_BLOCK_IMAGE;
+  else
+  {
+    blockImages[field(position).iBlockImage] = blockImages.back();
+    // TODO: change it !!!
+    field((blockImages.back().movingTo.row), (blockImages.back().movingTo.col)).iBlockImage =
+            field(position).iBlockImage;
+    field(position).iBlockImage = NO_BLOCK_IMAGE;
+  }
+  blockImages.erase(blockImages.end() - 1);
 }
 
 void Player::cycleVictim()
 {
-  if (game->nActivePlayers < 2)
+  if (game->activePlayers.size() < 2)
     return;
   do
   {
     victimNumber = (victimNumber + 1) % MAX_PLAYERS;
-  } while (game->player[victimNumber].active);
+  } while (game->players[victimNumber].active);
 }
 
 void Player::enableBonusEffect(Bonus bonus)

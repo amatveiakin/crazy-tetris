@@ -1,4 +1,4 @@
-// TODO: Wash out all std::vectors (since we decided to use traditional arrays)  (?)
+// TODO: Add range checking everywhere
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -22,13 +22,13 @@ using std::set;
 
 //================================== General ===================================
 
-const float STARTING_SPEED = 1.0f;
-const float SPEED_UP_MULTIPLIER = 1.004f;
-const Time   SPEED_UP_INTERVAL = 0.5f;
+const float  STARTING_SPEED = 1.0f;
+const float  SPEED_UP_MULTIPLIER = 1.05f;
+const Time   SPEED_UP_INTERVAL = 1.0f;
 // Speed limit can be excedeed via bonus
-const float SPEED_LIMIT = 5.0f;
+const float  SPEED_LIMIT = 5.0f;
 
-const Time   NORMAL_LOWERING_TIME = 1.0f;
+const Time   NORMAL_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
 const Time   LINE_DISAPPEAR_TIME = 0.1f;
@@ -53,11 +53,11 @@ const int    MAX_PLAYER_NAME_LENGTH = 16;
 
 const int N_PLAYER_KEYS = 7;
 
-enum PlayerKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop, keyChangeVictim };
+enum PlayerKey { keyLeft, keyRight, keyRotateCCW, keyRotateCW, keyDown, keyDrop, keyChangeVictim };
 
 const Time   MOVE_KEY_REACTIVATION_TIME = 0.12f;
 const Time   ROTATE_KEY_REACTIVATION_TIME = 0.18f;
-const Time   DOWN_KEY_REACTIVATION_TIME = 0.1f;
+const Time   DOWN_KEY_REACTIVATION_TIME = 0.08f;
 const Time   DROP_KEY_REACTIVATION_TIME = 0.3f;
 const Time   CHANGE_VICTIM_KEY_REACTIVATION_TIME = 0.2f;
 
@@ -65,8 +65,8 @@ const string PLAYER_KEY_NAME[N_PLAYER_KEYS] =
 {
   "Влево: ",
   "Вправо: ",
-  "Вращать по ч.: ",
   "Вращать пр. ч.: ",
+  "Вращать по ч.: ",
   "Вниз: ",
   "Бросить: ",
   "Менять цель: "
@@ -96,6 +96,36 @@ enum GlobalKey { };
 const string GLOBAL_KEY_NAME[1] = { "qwerty" };
 
 const Time   GLOBAL_KEY_REACTIVATION_TIME[1] = { 123.0 };
+
+
+
+struct PlayerKeyList
+{
+  KeyboardKey keyLeft;
+  KeyboardKey keyRight;
+  KeyboardKey keyRotateCCW;
+  KeyboardKey keyRotateCW;
+  KeyboardKey keyDown;
+  KeyboardKey keyDrop;
+  KeyboardKey keyChangeVictim;
+};
+
+union Controls
+{
+  PlayerKeyList keyByName;
+  KeyboardKey keyArray[N_PLAYER_KEYS];
+};
+
+
+
+struct GlobalKeyList { };
+
+union GlobalControls
+{
+  GlobalKeyList keyByName;
+//  KeyboardKey keyArray[N_GLOBAL_KEYS];
+  KeyboardKey keyArray[1];
+};
 
 
 
@@ -248,16 +278,16 @@ const int    NO_CHANGE = -2;
 
 struct BlockStructure
 {
-  vector<FieldCoords> block;
+  vector<FieldCoords> blocks;
   int lowestBlockRow;
   void afterRead()  // (!) change name
   {
-    if (block.empty())
+    if (blocks.empty())
       throw ERR_EMPTY_BLOCK;
-    lowestBlockRow = block[0].row;
-    for (size_t i = 1; i < block.size(); ++i)
-      if (block[i].row < lowestBlockRow)
-        lowestBlockRow = block[i].row;
+    lowestBlockRow = blocks[0].row;
+    for (size_t i = 1; i < blocks.size(); ++i)
+      if (blocks[i].row < lowestBlockRow)
+        lowestBlockRow = blocks[i].row;
   }
 };
 
@@ -467,38 +497,6 @@ private:
 
 
 
-//================================== Controls ==================================
-
-struct PlayerKeyList
-{
-  KeyboardKey keyLeft;
-  KeyboardKey keyRight;
-  KeyboardKey keyRotateCW;
-  KeyboardKey keyRotateCCW;
-  KeyboardKey keyDown;
-  KeyboardKey keyDrop;
-  KeyboardKey keyChangeVictim;
-};
-
-union Controls
-{
-  PlayerKeyList keyByName;
-  KeyboardKey keyArray[N_PLAYER_KEYS];
-};
-
-
-
-struct GlobalKeyList { };
-
-union GlobalControls
-{
-  GlobalKeyList keyByName;
-//  KeyboardKey keyArray[N_GLOBAL_KEYS];
-  KeyboardKey keyArray[1];
-};
-
-
-
 //=================================== Player ===================================
 
 class Game;
@@ -529,13 +527,13 @@ public:
   Field         field;          // C/R
   Time          latestLineCollapse; // R
   
-  const PieceTemplate* nextPiece;       // R
-  int           nextPieceRotationState; // R
+  const PieceTemplate*  nextPiece;                // R
+  int                   nextPieceRotationState;   // R
   
-  FallingPieceState fallingPieceState;  // R
-  const PieceTemplate* fallingPiece;    // R
-  int           fallingPieceRotationState; // R
-  FieldCoords   fallingPiecePosition;   // R    [``center'' coordinates]
+  FallingPieceState     fallingPieceState;        // R
+  const PieceTemplate*  fallingPiece;             // R
+  int                   fallingPieceRotationState; // R
+  FieldCoords           fallingPiecePosition;     // R    [``center'' coordinates]
   
   Buffs         buffs;          // R
   Debuffs       debuffs;        // R
@@ -543,12 +541,11 @@ public:
   
   EventSet      events;         // R
   
-  int           nBlockImages;                   // R
-  BlockImage    blockImage[MAX_BLOCK_IMAGES];   // N
-  vector<DisappearingLine> disappearingLine;    // R
-  VisualEffects visualEffects;                  // R
+  vector<BlockImage>        blockImages;          // N
+  vector<DisappearingLine>  disappearingLines;    // R
+  VisualEffects             visualEffects;        // R
   
-  Time          nextKeyActivation[N_PLAYER_KEYS]; // C
+  Time          nextKeyActivationTable[N_PLAYER_KEYS]; // C
 
   void          init(Game* game__, int number__);
   void          loadAccountInfo(int newAccount);
@@ -605,18 +602,19 @@ private:
 class Game
 {
 public:
-  vector<AccountInfo> account;
+  vector<AccountInfo> accounts;
 
-  Player        player[MAX_PLAYERS];
-  int           nActivePlayers;
+  Player        players[MAX_PLAYERS];
+  vector<Player*> activePlayers;
+  //int nActivePlayers;
   
-  vector<PieceTemplate> pieceTemplate;
+  vector<PieceTemplate> pieceTemplates;
   vector<int>   randomPieceTable;
   
   Time          currentTime;
   
-//  Time          nextGlobalKeyActivation[N_GLOBAL_KEYS];
-  Time          nextGlobalKeyActivation[1];
+//  Time          nextGlobalKeyActivationTable[N_GLOBAL_KEYS];
+  Time          nextGlobalKeyActivationTable[1];
   GlobalControls globalControls;
   
   void          init();
