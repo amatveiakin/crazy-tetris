@@ -61,7 +61,7 @@ void Game::init()
 void Game::loadAccounts()
 {
   // ...
-  loadDefaultSettings();
+  loadDefaultAccounts();
 }
 
 void Game::saveAccounts()
@@ -73,7 +73,7 @@ void Game::loadDefaultAccounts()
 {
   accounts.resize(MAX_PLAYERS);
   for (size_t iAccount = 0; iAccount < accounts.size(); ++iAccount)
-    accounts[iAccount].name = L"Player " + wchar_t(iAccount + '1');  // TODO: rewrite
+    accounts[iAccount].name = wstring(L"Player ") + wchar_t(iAccount + '1');  // TODO: rewrite
 }
 
 void Game::loadSettings()
@@ -380,9 +380,14 @@ Time Player::pieceLoweringInterval()
   return AUTO_LOWERING_TIME / speed;
 }
 
-Player* Player::victim()
+Player* Player::victim() const
 {
   return (victimNumber != number) ? &game->players[victimNumber] : NULL;
+}
+
+wstring Player::victimName() const
+{
+  return victim() ? victim()->account()->name : L"[nobody]";
 }
 
 void Player::takesBonus(Bonus bonus)
@@ -429,13 +434,13 @@ void Player::applyBonus(Bonus bonus)
 //      heal();
       break;
     case bnSlowDown:
-      // ...
+      bonusSlowDown();
       break;
     case bnClearField:
       events.push(etBeginClearField, currentTime());
       break;
     case bnSpeedUp:
-      // ...
+      bonusSpeedUp();
       break;
 //    case bnFlipField:
 //      // ...

@@ -729,7 +729,8 @@ public:
   Time          currentTime();
   Time          pieceLoweringInterval();
   
-  Player*       victim();
+  Player*       victim() const;
+  wstring       victimName() const;
   
   // TODO: standardize terminology:  fantasy  OR  formal (?)
   void          takesBonus(Bonus bonus);
