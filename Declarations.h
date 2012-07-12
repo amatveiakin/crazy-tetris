@@ -3,12 +3,8 @@
 
 #include <cstdio>
 #include <bitset>
-#include "d3dapp/d3dUtil.h" // temporary
+#include "d3dapp/d3dUtil.h"
 
-
-
-//#define blockImages lyingBlockImages
-//#define blockImages fallingBlockImages
 
 
 template<typename T>
@@ -70,7 +66,17 @@ enum Bonus
   bnNoBonus
 };
 
-const wstring BONUS_NAME[N_BONUSES] =
+inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
+{
+  bonus = Bonus(int(bonus) + 1);
+  return bonus;
+}
+
+const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
+const Bonus  LAST_BONUS = bnFlipField;
+const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
+
+const std::wstring BONUS_NAME[N_BONUSES] =
 {
   L"EnlargeHintQueue",
   L"PieceTheft",

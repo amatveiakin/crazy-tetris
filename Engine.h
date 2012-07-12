@@ -215,16 +215,6 @@ union GlobalControls
 
 
 
-inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
-{
-  bonus = Bonus(int(bonus) + 1);
-  return bonus;
-}
-
-const Bonus  FIRST_BONUS = bnEnlargeHintQueue;
-const Bonus  LAST_BONUS = bnFlipField;
-const int    N_BONUSES = LAST_BONUS - FIRST_BONUS + 1;
-
 const int    BONUS_CHANCES[N_BONUSES] =
 {
   1, // bnEnlargeHintQueue
