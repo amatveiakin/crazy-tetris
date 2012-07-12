@@ -1,3 +1,5 @@
+// TODO: change active player list
+
 // TODO: abandon events (?)
 
 // TODO: use more throw's instead of assertions
@@ -8,7 +10,7 @@
 //       add all events that what to change the field are delayed  (?)
 // No, looks like it's better to check specific conditions before any change
 
-// TODO: speed up algorithm -- ?
+// TODO: game speed up formula -- ?
 
 #ifndef CRAZYTETRIS_ENGINE_H
 #define CRAZYTETRIS_ENGINE_H
@@ -303,7 +305,6 @@ typedef ShiftedBitSet<N_DEBUFFS, FIRST_DEBUFF> Debuffs;
 
 //=============================== Pieces & Field ===============================
 
-const int    MAX_PIECE_SIZE = 4;
 const int    CENTRAL_PIECE_ROW = (MAX_PIECE_SIZE - 1) / 2; // is it necessary (?)
 const int    CENTRAL_PIECE_COL = (MAX_PIECE_SIZE - 1) / 2; // is it necessary (?)
 const int    N_PIECE_ROTATION_STATES = 4;
