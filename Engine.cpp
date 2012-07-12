@@ -510,7 +510,7 @@ void Player::onKeyPress(PlayerKey key)
   }
 }
 
-void Player::onTimer()
+/*void Player::onTimer()
 {
   while ((!events.empty()) && (currentTime() >= events.top().activationTime))
   {
@@ -519,18 +519,20 @@ void Player::onTimer()
     switch (events.top().type)
     {
     case etPieceLowering:
-      lowerPiece(false /* auto */);
+      lowerPiece(false / auto /);
       break;
     case etLineCollapse:
       collapseLine(events.top().parameters.lineCollapse.row);
       break;
     case etNewPiece:
-      if (canSendNewPiece())
-        sendNewPiece();
-      else
+      if (!sendNewPiece())
         eventDelayed = true;
+//      if (canSendNewPiece())
+//        sendNewPiece();
+//      else
+//        eventDelayed = true;
       break;
-    case etRoutineSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
+    case etRoutineSpeedUp:   // TODO: [FIXED?] why is it called in the very beginning?
       routineSpeedUp();
       break;
     case etBonusAppearance:
@@ -545,6 +547,45 @@ void Player::onTimer()
       events.delay(curentEvent);
     else
       events.erase(curentEvent);
+  }
+  redraw();
+}*/
+
+void Player::onTimer()
+{
+  while ((!events.empty()) && (currentTime() >= events.top().activationTime))
+  {
+    Event currentEvent = events.top();
+    events.pop();
+    bool eventDelayed = false;
+    switch (currentEvent.type)
+    {
+    case etPieceLowering:
+      lowerPiece(false /* auto */);
+      break;
+    case etLineCollapse:
+      collapseLine(currentEvent.parameters.lineCollapse.row);
+      break;
+    case etNewPiece:
+      if (!sendNewPiece())
+        eventDelayed = true;
+      break;
+    case etRoutineSpeedUp:   // TODO: [FIXED?] why is it called in the very beginning?
+      routineSpeedUp();
+      break;
+    case etBonusAppearance:
+      if (!generateBonus())
+        eventDelayed = true;
+      break;
+    case etBonusDisappearance:
+      removeBonuses();  // TODO: remove only one (?)
+      break;
+    }
+    if (eventDelayed)
+    {
+      currentEvent.activationTime += EVENT_DELAY_TIME;
+      events.push(currentEvent);
+    }
   }
   redraw();
 }
@@ -639,9 +680,13 @@ void Player::resizePieceQueue(int newSize)
       nextPieces[i] = randomPiece();
 }
 
-void Player::sendNewPiece()
+bool Player::sendNewPiece()
 {
+  if (!canSendNewPiece())
+    return false;
+
   fallingPiece = nextPieces[0];
+  assert(!fallingPiece.empty());
 
   /*if (!fallingPiece.empty())    // Is it necessary?
   {
@@ -653,7 +698,6 @@ void Player::sendNewPiece()
   else
     fallingPieceState = psAbsent;*/
 
-  assert(!fallingPiece.empty());
   fallingPieceState = psNormal;
   events.push(etPieceLowering, currentTime() + pieceLoweringInterval());
   for (size_t i = 0; i < fallingPiece.nBlocks(); ++i)
@@ -661,6 +705,7 @@ void Player::sendNewPiece()
   for (size_t i = 0; i < nextPieces.size() - 1; ++i)
     nextPieces[i] = nextPieces[i + 1];
   nextPieces.back() = randomPiece();
+  return true;
 }
 
 void Player::lowerPiece(bool forced)

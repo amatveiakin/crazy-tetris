@@ -586,11 +586,6 @@ public:
     return *events_.begin();
   }
   
-  iterator topIterator()
-  {
-    return events_.begin();
-  }
-  
   void pop()
   {
     events_.erase(events_.begin());
@@ -612,13 +607,13 @@ public:
     }
   }
   
-  void delay(iterator it)
+  /*void delay(iterator it)
   {
     Event event = *it;
     erase(it);
     event.activationTime += EVENT_DELAY_TIME;
     push(event);
-  }
+  }*/
   
   void clear()
   {
@@ -736,7 +731,8 @@ private:
   void          setUpPiece();
   void          initPieceQueue(int size);
   void          resizePieceQueue(int newSize);
-  void          sendNewPiece();   // TODO: combine with canSendNewPiece()
+//  void          sendNewPiece();
+  bool          sendNewPiece();
   void          lowerPiece(bool forced);
   bool          removeFullLines();
   void          collapseLine(int row);
