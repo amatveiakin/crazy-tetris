@@ -6,6 +6,7 @@
 //=============================== Recource files ===============================
 
 // TODO: add ..._NAME to file name constants
+
 // Hmmm... I hope something will work :-)
 #if defined(_WINDOWS) || defined(WINDOWS) || defined(_WIN32) ||  defined(WIN32) ||  defined(_WIN64) ||  defined(WIN64)
 const std::wstring  PATH_DELIMITER = L"\\";
@@ -18,6 +19,7 @@ const std::wstring  SETTINGS_FILE = L"Settings";
 const std::wstring  ACCOUNTS_FILE = L"Accounts";
 
 const std::wstring  TEXTURES_FOLDER = RECOURCE_FOLDER + L"Textures" + PATH_DELIMITER;
+const std::wstring  BONUS_IMAGES_FOLDER = TEXTURES_FOLDER + L"Bonuses" + PATH_DELIMITER;
 
 
 

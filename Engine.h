@@ -215,7 +215,7 @@ union GlobalControls
 
 
 
-const int    BONUS_CHANCES[N_BONUSES] =
+const int    BONUS_CHANCES[N_REAL_BONUSES] =
 {
   1, // bnEnlargeHintQueue
   2, // bnPieceTheft
