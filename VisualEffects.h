@@ -7,62 +7,163 @@
 //================================== Effects ===================================
 
 // Base effect type, do not use directly
-class BaseEffectType {
+class BaseEffectType
+{
+public:
+  BaseEffectType() : active_(false), progress_(MIN_PROGRESS), MIN_PROGRESS(0.0f), MAX_PROGRESS(1.0f),
+                     PROGRESS_RANGE(MAX_PROGRESS - MIN_PROGRESS) { }
 protected:
+  const float MIN_PROGRESS;
+  const float MAX_PROGRESS;
+  const float PROGRESS_RANGE;
+  const int TIME_UNITS_PER_SECONDS;
+
   bool active_;
-  Time startTime_;
+  float progress_;
+  Time lastTime_;
 };
+
+
 
 // An effect that repeats periodically (starting from zero moment)
-template <Time period>
-class PeriodicalEffectType : public BaseEffectType {
+class PeriodicalEffectType : public BaseEffectType
+{
 public:
-  void enable(Time currentTime) {
+  float period;
+  
+  void enable(Time currentTime, float newPeriod)
+  {
     active_ = true;
-    startTime_ = currentTime;
-    endTime_ = NEVER;
+    period = newPeriod;
+    lastTime_ = currentTime;
   }
-  void disable(Time currentTime) {
-    endTime_ = period - (currentTime - startTime_);
+  
+  void disable(Time currentTime)
+  {
+    stopping_ = true;
+    lastTime_ = currentTime;
   }
-  float progress(Time currentTime) {
-    while (startTime_ > currentTime + period)
-      startTime_ -= period;
-    return double(currentTime - startTime_) / period; // --> double (?)
+  
+  float progress(Time currentTime)
+  {
+    if (!active_)
+      return MIN_PROGRESS;
+    progress_ += (currentTime - lastTime_) / period;
+    while (progress_ > MAX_PROGRESS)
+    {
+      if (stopping_)
+      {
+        progress_ = MIN_PROGRESS;
+        active_ = false;
+      }
+      else
+        progress_ -= PROGRESS_RANGE;
+    }
+    return progress_;
   }
 
 protected:
-  Time endTime_;
+  bool stopping_;
 };
+
+
 
 // An effect that can fade in and (or) out. If (active == true) the effect is turned on
 // and thus is either functioning normally [if (current_time > endTime] or is being
 // activated now [if (current time <= endTime)]. If (active == false) everything is vice versa.
-template <Time duration>
-class FadingEffectType : public BaseEffectType {
+class FadingEffectType : public BaseEffectType
+{
 public:
-  void enable(Time currentTime) {
+  float animationDuration;
+  
+  void enable(Time currentTime, float newAnimationDuration)
+  {
     active_ = true;
-    startTime_ = currentTime;
+    animationDuration = newAnimationDuration;
+    lastTime_ = currentTime;
   }
-  void disable(Time currentTime) {
+  
+  void disable(Time currentTime)
+  {
     active_ = false;
-    startTime_ = currentTime;
+    lastTime_ = currentTime;
   }
-  float progress(Time currentTime) {
-    if (currentTime > startTime_ + duration)
-      return 1.0f;
-    return double(currentTime - startTime_) / duration; // --> double (?)
+  
+  float progress(Time currentTime)
+  {
+    float progressChange = float(currentTime - lastTime_) / animationDuration;
+    if (active_)
+      progress_ = min(progress_ + progressChange, MAX_PROGRESS);
+    else
+      progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+    return progress_;
   }
 };
 
-typedef FadingEffectType<800> FlippedFieldEffect; // TODO: Use a constant declared somewhere else
-typedef PeriodicalEffectType<3000> RotatingFieldEffect; // TODO: Use a constant declared somewhere else
-typedef FadingEffectType<400> SemicubesEffect; // TODO: Use a constant declared somewhere else
-typedef PeriodicalEffectType<2000> WaveEffect; // TODO: Use a constant declared somewhere else
 
-class VisualEffects {
-  FlippedFieldEffect flippedField;
+
+// Effect that fades in for some time and than immediately fades out.    <-- spelling (?)
+class BlinkEffectType : public BaseEffectType
+{
+public:
+  float halfDuration;
+  
+  void enable(Time currentTime, float newHalfDuration)
+  {
+    active_ = true;
+    halfDuration = newHalfDuration;
+    lastTime_ = currentTime;
+  }
+  
+  void disable(Time currentTime)
+  {
+    active_ = false;
+    lastTime_ = currentTime;
+  }
+  
+  float progress(Time currentTime)
+  {
+    float progressChange = float(currentTime - lastTime_) / halfDuration;
+    if (active_) {
+      progress_ += progressChange;
+      if (progress > MAX_PROGRESS)
+      {
+        progress = MAX_PROGRESS;
+        active_ = false;
+      }
+    }
+    else
+      progress_ = max(progress_ - progressChange, MIN_PROGRESS);
+    return progress_;
+  }
+};
+
+
+
+typedef BlinkEffectType ClearGlassEffect;
+
+// if actually can't fade out :-)
+typedef FadingEffectType PlayerDyingEffect; // spelling -- (?)
+
+typedef FadingEffectType NoHintEffect;
+
+typedef FadingEffectType FlippedScreenEffect;
+
+typedef PeriodicalEffectType RotatingFieldEffect;
+
+typedef FadingEffectType SemicubesEffect;
+
+typedef PeriodicalEffectType WaveEffect;
+
+
+
+class VisualEffects
+{
+public:
+  ClearGlassEffect clearGlass;
+  PlayerDyingEffect playerDying;
+  NoHintEffect noHint;
+  FlippedScreenEffect flippedScreen;
   RotatingFieldEffect rotatingField;
   SemicubesEffect semicubes;
   WaveEffect wave;
@@ -74,9 +175,10 @@ class VisualEffects {
 
 class VisualObject { };
 
-class Block : public VisualObject {
+class Block : public VisualObject
+{
 public:
-  Color color; // RGB or index?
+  Color color;
   FieldCoords movingFrom;
   FieldCoords movingTo;
   Time movingStartTime;
@@ -84,7 +186,8 @@ public:
   bool motionBlur;
 };
 
-class DisappearingLine : public VisualObject {
+class DisappearingLine : public VisualObject
+{
   std::vector<Color> blockColor;
   int row;
   Time startTime;

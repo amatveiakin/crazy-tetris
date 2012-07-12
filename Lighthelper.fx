@@ -37,9 +37,9 @@ float DiscreetSpecFactor(float specFactor)
 float DiscreetDiffuseFactor(float diffuseFactor)
 {
   
-  if (diffuseFactor < 0.0f)            return 0.4f;
-  if (diffuseFactor >= 0.0f & diffuseFactor < 0.5f) return 0.6f;  
-  if (diffuseFactor >= 0.5f & diffuseFactor < 1.0f) return 1.0f;   
+  if (diffuseFactor < 0.0f)            return 0.1f;
+  if (diffuseFactor >= 0.0f & diffuseFactor < 0.5f) return 0.3f;  
+  if (diffuseFactor >= 0.5f & diffuseFactor < 1.0f) return 0.66f;   
   return diffuseFactor;
 }
 

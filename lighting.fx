@@ -1,31 +1,24 @@
 //=============================================================================
-// color.fx by Frank Luna (C) 2008 All Rights Reserved.
+// lighting.fx by Frank Luna (C) 2008 All Rights Reserved.
 //
-// Transforms and colors geometry.
+// Transforms and lights geometry.
 //=============================================================================
 
-
 #include "lighthelper.fx"
-
-cbuffer cbPerObject
-{
-	float4x4 gWorld;
-	float4x4 gWVP;
-	float4 gColorDiffuse;
-	float4 gColorSpecular; 
-};
-
+ 
 cbuffer cbPerFrame
 {
 	Light gLight;
 	int gLightType; 
 	float3 gEyePosW;
 	
-	float gTime;
-	float4 gClippingPlane;
-	
 };
 
+cbuffer cbPerObject
+{
+	float4x4 gWorld;
+	float4x4 gWVP;
+};
 
 struct VS_IN
 {
@@ -39,7 +32,6 @@ struct VS_OUT
 {
 	float4 posH    : SV_POSITION;
     float3 posW    : POSITION;
-    float3 posL    : POSITION_LOCAL;
     float3 normalW : NORMAL;
     float4 diffuse : DIFFUSE;
     float4 spec    : SPECULAR;
@@ -49,8 +41,6 @@ VS_OUT VS(VS_IN vIn)
 {
 	VS_OUT vOut;
 	
-	vOut.posL = vIn.posL;
-	
 	// Transform to world space space.
 	vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld);
 	vOut.normalW = mul(float4(vIn.normalL, 0.0f), gWorld);
@@ -59,20 +49,18 @@ VS_OUT VS(VS_IN vIn)
 	vOut.posH = mul(float4(vIn.posL, 1.0f), gWVP);
 	
 	// Output vertex attributes for interpolation across triangle.
-	vOut.diffuse = gColorDiffuse;
-	vOut.spec    = gColorSpecular;
+	vOut.diffuse = vIn.diffuse;
+	vOut.spec    = vIn.spec;
 	
 	return vOut;
 }
  
 float4 PS(VS_OUT pIn) : SV_Target
 {
-	//clip(-dot(float4(pIn.posL, 1.0f), gClippingPlane) + 0.001);
-	
 	// Interpolating normal can make it not be of unit length so normalize it.
     pIn.normalW = normalize(pIn.normalW);
-    
-    //if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
+   
+   
     SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
     
     float3 litColor;
@@ -92,7 +80,6 @@ float4 PS(VS_OUT pIn) : SV_Target
     return float4(litColor, pIn.diffuse.a);
 }
 
-
 technique10 LightTech
 {
     pass P0
@@ -102,3 +89,6 @@ technique10 LightTech
         SetPixelShader( CompileShader( ps_4_0, PS() ) );
     }
 }
+
+
+

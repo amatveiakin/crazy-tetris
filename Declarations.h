@@ -4,24 +4,49 @@
 #include <climits>
 #include <vector>
 
-typedef int Time;
-const int TICKS_PER_SECOND = 1000;
-const Time NEVER = INT_MIN;
 
-typedef int Color; // value or index? (?)
 
-const int N_CONTROL_KEY = 8;
+typedef float Time;
+const Time NEVER = -1.0f;
+
+
+
+struct Color
+{
+  float r, g, b, a;
+};
+
+
+
+const int N_CONTROL_KEY = 7;
 enum ControlKey { keyLeft, keyRight, keyRotateCW, keyRotateCCW, keyDown, keyDrop,
-                  keyHeal, keyChangeTarget, keyUnassigned };
+                  keyChangeVictim, keyUnassigned };
+                  
+typedef int RealKey;
 
-struct FieldCoords {
+bool playerKey(ControlKey key)
+{
+  return (key >= keyLeft) && (key <= keyChangeVictim);
+}
+
+bool systemKey(ControlKey key)
+{
+  return false;
+}
+
+
+
+struct FieldCoords
+{
   int x, y;
 };
 
 template <typename T, int nRows, int nCols>
-class Table : public std::vector<std::vector<T> > {
+class Table : public std::vector<std::vector<T> >
+{
 public:
-  Table() {
+  Table()
+  {
     std::vector<T>::resize(nRows);
     for (int i = 0; i < std::vector<T>::size(); ++i)
       std::vector<T>::operator[](i).resize(nCols);
