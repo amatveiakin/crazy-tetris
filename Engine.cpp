@@ -854,10 +854,10 @@ bool Player::generateBonus()  // TODO: remake
         return false;
       field(row, col).bonus = bonus;
       lyingBlockImages[field(row, col).iBlockImage].bonus = bonus;
+      planBonusDisappearance();
       return true;
     }
   }
-  planBonusDisappearance();
   return false;
 }
 
