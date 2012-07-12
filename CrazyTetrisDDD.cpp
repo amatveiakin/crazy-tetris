@@ -284,8 +284,8 @@ void CrazyTetrisApp::updateScene(float dt)
     mTheta = 0;
   }
   
-  if (GetAsyncKeyState(VK_F1) & 0x8000) mGame.players[2].visualEffects.flippedScreen.enable(1.0f);
-  if(GetAsyncKeyState(VK_F2) & 0x8000)	mGame.players[2].visualEffects.flippedScreen.disable();
+  if (GetAsyncKeyState(VK_F1) & 0x8000) mGame.players[2].visualEffects.fieldCleaning.enable(3.0f);
+  //if(GetAsyncKeyState(VK_F2) & 0x8000)	mGame.players[2].visualEffects.fieldCleaning.disable();
 
   if(GetAsyncKeyState(VK_F3) & 0x8000)	mGame.players[2].visualEffects.rotatingField.enable(10.0f);
   if(GetAsyncKeyState(VK_F4) & 0x8000)	mGame.players[2].visualEffects.rotatingField.disable();
@@ -488,7 +488,7 @@ void CrazyTetrisApp::buildFX()
   //Visual effect's progress
   fxWaveProgressVar      = FX->GetVariableByName("gWaveProgress")->AsScalar();
   fxSemicubesProgressVar = FX->GetVariableByName("gSemicubesProgress")->AsScalar();
-  fxImplodeProgressVar   = FX->GetVariableByName("gSemicubesProgress")->AsScalar();
+  fxImplodeProgressVar   = FX->GetVariableByName("gImplodeProgress")->AsScalar();
 
 
   fxClippingPlaneVar     = FX->GetVariableByName("gClippingPlane");
@@ -958,11 +958,9 @@ void CrazyTetrisApp::loadPlayerData(Player* player)
                      D3DXMatrixRotationX(&tempX,     PI * player->visualEffects.flippedScreen.progress(currTime)));
   fxGlobalRotationVar->SetMatrix((float*) &mGlobalRotation);
   
-  float semicubesProgress = player->visualEffects.semicubes.progress(currTime);
-  fxSemicubesProgressVar->SetFloat(semicubesProgress);
-
+  fxSemicubesProgressVar->SetFloat(player->visualEffects.semicubes.progress(currTime));
   fxWaveProgressVar->SetFloat(player->visualEffects.wave.progress(currTime));
-  
+  fxImplodeProgressVar->SetFloat(player->visualEffects.fieldCleaning.progress(currTime));  
 }
 
  
