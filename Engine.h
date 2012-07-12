@@ -78,8 +78,8 @@ const Time   PIECE_ROTATING_ANIMATION_TIME = 0.07f;*/
 const float  STARTING_SPEED = 1.0;
 const float  ROUTINE_SPEED_UP_VALUE = 0.01f;
 const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
-// Speed limit can be excedeed via bonus (?)
-const float  SPEED_LIMIT = 5.0;
+const float  NORMAL_SPEED_LIMIT = 5.0;
+const float  ABSOLUTE_SPEED_LIMIT = 10.0;
 
 const Time   AUTO_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
@@ -236,8 +236,8 @@ const int    BONUS_CHANCES[N_BONUSES] =
 const int    BONUS_ENLARGED_HINT_QUEUE_SIZE = 7;
 const Time   BONUS_FADING_DURATION = 0.5f;
 
-const float  BONUS_SPEED_UP_MULTIPLIER = 1.4f;
-const float  BONUS_SLOW_DOWN_MULTIPLIER = 0.7f;
+const float  BONUS_SPEED_UP_VALUE = 1.0f;
+const float  BONUS_SLOW_DOWN_VALUE = 1.0f;
 
 const Time   BONUS_FLIPPING_SCREEN_DURATION = 0.8f;
 const Time   BONUS_ROTATING_SCREEN_PERIOD = 10.0f;
@@ -264,11 +264,11 @@ const int    BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL = FIELD_HEIGHT / 2;
 
 
 const Bonus  FIRST_BUFF         = bnEnlargeHintQueue;
-const Bonus  LAST_BUFF          = bnEnlargeHintQueue;
+const Bonus  LAST_BUFF          = bnPieceTheft;
 const int    N_BUFFS            = LAST_BUFF - FIRST_BUFF + 1;
 
 const Bonus  FIRST_DEBUFF       = bnFlippedScreen;
-const Bonus  LAST_DEBUFF        = bnSpeedUp;
+const Bonus  LAST_DEBUFF        = bnNoHint;
 const int    N_DEBUFFS          = LAST_DEBUFF - FIRST_DEBUFF + 1;
 
 const Bonus  FIRST_KIND_BONUS   = FIRST_BUFF;

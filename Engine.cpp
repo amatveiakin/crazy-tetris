@@ -507,8 +507,14 @@ void Player::endClearField()
 void Player::kill()
 {
   for (vector<Player*>::iterator i = game->activePlayers.begin(); i != game->activePlayers.end(); ++i)
+  {
     if ((*i)->victimNumber == number)
+    {
       (*i)->cycleVictim();
+      if ((game->activePlayers.size() >= 2) && ((*i)->victimNumber == (*i)->number))
+        (*i)->cycleVictim();
+    }
+  }
 
   for (vector<Player*>::iterator i = game->activePlayers.begin(); i != game->activePlayers.end(); ++i)
   {
@@ -713,7 +719,7 @@ bool Player::bonusIsUseful(Bonus bonus) const
     return debuffs.any();
     break;
   case bnSlowDown:
-    return speed > STARTING_SPEED * BONUS_SLOW_DOWN_MULTIPLIER;  // (?)
+    return speed > STARTING_SPEED + BONUS_SLOW_DOWN_VALUE;  // (?)
     break;
   case bnClearField:
     return highestNonemptyRow() > BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL;
@@ -1135,7 +1141,7 @@ void Player::removeBlockImage(vector<BlockImage>& imageArray, FieldCoords positi
 
 void Player::routineSpeedUp()
 {
-  float maxSpeed = myMax(SPEED_LIMIT, speed);
+  float maxSpeed = myMax(NORMAL_SPEED_LIMIT, speed);
   speed += ROUTINE_SPEED_UP_VALUE;
   speed = myMin(speed, maxSpeed);
   events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
@@ -1143,12 +1149,13 @@ void Player::routineSpeedUp()
 
 void Player::bonusSpeedUp()
 {
-  speed *= BONUS_SPEED_UP_MULTIPLIER;
+  speed += BONUS_SPEED_UP_VALUE;
+  speed = myMin(speed, ABSOLUTE_SPEED_LIMIT);
 }
 
 void Player::bonusSlowDown()
 {
-  speed *= BONUS_SLOW_DOWN_MULTIPLIER;
+  speed += BONUS_SLOW_DOWN_VALUE;
   speed = myMax(speed, STARTING_SPEED);
 }
 
