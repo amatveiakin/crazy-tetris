@@ -151,9 +151,9 @@ float4 psFallingPiece(StandardVS_OUT pIn) : SV_Target
   float3 distToGrid = ((pIn.posL * CUBE_SCALE_INVERTED + 11 - 0.1) % 2.0f - 1.8); //another VERY MAGIC constants
   //float3 distToGrid = ((pIn.posL * CUBE_SCALE_INVERTED +2 ) % 2.0f - 1.8);
   //clip(-min(max(max(distToGrid.x, distToGrid.y), distToGrid.z), -dot(float4(pIn.posW, 1.0f), gClippingPlane)));
-  float opacity = 1.0;
+  float opacity = gEdgeOpacity;
   if (dot(float4(pIn.posW, 1.0f), gClippingPlane) < MATH_EPS)
-    if ((distToGrid.x > 0) || (distToGrid.y > 0) || (distToGrid.z > 0)) opacity = gOpacity;
+    if ((distToGrid.x > 0) || (distToGrid.y > 0) || (distToGrid.z > 0)) opacity = gFaceOpacity;
   clip(opacity - MATH_EPS);
 
   //Interpolating normal can make it not be of unit length so normalize it.

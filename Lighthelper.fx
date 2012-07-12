@@ -47,6 +47,11 @@ float DiscreetDiffuseFactor(float diffuseFactor)
   return diffuseFactor;
 }
 
+float distribution(int dx, int dy)
+{
+  return 1.0/(1 + dx*dx + dy*dy);
+}
+
 float ShadowFactor(float4 projTexC)
 {
     // Complete projection by doing division by w.
@@ -62,7 +67,22 @@ float ShadowFactor(float4 projTexC)
     // Depth in NDC space.
     float depth = projTexC.z;
     // Sample shadow map to get nearest depth to light.
-    float s0 = gShadowMap.Sample(gShadowSam,
+    float result = 0;
+    float m      = 0;
+    [unroll]
+    for (int i = -2; i <= 2; ++i)
+    {
+      [unroll]
+      for (int j = -2; j <=2; ++j)
+      {
+        result += distribution(i, j) * 
+          (gShadowMap.Sample(gShadowSam, projTexC.xy + float2(i * SMAP_DX, j * SMAP_DX)).r > depth - SHADOW_EPSILON);
+        m += distribution(i, j);
+      }
+    }
+    result /= m;
+    return result;
+    /*float s0 = gShadowMap.Sample(gShadowSam,
           projTexC.xy).r;
     float s1 = gShadowMap.Sample(gShadowSam,
           projTexC.xy + float2(SMAP_DX, 0)).r;
@@ -81,7 +101,7 @@ float ShadowFactor(float4 projTexC)
     float2 t = frac( texelPos );
     // Interpolate results.
     return lerp(lerp(result0, result1, t.x),
-                lerp(result2, result3, t.x), t.y);
+                lerp(result2, result3, t.x), t.y);*/
 }
 
 float3 ParallelLight(SurfaceInfo v, Light L, float3 eyePos)

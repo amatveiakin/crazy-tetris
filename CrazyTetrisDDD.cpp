@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <fstream>
 #include "d3dApp/d3dApp.h"
 #include "d3dApp/DrawableTex2D.h"
 #include "Primitives.h"
@@ -9,6 +10,9 @@
 #include "Declarations.h"
 #include "DirectXConstants.h"
 
+using std::ifstream;
+using std::ios_base;
+using std::streampos;
 //Move to Hud.h?
 
 const float MAX_WORLD_FIELD_WIDTH  = 2.0f;
@@ -22,13 +26,15 @@ const float VP_WORLD_WIDTH  = FIELD_INDENT_LEFT + MAX_WORLD_FIELD_WIDTH + FIELD_
 const float VP_WORLD_HEIGHT = HUD_HEIGHT + FIELD_INDENT_BOTTOM + MAX_WORLD_FIELD_HEIGHT + FIELD_INDENT_TOP;
 const float ANGLE_FOV_Y = 0.2f * PI; //DON'T CHANGE!!!
 const float CUBE_SCALE = min (MAX_WORLD_FIELD_WIDTH / (float) FIELD_WIDTH, MAX_WORLD_FIELD_HEIGHT / (float) FIELD_HEIGHT);
-const float SEARCHLIGHT_RADIUS = 3.5 * CUBE_SCALE;
+const float SEARCHLIGHT_RADIUS = 5 * CUBE_SCALE;
 const float DIST_TO_SEARCHLIGHT = SEARCHLIGHT_RADIUS / tan(searchBeta);
 
 const int   LYING_BLOCKS_INSTANCES_OFFSET      = 0;
 const int   DISAPPEARING_LINE_INSTANCES_OFFSET = LYING_BLOCKS_INSTANCES_OFFSET + MAX_BLOCKS;
 const int   FALLING_PIECE_INSTANCES_OFFSET     = DISAPPEARING_LINE_INSTANCES_OFFSET + 4 * FIELD_WIDTH;
-const int   MAX_CUBE_INSTANCES                 = FALLING_PIECE_INSTANCES_OFFSET + 10;
+const int   HINT_INSTANCES_OFFSET              = FALLING_PIECE_INSTANCES_OFFSET + 10;
+const int   MAX_CUBE_INSTANCES                 = HINT_INSTANCES_OFFSET + 10;
+
 
 float EYE_TO_FIELD = 0.5f * VP_WORLD_HEIGHT / tan(ANGLE_FOV_Y / 2.0f);
 
@@ -55,6 +61,7 @@ private:
   void drawPlayerToShadowMap(Player* player);
   void drawLyingBlocks(Player* player, bool colored);
   void drawFallingPiece(Player* player, bool colored);
+  void drawHint(Player* player);
   void drawDisappearingLines(Player* player, bool colored);
   void drawWall(Player* player, bool colored);
   
@@ -114,6 +121,8 @@ private:
   ID3D10EffectScalarVariable* fxSemicubesProgressVar;
   ID3D10EffectScalarVariable* fxOpacityVar;
   ID3D10EffectScalarVariable* fxColoredVar;
+  ID3D10EffectScalarVariable* fxEdgeOpacityVar;
+  ID3D10EffectScalarVariable* fxFaceOpacityVar;
   ID3D10EffectScalarVariable* fxCUBE_SCALE;
   ID3D10EffectScalarVariable* fxCUBE_SCALE_INVERTED;
 
@@ -148,6 +157,8 @@ private:
 
   D3D10_VIEWPORT vpPlayers[MAX_PLAYERS];
   D3D10_VIEWPORT vpScreen;
+  D3D10_VIEWPORT vpShadow;
+
 
   
   D3DXMATRIX mWorld;
@@ -218,13 +229,13 @@ void CrazyTetrisApp::initApp()
 
   D3DApp::initApp();
 	
-  mBox.init(md3dDevice, CUBE_SCALE / 2.0f, 0.5f, 5);
+  mBox.init(md3dDevice, CUBE_SCALE / 2.0f + MATH_EPS, 0.5f, 5);
   mWall.init(md3dDevice, 
              CUBE_SCALE * FIELD_WIDTH  * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
              CUBE_SCALE * (FIELD_HEIGHT) * (1.0f + CUBE_SCALE * (FIELD_HEIGHT / 2.0f + 0.5f) / EYE_TO_FIELD), 
              1.0f,  1.0f);
   mGlass.init(md3dDevice, CUBE_SCALE * FIELD_WIDTH, CUBE_SCALE * FIELD_HEIGHT, CUBE_SCALE);
-  mShadowMap.init(md3dDevice, 1024, 1024, false, DXGI_FORMAT_R32G32B32A32_FLOAT); //change to false!
+  mShadowMap.init(md3dDevice, (int) SMAP_SIZE, (int) SMAP_SIZE, false, DXGI_FORMAT_R32G32B32A32_FLOAT); //change to false!
 
   buildFX();
 	buildTextures();
@@ -284,8 +295,11 @@ void CrazyTetrisApp::updateScene(float dt)
   if(GetAsyncKeyState(VK_F7) & 0x8000)	mGame.players[2].visualEffects.semicubes.enable(1.f);
   if(GetAsyncKeyState(VK_F8) & 0x8000)	mGame.players[2].visualEffects.semicubes.disable();
 
-  if(GetAsyncKeyState('1') & 0x8000)	 mGame.players[2].visualEffects.lantern.enable(2.0f);
-  if(GetAsyncKeyState('2')& 0x8000)	   mGame.players[2].visualEffects.lantern.disable();
+  if(GetAsyncKeyState('1') & 0x8000)	 mGame.players[1].visualEffects.lantern.enable(2.0f);
+  if(GetAsyncKeyState('2')& 0x8000)	   mGame.players[1].visualEffects.lantern.disable();
+
+  if(GetAsyncKeyState('3') & 0x8000)	 mGame.players[2].visualEffects.lantern.enable(2.0f);
+  if(GetAsyncKeyState('4')& 0x8000)	   mGame.players[2].visualEffects.lantern.disable();
 
 
   // Convert Spherical to Cartesian coordinates: mPhi measured from +y
@@ -309,21 +323,20 @@ void CrazyTetrisApp::drawScene()
   //Set time for this frame
 	fxTimeVar->SetFloat(currTime);
 
-  for (size_t i = 0; i < mGame.activePlayers.size(); ++i)
-  {
-    //loadPlayerData(mGame.activePlayers[i]);
-    //bla-bla
-    //drawPlayerToShadowMap(mGame.activePlayers[i], currTime);
-    //md3dDevice->RSSetViewports(1, &vpPlayers[i]);
-    drawPlayer(mGame.activePlayers[i], &vpPlayers[i]);
-  }
+  //for (size_t i = 0; i < mGame.activePlayers.size(); ++i)
+  //  drawPlayer(mGame.activePlayers[i], &vpPlayers[i]);
 
+  drawPlayer(mGame.activePlayers[0], &vpPlayers[0]);
+  drawPlayer(mGame.activePlayers[1], &vpPlayers[1]);
+
+  
   md3dDevice->RSSetViewports(1, &vpScreen);
 	md3dDevice->RSSetState(0);
 	// We specify DT_NOCLIP, so we do not care about width/height of the rect.
 	RECT R = {5, 5, 0, 0};
-	mFont->DrawText(0, mFrameStats.c_str(), -1, &R, DT_NOCLIP, WHITE);
-
+  mFont->DrawText(0, mFrameStats.c_str() , -1, &R, DT_NOCLIP, WHITE);
+  //mFrameStats.c_str()
+  
 	mSwapChain->Present(0, 0);
 }
 
@@ -337,24 +350,27 @@ void CrazyTetrisApp::drawPlayer(Player* player, D3D10_VIEWPORT* viewport)
   loadCubeInstances(player);
   installLights(fieldToWorldX(player->visualEffects.lantern.positionX(currTime)),
                 fieldToWorldY(player->visualEffects.lantern.positionY(currTime)),
-                               player->visualEffects.lantern.progress(currTime));
+                              player->visualEffects.lantern.progress(currTime));
   
   fxLightWVPVar->SetMatrix((float*)&mLightWVP);
+
+	md3dDevice->OMSetDepthStencilState(0, 0);
+	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
+  //Reseting states
+  md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);
+  //md3dDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//md3dDevice->RSSetState(mSolidCullBack);
+
   drawPlayerToShadowMap(player);
 
-  //Reseting states
   mVP = mView * mProj;
 	fxVPVar->SetMatrix((float*)&mVP);
 
   //fxWorldVar->SetMatrix((float*) &mWorld);
-  fxShadowMapVar->SetResource(mShadowMap.depthMap()); 
+  fxShadowMapVar->SetResource(mShadowMap.depthMap());
   //fxDiffuseMapVar->SetResource(mShadowMap.depthMap()); 
-  //fxColoredVar->SetInt(1);
   md3dDevice->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
-  md3dDevice->OMSetDepthStencilState(0, 0);
-  md3dDevice->RSSetViewports(1, viewport);
-  float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
-  
+  md3dDevice->RSSetViewports(1, viewport); 
   //рисуем непрозрачные объекты  
   md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);       
   //Рисуем стенку
@@ -370,13 +386,10 @@ void CrazyTetrisApp::drawPlayer(Player* player, D3D10_VIEWPORT* viewport)
   //упорядочиваем по удаленности и рисуем прозрачные объекты
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
   //рисуем падающую фигуру
-  
+  drawHint(player);  
   drawFallingPiece(player, true);
   fxShadowMapVar->SetResource(0);
-  //fxDiffuseMapVar->SetResource(texBackWallRV);
   techTextured->GetPassByIndex( 0 )->Apply(0); //to actually refresh gShadowMap
-
-  //fxShadowMapVar->SetResource(texSearchLightColorFilterRV);
 }
 
 void CrazyTetrisApp::drawPlayerToShadowMap(Player* player)
@@ -384,19 +397,22 @@ void CrazyTetrisApp::drawPlayerToShadowMap(Player* player)
   D3DXVECTOR4 clippingPlane;
    
   mShadowMap.begin();
+  
+  md3dDevice->RSSetViewports(1, &vpShadow);
+	md3dDevice->RSSetState(0);
   fxVPVar->SetMatrix((float*)&mLightWVP);
-  fxColoredVar->SetInt(0);
+  //fxColoredVar->SetInt(0);
   
 	float blendFactors[] = {0.0f, 0.0f, 0.0f, 0.0f};
   
-  md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);       
-  drawWall(player, false);
+  //md3dDevice->OMSetBlendState(0, blendFactors, 0xffffffff);       
+  //drawWall(player, false);
   md3dDevice->IASetInputLayout(cubesVertexLayout);
   mBox.setVB_AndIB_AsCurrent(md3dDevice, cubeInstancesBuffer);
   drawLyingBlocks(player, false);
   drawDisappearingLines(player, false);
   
-  md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
+  //md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
   drawFallingPiece(player, false);
   mShadowMap.end();
 }
@@ -420,7 +436,16 @@ void CrazyTetrisApp::buildFX()
 			ReleaseCOM(compilationErrors);
 		}
 		DXTrace(__FILE__, (DWORD)__LINE__, hr, L"D3DX10CreateEffectFromFile", true);
-	} 
+  }
+  /*ifstream is("effects.fxh");
+  is.seekg(0,ios_base::end);
+  streampos pos = is.tellg();
+  is.seekg(0,ios_base::beg);
+  char * effectBuffer = new char[pos];
+  is.read(effectBuffer,pos);
+	
+  HR( D3D10CreateEffectFromMemory((void *)effectBuffer,pos,0,md3dDevice,NULL,&FX) );*/
+
   //Techniques
   techCubes             = FX->GetTechniqueByName("techCubes");
   techSemicubes         = FX->GetTechniqueByName("techSemicubes");
@@ -454,6 +479,8 @@ void CrazyTetrisApp::buildFX()
   fxColorDiffuseVar  = FX->GetVariableByName("gColorDiffuse");
   fxColorSpecularVar = FX->GetVariableByName("gColorSpecular");
   fxOpacityVar =       FX->GetVariableByName("gOpacity")->AsScalar();
+  fxEdgeOpacityVar =   FX->GetVariableByName("gEdgeOpacity")->AsScalar();
+  fxFaceOpacityVar =   FX->GetVariableByName("gFaceOpacity")->AsScalar();
   fxColoredVar =       FX->GetVariableByName("gColored")->AsScalar();
 
   //Current time
@@ -498,7 +525,7 @@ void CrazyTetrisApp::buildVertexLayouts()
   // Create the vertex input layout for cubes (instanced!)
 	D3D10_INPUT_ELEMENT_DESC cubesVertexDesc[] =
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D10_INPUT_PER_VERTEX_DATA,   0},
+		{"POSITION_LOCAL", 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 0,  D3D10_INPUT_PER_VERTEX_DATA,   0},
 		{"NORMAL"  , 0, DXGI_FORMAT_R32G32B32_FLOAT,    0, 12, D3D10_INPUT_PER_VERTEX_DATA,   0},
      
     {"diffuse",      0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0 * 16, D3D10_INPUT_PER_INSTANCE_DATA, 1},
@@ -516,7 +543,7 @@ void CrazyTetrisApp::buildVertexLayouts()
 
   D3D10_INPUT_ELEMENT_DESC texturedVertexDesc[] =
   {
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D10_INPUT_PER_VERTEX_DATA, 0},
+    {"POSITION_LOCAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,  0, D3D10_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D10_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D10_INPUT_PER_VERTEX_DATA, 0},
   };
@@ -772,7 +799,7 @@ void CrazyTetrisApp::buildTextures()
 void CrazyTetrisApp::buildViewports()
 {
     //Updating viewports
-  int nActivePlayers = mGame.activePlayers.size(); //Сделать нормально
+  int nActivePlayers = mGame.activePlayers.size();
 	float vpWidth  = (float) mClientWidth / nActivePlayers; 
   float vpHeight = (float) mClientHeight;
 
@@ -797,7 +824,13 @@ void CrazyTetrisApp::buildViewports()
   vpScreen.Height = mClientHeight;
   vpScreen.MinDepth = 0.0f;
   vpScreen.MaxDepth = 1.0f;
-
+  
+  vpShadow.TopLeftX = 0;
+  vpShadow.TopLeftY = 0;
+  vpShadow.Width = (int) SMAP_SIZE;
+  vpShadow.Height= (int) SMAP_SIZE;
+  vpShadow.MinDepth = 0.0f;
+  vpShadow.MaxDepth = 1.0f;
 }
 float CrazyTetrisApp::fieldToWorldX(float fieldX)
 {
@@ -854,6 +887,20 @@ void CrazyTetrisApp::loadCubeInstances(Player* player)
     cubeInstances[FALLING_PIECE_INSTANCES_OFFSET + i].specularColor.a = 128.f;
 
   }
+  
+  for (size_t i = 0; i < player->nextPieces[0].nBlocks(); ++i)
+  {
+    D3DXMatrixTranslation(&cubeInstances[HINT_INSTANCES_OFFSET + i].mWorld, 
+                           fieldToWorldX(player->nextPieces[0].absoluteCoords(i).col),
+                           fieldToWorldY(player->nextPieces[0].absoluteCoords(i).row),
+                           0);
+    cubeInstances[HINT_INSTANCES_OFFSET + i].diffuseColor  = player->nextPieces[0].color();
+    cubeInstances[HINT_INSTANCES_OFFSET + i].specularColor = player->nextPieces[0].color() * 0.5f + WHITE * 0.5f;
+    cubeInstances[HINT_INSTANCES_OFFSET + i].specularColor.a = 128.f;
+  }
+
+
+
   cubeInstancesBuffer->Unmap();
 }
 
@@ -861,7 +908,7 @@ void CrazyTetrisApp::installLights(float x, float y, float lanternProgress)
 {
   
   //Calculating lights
-  if (lanternProgress > -10)
+  if (true)
   {
     Lights[1].pos.x = x;
     Lights[1].pos.y = y;
@@ -921,7 +968,6 @@ void CrazyTetrisApp::loadPlayerData(Player* player)
   
 void CrazyTetrisApp::drawWall(Player* player, bool colored)
 {
-  //fxDiffuseMapVar->SetResource(mShadowMap.colorMap()); 
   D3DXMATRIX temp;
   fxWorldVar->SetMatrix((float*) D3DXMatrixTranslation(&temp, 0.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2));
   md3dDevice->IASetInputLayout(texturedVertexLayout);
@@ -948,6 +994,19 @@ void CrazyTetrisApp::drawLyingBlocks(Player* player, bool colored)
   mBox.draw(player->lyingBlockImages.size(), LYING_BLOCKS_INSTANCES_OFFSET);
 }
 
+
+void CrazyTetrisApp::drawHint(Player* player)
+{
+  fxEdgeOpacityVar->SetFloat(player->visualEffects.hint.progress(currTime));
+  fxFaceOpacityVar->SetFloat(0.3 * player->visualEffects.hintMaterialization.progress(currTime));
+  techFallingPiece->GetPassByIndex( 0 )->Apply(0);
+  mBox.draw(player->nextPieces[0].nBlocks(), HINT_INSTANCES_OFFSET);
+  techFallingPiece->GetPassByIndex( 1 )->Apply(0);
+  mBox.draw(player->nextPieces[0].nBlocks(), HINT_INSTANCES_OFFSET);
+
+
+}
+
 void CrazyTetrisApp::drawDisappearingLines(Player* player, bool colored)
 {
   for (size_t i = 0; i < player->disappearingLines.size(); ++i)
@@ -965,6 +1024,8 @@ void CrazyTetrisApp::drawDisappearingLines(Player* player, bool colored)
 
 void CrazyTetrisApp::drawFallingPiece(Player* player, bool colored)
 {
+  fxEdgeOpacityVar->SetFloat(1.);
+  fxFaceOpacityVar->SetFloat(0.3);
   D3DXVECTOR4 clippingPlane = D3DXVECTOR4(0.0, -1.0f, 0.0f, CUBE_SCALE * FIELD_HEIGHT / 2.0f);
 	D3DXVec4Transform(&clippingPlane, &clippingPlane, &mGlobalRotation);
   fxClippingPlaneVar->SetRawValue(&clippingPlane, 0, sizeof(D3DXVECTOR4));

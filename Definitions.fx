@@ -3,7 +3,7 @@
 
 struct UncoloredVS_IN
 {
-	float3 posL    : POSITION;
+	float3 posL    : POSITION_LOCAL;
 	float3 normalL : NORMAL;
 	//float4 diffuse : DIFFUSE;
 	//float4 spec    : SPECULAR;
@@ -11,7 +11,7 @@ struct UncoloredVS_IN
 
 struct TexturedVS_IN
 {
-	float3 posL    : POSITION;
+	float3 posL    : POSITION_LOCAL;
 	float3 normalL : NORMAL;
 	float2 texC    : TEXCOORD0;
 };
@@ -20,7 +20,7 @@ struct TexturedVS_IN
 struct TexturedVS_OUT
 {
 	float4 posH    : SV_POSITION;
-  float3 posW    : POSITION;
+  float3 posW    : POSITION_WORLD;
   //float3 posL    : POSITION_LOCAL;
   float3 normalW : NORMAL;
 	float2 texC     : TEXCOORD0;
@@ -30,7 +30,7 @@ struct TexturedVS_OUT
 
 struct CubesVS_IN
 {
-	float3 posL      : POSITION;
+	float3 posL      : POSITION_LOCAL;
 	float3 normalL   : NORMAL;
   float4 diffuseColor  : diffuse;
 	float4 specularColor : specular;
@@ -41,7 +41,7 @@ struct CubesVS_IN
 struct StandardVS_OUT
 {
 	float4 posH     : SV_POSITION;
-  float3 posW     : POSITION;
+  float3 posW     : POSITION_WORLD;
   float3 posL     : POSITION_LOCAL;
   float3 normalW  : NORMAL;
   float4 diffuse  : DIFFUSE;
@@ -78,6 +78,8 @@ cbuffer cbPerObject
   float4   gColorDiffuse;
   float4   gColorSpecular;
   float    gOpacity;
+  float    gEdgeOpacity;
+  float    gFaceOpacity;
 };
 
 struct ShadowVS_OUT
