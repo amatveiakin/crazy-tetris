@@ -33,12 +33,12 @@ private:
 
 };
 
-class Wall : public Primitive
+class TexturedQuad : public Primitive
 {
 public:
 
-	Wall();
-	~Wall();
+	TexturedQuad();
+	~TexturedQuad();
   void init(ID3D10Device* device, float worldWidth, float worldHeight, float texWidth, float texHeight);
   void draw();
 

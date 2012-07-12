@@ -148,11 +148,11 @@ void  Box::setVB_AndIB_AsCurrent(ID3D10Device* device, ID3D10Buffer* cubeInstanc
 }
 
 
-Wall::Wall() {}
+TexturedQuad::TexturedQuad() {}
 
-Wall::~Wall() {}
+TexturedQuad::~TexturedQuad() {}
 
-void Wall::init(ID3D10Device* device, float worldWidth, float worldHeight, float texWidth, float texHeight)
+void TexturedQuad::init(ID3D10Device* device, float worldWidth, float worldHeight, float texWidth, float texHeight)
 {
   nVertices = 4;
   nFaces = 2;
@@ -177,7 +177,7 @@ void Wall::init(ID3D10Device* device, float worldWidth, float worldHeight, float
   HR(md3dDevice->CreateBuffer(&vbd, &vinitData, &mVB));
 }
 
-void Wall::draw()
+void TexturedQuad::draw()
 {
   md3dDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
   UINT stride = sizeof(TexturedVertex);
@@ -191,7 +191,7 @@ Glass::Glass() {}
 
 Glass::~Glass()
 {
-  if (mIB) ReleaseCOM(mIB);
+  //if (mIB) ReleaseCOM(mIB);
 }
 
 void Glass::init(ID3D10Device* device, float width, float height, float depth)
