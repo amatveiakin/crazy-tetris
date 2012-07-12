@@ -6,6 +6,7 @@
 #include "VisualEffects.h"
 #include "Engine.h"
 #include "Declarations.h"
+#include "DirectXConstants.h"
 
 bool keyPressed(KeyboardKey key)
 {
@@ -83,7 +84,7 @@ private:
 	D3DXMATRIX mVP;
   D3DXMATRIX mGlobalRotation;
 
-	Light currLight;
+	Light Lights[MAX_LIGHTS];
 	
 	D3DXVECTOR3 eyePosW;
   	
@@ -132,9 +133,8 @@ void CrazyTetrisApp::initApp()
 	D3DApp::initApp();
 	
   mBox.init(md3dDevice, CUBE_SCALE / 2.0 + MATH_EPS, 0.5f, 5);
-  //mBox.init(md3dDevice, 1., 0.5f, 5);
-
-	buildFX();
+  
+  buildFX();
 	setConstantBuffers();
 
   buildVertexLayouts();
@@ -188,17 +188,17 @@ void CrazyTetrisApp::updateScene(float dt)
   if(GetAsyncKeyState(VK_F5) & 0x8000)	currEffects.wave.enable(2);
   if(GetAsyncKeyState(VK_F6) & 0x8000)	currEffects.wave.disable();
 
-  if(GetAsyncKeyState(VK_NUMPAD6) & 0x8000)	currLight.pos.x += 2.f * dt;
-  if(GetAsyncKeyState(VK_NUMPAD4) & 0x8000) currLight.pos.x -= 2.f * dt;
+  if(GetAsyncKeyState(VK_NUMPAD6) & 0x8000)	Lights[1].pos.x += 2.f * dt;
+  if(GetAsyncKeyState(VK_NUMPAD4) & 0x8000) Lights[1].pos.x -= 2.f * dt;
 
-  if(GetAsyncKeyState(VK_NUMPAD8) & 0x8000)	currLight.pos.y += 2.f * dt;
-  if(GetAsyncKeyState(VK_NUMPAD2) & 0x8000) currLight.pos.y -= 2.f* dt;
+  if(GetAsyncKeyState(VK_NUMPAD8) & 0x8000)	Lights[1].pos.y += 2.f * dt;
+  if(GetAsyncKeyState(VK_NUMPAD2) & 0x8000) Lights[1].pos.y -= 2.f* dt;
 
-  if(GetAsyncKeyState(VK_NUMPAD7)       & 0x8000)	currLight.pos.z += dt;
-  if(GetAsyncKeyState(VK_NUMPAD1) & 0x8000) currLight.pos.z -= dt;
+  if(GetAsyncKeyState(VK_NUMPAD7) & 0x8000)	Lights[1].pos.z += dt;
+  if(GetAsyncKeyState(VK_NUMPAD1) & 0x8000) Lights[1].pos.z -= dt;
 
-  if(GetAsyncKeyState(VK_NUMPAD9)       & 0x8000)	currLight.range += dt;
-  if(GetAsyncKeyState(VK_NUMPAD3) & 0x8000) currLight.range -= dt;
+  if(GetAsyncKeyState(VK_NUMPAD9) & 0x8000)	Lights[1].range += dt;
+  if(GetAsyncKeyState(VK_NUMPAD3) & 0x8000) Lights[1].range -= dt;
 
   // Convert Spherical to Cartesian coordinates: mPhi measured from +y
 	// and mTheta measured counterclockwise from -z.
@@ -241,7 +241,7 @@ void CrazyTetrisApp::drawScene()
   mVP = mView * mProj;
 	fxVPVar->SetMatrix((float*)&mVP);
 
-	fxLightVar->SetRawValue(&currLight, 0, sizeof(Light));
+	fxLightVar->SetRawValue(&Lights, 0, MAX_LIGHTS * sizeof(Light) );
 	fxEyePosVar->SetRawValue(&eyePosW,0,sizeof(D3DXVECTOR3));
    
   D3DXMATRIX temp, tempX, tempY;
@@ -275,6 +275,8 @@ void CrazyTetrisApp::drawScene()
   cubeInstancesBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, (void** ) &cubeInstances); 
   
   
+  //Real picture
+  
   for (int i = 0; i < mGame.player[0].nBlockImages; ++i)
   {
     cubeInstances[i].offset.x = (mGame.player[0].blockImage[i].positionX(currTime) - (FIELD_WIDTH - 1.0) / 2.) * CUBE_SCALE;
@@ -286,9 +288,13 @@ void CrazyTetrisApp::drawScene()
     cubeInstances[i].specularColor.a = 128.f;
 
   }
-
+  cubeInstancesBuffer->Unmap();
   
-  /*
+  mBox.draw(mGame.player[0].nBlockImages);
+  
+  
+  //Test picture
+  
   for (int i =  0; i < FIELD_WIDTH; ++i)
   {
     //int maxJ = FIELD_HEIGHT;//std::rand() % (FIELD_HEIGHT);
@@ -303,11 +309,14 @@ void CrazyTetrisApp::drawScene()
       cubeInstances[i* FIELD_HEIGHT + j].specularColor.a = 128.f;
     }
    }
-   */
-   cubeInstancesBuffer->Unmap();
-  
  
-  mBox.draw(mGame.player[0].nBlockImages);
+  cubeInstancesBuffer->Unmap();
+ 
+ 
+  mBox.draw(MAX_BLOCKS);
+  
+  
+
     
   md3dDevice->OMSetBlendState(transparentBS, blendFactors, 0xffffffff);    
   //упорядочиваем по удаленности и рисуем непрозрачные объекты
@@ -427,20 +436,35 @@ void CrazyTetrisApp::buildRasterizerStates()
 
 void CrazyTetrisApp::buildLights()
 {
+  int i;
+  for (i = 0; i < 2; i++)
+  {
+	  Lights[i].ambient   = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
+	  Lights[i].diffuse   = D3DXCOLOR(0.5f, 0.5f, 0.5f, 0.5f);
+	  Lights[i].specular  = D3DXCOLOR(0.6f, 0.6f, 0.6f, 1.0f);
+    Lights[i].active = 1;
+  }
+  
+  //Setting parallel light
+  Lights[0].dir       = D3DXVECTOR3(0, -0.0f, -1.0f);
+  Lights[0].lightType = 1;
+  Lights[0].active = 0;  
 
-	currLight.dir       = D3DXVECTOR3(0, -0.0f, 1.0f);
-	currLight.ambient   = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);
-	currLight.diffuse   = D3DXCOLOR(0.5f, 0.5f, 0.5f, 0.5f);
-	currLight.specular  = D3DXCOLOR(0.6f, 0.6f, 0.6f, 1.0f);
-  currLight.att.x = 0;
-  currLight.att.y = 0;
-  currLight.att.z = 1;
-  currLight.spotPow = 64.0;
-  currLight.range = 2;
-  currLight.pos = D3DXVECTOR3(0., 0., -1);
+  //Spots for lantern
+  Lights[1].dir       = D3DXVECTOR3(0, 0.0f, 1.0f);
+  Lights[1].pos = D3DXVECTOR3(0., 0., -0.6);
+  Lights[1].att.y = 1;
+  Lights[1].spotPow = 8.f;
+  Lights[1].range = 10;
+  Lights[1].lightType = 3;
 
-
-  currLight.lightType = 0;
+  Lights[2].dir       = D3DXVECTOR3(0, 0.0f, -1.0f);
+  Lights[2].pos = D3DXVECTOR3(0., 0., +0.6);
+  Lights[2].att.y = 1;
+  Lights[2].spotPow = 8.f;
+  Lights[2].range = 10;
+  Lights[2].lightType = 3;
+  
 }
 
 void CrazyTetrisApp::buildBlendingStates()

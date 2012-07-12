@@ -1,9 +1,5 @@
 #include "lighthelper.fx"
-
-const float PI       = 3.14159265358979323f;
-const float TWO_PI   = 2 * 3.14159265358979323f;
-const float MATH_EPS = 0.001f;
-
+#include "DirectXConstants.h"
 
 cbuffer cbRare
 {
@@ -14,19 +10,15 @@ cbuffer cbPerObject
 {
 	float4x4 gWorld;
 	float4x4 gVP;
-  
-	//float4 gColorDiffuse;
-	//float4 gColorSpecular; 
 };
 
 cbuffer cbPerFrame
 {
-	Light  gLight;
+	Light gLight[MAX_LIGHTS];
 	float3 gEyePosW;
 	float  gTime;
   float  gWaveProgress;
   float  gSemicubesProgress;
-
   float4x4 gGlobalRotation;
 };
 
@@ -69,7 +61,7 @@ VS_OUT vsCubes(CubesVS_IN vIn)
 	vOut.posW    = vIn.posL + vIn.offset;
   
   //Make wave effect
-  vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(2 * vOut.posW.y)  * 0.33; //if makes slower (?)
+  vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
   
   vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation);
@@ -128,23 +120,33 @@ float4 psStandard(VS_OUT pIn) : SV_Target
 
   SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
   
-  float3 litColor;
-  //add lighttype!
-  if (gLight.lightType == 0) // Parallel
+  float3 litColor = float3(0., 0., 0.);
+  
+  int i;
+
+  for (i = 0; i < MAX_LIGHTS; ++i)
   {
-	  litColor = ParallelLight(v, gLight, gEyePosW);
-  }
-  else if (gLight.lightType == 1) // Point
-  {
-	  litColor = PointLight(v, gLight, gEyePosW);
-	}
-	else // Spot
-	{
-	  litColor = Spotlight(v, gLight, gEyePosW);
-	}
-	   
+    if (gLight[i].active == 1)
+    {
+      if (gLight[i].lightType == 1) // Parallel
+      {
+	      litColor += ParallelLight(v, gLight[i], gEyePosW);
+      }
+      else if (gLight[i].lightType == 2) // Point
+      {
+	      litColor += PointLight(v, gLight[i], gEyePosW);
+	    }
+	    else if (gLight[i].lightType == 3)// Spot
+	    {
+	      litColor += Spotlight(v, gLight[i], gEyePosW);
+	    }
+    }
+  }   
   return float4(litColor, pIn.diffuse.a);
 }
+
+
+//Semicubes section
 
 RasterizerState rsSemicubes 
 {
@@ -169,23 +171,27 @@ float4 psSemicubes(VS_OUT pIn) : SV_Target
 
   SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
   
- float3 litColor;
-  //add lighttype!
-  if (gLight.lightType == 0) // Parallel
+  float3 litColor = float3(0., 0., 0.);
+  
+  int i;
+
+  for (i = 0; i < MAX_LIGHTS; ++i)
   {
-	  litColor = ParallelLight(v, gLight, gEyePosW);
-  }
-  else if (gLight.lightType == 1) // Point
-  {
-	  litColor = PointLight(v, gLight, gEyePosW);
-	}
-	else // Spot
-	{
-	  litColor = Spotlight(v, gLight, gEyePosW);
-	}
-   
-  //return float4(litColor, pIn.diffuse.a);
-  return float4(1., 1., 1., 1.);
+    if (gLight[i].lightType == 1) // Parallel
+    {
+	    litColor += ParallelLight(v, gLight[i], gEyePosW);
+    }
+    else if (gLight[i].lightType == 2) // Point
+    {
+	    litColor += PointLight(v, gLight[i], gEyePosW);
+	  }
+	  else if (gLight[i].lightType == 3)// Spot
+	  {
+	    litColor += Spotlight(v, gLight[i], gEyePosW);
+	  }
+  }      
+  return float4(litColor, pIn.diffuse.a);
+  //return float4(1., 1., 1., 1.);
 }
 
 technique10 techCubes

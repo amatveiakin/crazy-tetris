@@ -6,6 +6,7 @@
 #include "Vertex.h"
 #include <math.h>
 
+
 float sgn(float t)
 {
   if (t < -MATH_EPS) return -1.0f;

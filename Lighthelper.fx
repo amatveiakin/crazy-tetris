@@ -1,3 +1,4 @@
+
 struct Light
 {
 	float3 pos;
@@ -8,7 +9,8 @@ struct Light
 	float3 att;
 	float  spotPower;
 	float  range;
-  int    lightType;
+  int    lightType;  //0 - off, 1 - parallel, 2 - point, 3 - spot
+  int    active;
 };
 
 struct SurfaceInfo

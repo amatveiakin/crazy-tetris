@@ -6,6 +6,7 @@
 #define BOX_H
 
 #include "d3dapp/d3dUtil.h"
+#include "DirectXConstants.h"
 
 class Box
 {
