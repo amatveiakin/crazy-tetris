@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="main">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="D3DApp">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Primitives">
+      <UniqueIdentifier>{b63953fb-79d6-4f48-aaac-98c54cede621}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tetris Engine">
+      <UniqueIdentifier>{1ecdd13e-ed01-4ed6-835c-ca8422b6a07a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CrazyTetrisDDD.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
+    <ClCompile Include="d3dapp\d3dApp.cpp">
+      <Filter>D3DApp</Filter>
+    </ClCompile>
+    <ClCompile Include="d3dapp\DrawableTex2D.cpp">
+      <Filter>D3DApp</Filter>
+    </ClCompile>
+    <ClCompile Include="d3dapp\GameTimer.cpp">
+      <Filter>D3DApp</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives.cpp">
+      <Filter>Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Tetris Engine</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Light.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dapp\d3dApp.h">
+      <Filter>D3DApp</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dapp\d3dUtil.h">
+      <Filter>D3DApp</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dapp\DrawableTex2D.h">
+      <Filter>D3DApp</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dapp\GameTimer.h">
+      <Filter>D3DApp</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives.h">
+      <Filter>Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Declarations.h">
+      <Filter>Tetris Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Tetris Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="IOFunctions.h">
+      <Filter>Tetris Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings.h">
+      <Filter>Tetris Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="VisualEffects.h">
+      <Filter>Tetris Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectXConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Definitions.fx" />
+    <None Include="Effects.fx" />
+    <None Include="Lighthelper.fx" />
+    <None Include="Samplers.fx" />
+    <None Include="Shadows.fx" />
+    <None Include="States.fx" />
+  </ItemGroup>
+</Project>
