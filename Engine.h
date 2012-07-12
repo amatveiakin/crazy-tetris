@@ -22,20 +22,20 @@ using std::set;
 
 //================================== General ===================================
 
-const float  STARTING_SPEED = 1.0f;
-const float  SPEED_UP_MULTIPLIER = 1.05f;
-const Time   SPEED_UP_INTERVAL = 1.0f;
+const float  STARTING_SPEED = 1.0;
+const float  ROUTINE_SPEED_UP_MULTIPLIER = 1.01f;
+const Time   ROUTINE_SPEED_UP_INTERVAL = 2.0f;
 // Speed limit can be excedeed via bonus
-const float  SPEED_LIMIT = 5.0f;
+const float  SPEED_LIMIT = 5.0;
 
 const Time   NORMAL_LOWERING_TIME = 0.8f;
 // Time necessary for a dropping piece to move one line down
 const Time   DROPPING_PIECE_LOWERING_TIME = 0.01f;
-const Time   LINE_DISAPPEAR_TIME = 0.1f;
-const Time   LINE_COLLAPSE_TIME = 0.1f;
+const Time   LINE_DISAPPEAR_TIME = 0.7f;
+const Time   LINE_COLLAPSE_TIME = 0.05f;
 
 const Time   PIECE_LOWERING_ANIMATION_TIME = 0.05f;
-const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.05f;
+const Time   LINE_COLLAPSE_ANIMATION_TIME = 0.03f;
 const Time   PIECE_MOVING_ANIMATION_TIME = 0.05f;
 const Time   PIECE_ROTATING_ANIMATION_TIME = 0.05f;
 
@@ -135,7 +135,7 @@ enum Bonus
 {
   // buffs
   
-  // kind soceries
+  // kind sorceries
   bnHeal,
   bnSlowDown,
   bnClearField,
@@ -147,7 +147,7 @@ enum Bonus
   bnCutBlocks, // name --> (?)
   bnNoHint,
   
-  // evil soceries
+  // evil sorceries
   bnSpeedUp,
   bnFlipField,
   
@@ -157,14 +157,14 @@ enum Bonus
 
 #define SKIP_BUFFS
 
-#define SKIP_KIND_SOCERIES  case bnHeal:  case bnSlowDown:  case bnClearField:
+#define SKIP_KIND_SORCERIES case bnHeal:  case bnSlowDown:  case bnClearField:
 
-#define SKIP_DEBFFS         case bnFlippedScreen:  case bnInverseControls:  case bnCrazyPieces: \
+#define SKIP_DEBUFFS        case bnFlippedScreen:  case bnInverseControls:  case bnCrazyPieces: \
                             case bnCutBlocks:  case bnNoHint:
 
-#define SKIP_EVIL_SOCERIES  case bnSpeedUp:  case bnFlipField:
+#define SKIP_EVIL_SORCERIES case bnSpeedUp:  case bnFlipField:
 
-#define SKIP_ALL_BUT_SOCERIES  SKIP_BUFFS  SKIP_DEBFFS  case bnNoBonus:
+#define SKIP_ALL_BUT_SORCERIES  SKIP_BUFFS  SKIP_DEBUFFS  case bnNoBonus:
 
 
 inline Bonus& operator++(Bonus& bonus) // (?) Isn't there really a better way?
@@ -387,7 +387,7 @@ enum EventType
 {
   etPieceLowering,
   etLineCollapse,
-  etSpeedUp,
+  etRoutineSpeedUp,
   etBonusAppearance,
   etBonusDisappearance
 };
@@ -588,6 +588,7 @@ private:
                                Time movingStartTime, Time movingDuration);
   void          removeBlockImage(FieldCoords position);
 
+  void          routineSpeedUp();
   void          cycleVictim();
   
   void          enableBonusEffect(Bonus bonus);
@@ -604,6 +605,7 @@ class Game
 public:
   vector<AccountInfo> accounts;
 
+  //FixedZeroBasedArray<Player, MAX_PLAYERS> players;
   Player        players[MAX_PLAYERS];
   vector<Player*> activePlayers;
   //int nActivePlayers;

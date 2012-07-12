@@ -128,6 +128,29 @@ struct FloatFieldCoords : public Coord2D<float> // (?) What's happening here?!!
 
 
 
+template <typename T, int size>   // TODO: use it
+class FixedZeroBasedArray
+{
+  T& operator[](int index)
+  {
+    assert(0 <= index);
+    assert(index < size);
+    return elements_[index];
+  }
+  
+  const T& operator[](int index) const
+  {
+    assert(0 <= index);
+    assert(index < size);
+    return elements_[index];
+  }
+  
+protected:
+  T elements_[size];
+};
+
+
+
 template <typename T, int firstRow, int firstCol, int lastRow, int lastCol>
 class Fixed2DArray
 {
@@ -196,7 +219,8 @@ class SmartFileHandler
 public:
   SmartFileHandler(const char* path, const char* mode)
   {
-    file_handle_ = fopen(path, mode);
+//    file_handle_ = fopen(path, mode);
+    fopen_s(&file_handle_, path, mode);   // TODO: So, why is it safer?
   }
   
   ~SmartFileHandler()

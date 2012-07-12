@@ -97,7 +97,7 @@ void Game::saveSettings()
 
 void Game::loadDefaultSettings()
 {
-  /*players[0].participates = true;
+  players[0].participates = false;
   players[0].accountNumber = 0;
   players[0].controls.keyByName.keyLeft = 'A';
   players[0].controls.keyByName.keyRight = 'D';
@@ -120,18 +120,8 @@ void Game::loadDefaultSettings()
   players[2].controls.keyByName.keyDrop = VK_RSHIFT;
   players[2].controls.keyByName.keyChangeVictim = VK_RCONTROL;
 
-  players[0].participates = false;
-  players[0].accountNumber = 3;*/
-
-  players[0].participates = true;
-  players[0].accountNumber = 2;
-  players[0].controls.keyByName.keyLeft = VK_LEFT;
-  players[0].controls.keyByName.keyRight = VK_RIGHT;
-  players[0].controls.keyByName.keyRotateCCW = VK_UP;
-  players[0].controls.keyByName.keyRotateCW = VK_DELETE;
-  players[0].controls.keyByName.keyDown = VK_DOWN;
-  players[0].controls.keyByName.keyDrop = VK_RSHIFT;
-  players[0].controls.keyByName.keyChangeVictim = VK_RCONTROL;
+  players[3].participates = false;
+  players[3].accountNumber = 3;
 }
 
 void Game::newMatch()
@@ -180,7 +170,24 @@ void Game::onTimer(Time currentTime__)
       nextGlobalKeyActivationTable[key] = currentTime + GLOBAL_KEY_REACTIVATION_TIME[key];
     }
   }
-  for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
+  
+  for (size_t iPlayer = 0; iPlayer < activePlayers.size(); ++iPlayer)
+  {
+    for (int key = 0; key < N_PLAYER_KEYS; ++key)
+    {
+      if (keyPressed(activePlayers[iPlayer]->controls.keyArray[key]) &&
+          (currentTime >= activePlayers[iPlayer]->nextKeyActivationTable[key]))
+      {
+        activePlayers[iPlayer]->onKeyPress(PlayerKey(key));
+        activePlayers[iPlayer]->nextKeyActivationTable[key] = currentTime + PLAYER_KEY_REACTIVATION_TIME[key];
+      }
+    }
+  }
+  
+  for (size_t iPlayer = 0; iPlayer < activePlayers.size(); ++iPlayer)
+    activePlayers[iPlayer]->onTimer();
+  
+  /*for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
   {
     if (players[iPlayer].active)
     {
@@ -198,7 +205,7 @@ void Game::onTimer(Time currentTime__)
   
   for (int iPlayer = 0; iPlayer < MAX_PLAYERS; ++iPlayer)
     if (players[iPlayer].active)
-      players[iPlayer].onTimer();
+      players[iPlayer].onTimer();*/
 }
 
 
@@ -296,7 +303,7 @@ void Player::prepareForNewMatch()
 void Player::prepareForNewRound()
 {
   events.clear();
-  events.push(etSpeedUp, currentTime() + SPEED_UP_INTERVAL);
+  events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
   buffs.clear();
   debuffs.clear();
   field.clear();
@@ -367,7 +374,7 @@ void Player::applyBonus(Bonus bonus)
       case bnFlipField:
         // ...
         break;
-      SKIP_ALL_BUT_SOCERIES;
+      SKIP_ALL_BUT_SORCERIES;
     }
   }
   enableBonusEffect(bonus);
@@ -428,8 +435,8 @@ void Player::onTimer()
       case etLineCollapse:
         collapseLine(events.top().parameters.lineCollapse.row);
         break;
-      case etSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
-        // ...
+      case etRoutineSpeedUp:   // TODO: [FIX BUG] why is it called in the very beginning?
+        routineSpeedUp();
         break;
       case etBonusAppearance:
         // ...
@@ -777,6 +784,13 @@ void Player::removeBlockImage(FieldCoords position)
   blockImages.erase(blockImages.end() - 1);
 }
 
+void Player::routineSpeedUp()
+{
+  speed *= ROUTINE_SPEED_UP_MULTIPLIER;
+  speed = myMin(speed, SPEED_LIMIT);
+  events.push(etRoutineSpeedUp, currentTime() + ROUTINE_SPEED_UP_INTERVAL);
+}
+
 void Player::cycleVictim()
 {
   if (game->activePlayers.size() < 2)
@@ -784,7 +798,7 @@ void Player::cycleVictim()
   do
   {
     victimNumber = (victimNumber + 1) % MAX_PLAYERS;
-  } while (game->players[victimNumber].active);
+  } while (!game->players[victimNumber].active);
 }
 
 void Player::enableBonusEffect(Bonus bonus)
