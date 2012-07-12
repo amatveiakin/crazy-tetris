@@ -152,7 +152,7 @@ void Game::loadDefaultSettings()
   players[2].controls.keyByName.keyDrop = VK_RSHIFT;
   players[2].controls.keyByName.keyNextVictim = VK_RCONTROL;
 
-  players[3].participates = false;
+  players[3].participates = false;  
   players[3].accountNumber = 3;
   players[3].controls.keyByName.keyLeft = VK_NUMPAD4;
   players[3].controls.keyByName.keyRight = VK_NUMPAD6;
@@ -203,6 +203,8 @@ void Game::onTimer(Time currentTime__)
       onGlobalKeyPress(GlobalKey(key));
       nextGlobalKeyActivationTable[key] = currentTime + GLOBAL_KEY_REACTIVATION_TIME[key];
     }
+    else if (!keyPressed(globalControls.keyArray[key]))
+      nextGlobalKeyActivationTable[key]  = currentTime;
   }
   
   for (size_t iPlayer = 0; iPlayer < activePlayers.size(); ++iPlayer)
@@ -215,6 +217,8 @@ void Game::onTimer(Time currentTime__)
         activePlayers[iPlayer]->onKeyPress(PlayerKey(key));
         activePlayers[iPlayer]->nextKeyActivationTable[key] = currentTime + PLAYER_KEY_REACTIVATION_TIME[key];
       }
+      else if (!keyPressed(activePlayers[iPlayer]->controls.keyArray[key]))
+        activePlayers[iPlayer]->nextKeyActivationTable[key] = currentTime;
     }
   }
   
@@ -476,7 +480,7 @@ void Player::heal()
 {
   // optimize disabling all effects (?)
   for (Bonus i = FIRST_DEBUFF; i <= LAST_DEBUFF; ++i)
-    if (debuffs.check(i))
+    if (debuffs.test(i))
       disenchant(i);
 }
 
@@ -652,6 +656,15 @@ void Player::redraw()
 
 
 
+int Player::highestNonemptyLine() const
+{
+  for (int row = FIELD_HEIGHT - 1; row >= 0; --row)
+    for (int col = 0; col < FIELD_WIDTH; ++col)
+      if (field(row, col).isBlocked())
+        return row;
+  return -1;
+}
+
 bool Player::canDisposePiece(FieldCoords position, const BlockStructure& piece) const
 {
   for (size_t i = 0; i < piece.blocks.size(); ++i)
@@ -683,9 +696,65 @@ Piece Player::randomPiece() const
   return piece;
 }
 
-Bonus Player::randomBonus() const  // TODO: remake: fo not generate useless bonuses
+bool Player::bonusIsUseful(Bonus bonus) const
 {
-  return game->randomBonusTable[rand() % game->randomBonusTable.size()];
+  // TODO: process all debuffs uniformly  (may be, they are just always useful?)
+  if (isBuff(bonus))
+    return !buffs.test(bonus);
+
+  switch (bonus)
+  {
+  case bnHeal:
+    return debuffs.any();
+    break;
+  case bnSlowDown:
+    return speed > STARTING_SPEED * BONUS_SLOW_DOWN_MULTIPLIER;  // (?)
+    break;
+  case bnClearField:
+    return highestNonemptyLine() > BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL;
+    break;
+
+  case bnFlippedScreen:
+    // ...
+    break;
+  case bnRotatingScreen:
+    // ...
+    break;
+  case bnWave:
+    // ...
+    break;
+  case bnLantern:
+    // ...
+    break;
+  case bnCrazyPieces:
+    // ...
+    break;
+  case bnTruncatedBlocks:
+    // ...
+    break;
+  case bnNoHint:
+    // ...
+    break;
+
+  case bnSpeedUp:
+    // ...
+    break;
+
+  SKIP_BUFFS;
+  }
+
+  return true;
+}
+
+Bonus Player::randomBonus() const
+{
+  Bonus bonus;
+  for (int iAttempt = 0; iAttempt < N_BONUS_CHOOSE_ATTEMPTS; ++iAttempt) {
+    bonus = game->randomBonusTable[rand() % game->randomBonusTable.size()];
+    if (bonusIsUseful(bonus))
+      return bonus;
+  }
+  return bnNoBonus;
 }
 
 void Player::setUpPiece()
@@ -949,7 +1018,7 @@ void Player::rotatePiece(int direction)
 
 bool Player::generateBonus()  // TODO: remake
 {
-  for (int iter = 0; iter < N_BONUS_APPEAR_ATTEMPS; ++iter)
+  for (int iter = 0; iter < N_BONUS_APPEAR_ATTEMPTS; ++iter)
   {
     int row = rand() % FIELD_HEIGHT;
     int col = rand() % FIELD_WIDTH;

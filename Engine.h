@@ -254,7 +254,10 @@ const Time   MAX_BONUS_APPEAR_TIME = 6.0f;
 const Time   MIN_BONUS_LIFE_TIME = 15.0;
 const Time   MAX_BONUS_LIFE_TIME = 20.0;
 
-const int    N_BONUS_APPEAR_ATTEMPS = 20;
+const int    N_BONUS_CHOOSE_ATTEMPTS = 10;
+const int    N_BONUS_APPEAR_ATTEMPTS = 20;
+
+const int    BONUS_HIGHEST_LINE_MAKING_CLEARING_USEFUL = FIELD_HEIGHT / 2;
 
 
 
@@ -740,10 +743,12 @@ public:
   void          stealPiece();  // (!) make private
 
 private:
+  int           highestNonemptyLine() const;  // TODO: make it a variable (?)
   bool          canDisposePiece(FieldCoords position, const BlockStructure& piece) const;
   bool          canSendNewPiece() const;
   bool          fallingPieceCannotReachSky() const;
   Piece         randomPiece() const;
+  bool          bonusIsUseful(Bonus bonus) const;
   Bonus         randomBonus() const;
 
   void          beginClearField();

@@ -279,11 +279,21 @@ public:
     std::bitset<nElements>::operator[](position - firstElementsNumber) = true;
   }
   
-  bool check(size_t position) const
+  bool test(size_t position) const
   {
     assert(firstElementsNumber <= position);
     assert(position < nElements + firstElementsNumber);
     return std::bitset<nElements>::operator[](position - firstElementsNumber);
+  }
+  
+  bool any() const
+  {
+    return std::bitset<nElements>::any();
+  }
+  
+  bool none() const
+  {
+    return std::bitset<nElements>::none();
   }
   
   void remove(size_t position)
