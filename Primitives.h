@@ -27,7 +27,6 @@ public:
 	void setVB_AndIB_AsCurrent(ID3D10Device* device,  ID3D10Buffer* cubeInstancesBuffer);
   void draw(int nInstances);
 
-
 private:
   ID3D10Buffer* mIB;
 
@@ -45,5 +44,18 @@ public:
 
 };
 
-#endif
 
+
+class Glass : public Primitive
+{
+public:
+  Glass();
+  ~Glass();
+  void init(ID3D10Device* device, float width, float height, float depth);
+  void draw();
+
+private:
+  ID3D10Buffer* mIB;
+};
+
+#endif

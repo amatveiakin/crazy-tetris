@@ -18,7 +18,7 @@ Primitive::Primitive() : nVertices(0), nFaces(0), mVB(0), md3dDevice(0) {}
 
 Primitive::~Primitive()
 {
-  ReleaseCOM(mVB);
+  if (mVB) ReleaseCOM(mVB);
 }
 
 
@@ -27,7 +27,7 @@ Box::Box() : mIB(0) {}
  
 Box::~Box()
 {
-	ReleaseCOM(mIB);
+	if (mIB) ReleaseCOM(mIB);
 }
 
 
@@ -186,4 +186,86 @@ void Wall::draw()
 
   md3dDevice->IASetVertexBuffers(0, 1, &mVB, &stride, &offset);
   md3dDevice->Draw(nFaces + 2, 0);
+}
+
+Glass::Glass() {}
+
+Glass::~Glass()
+{
+  if (mIB) ReleaseCOM(mIB);
+}
+
+void Glass::init(ID3D10Device* device, float width, float height, float depth)
+{
+  nVertices = 12;
+  nFaces = 6;
+  md3dDevice = device;
+
+  UncoloredVertex vertices[] = 
+  {
+    //Left face
+    {D3DXVECTOR3(-1.0f, +1.0f, -1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(-1.0f, +1.0f, +1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(-1.0f, -1.0f, +1.0f), D3DXVECTOR3(1.0f, 0.0f, 0.0f)},
+    //Bottom face
+    {D3DXVECTOR3(-1.0f, -1.0f, -1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f)},
+    {D3DXVECTOR3(-1.0f, -1.0f, +1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f)},
+    {D3DXVECTOR3(+1.0f, -1.0f, -1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f)},
+    {D3DXVECTOR3(+1.0f, -1.0f, +1.0f), D3DXVECTOR3(0.0f, 1.0f, 0.0f)},
+    //Right face
+    {D3DXVECTOR3(+1.0f, -1.0f, -1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(+1.0f, -1.0f, +1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(+1.0f, +1.0f, +1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f)},
+    {D3DXVECTOR3(+1.0f, +1.0f, -1.0f), D3DXVECTOR3(-1.0f, 0.0f, 0.0f)}
+  };
+
+  for (int i = 0; i < nVertices; ++i)
+  {
+    vertices[i].pos.x *= width  / 2.0f;
+    vertices[i].pos.y *= height / 2.0f;
+    vertices[i].pos.z *= depth  / 2.0f;
+  }
+
+  D3D10_BUFFER_DESC vbd;
+  vbd.Usage = D3D10_USAGE_IMMUTABLE;
+  vbd.ByteWidth = sizeof(UncoloredVertex) * nVertices;
+  vbd.BindFlags = D3D10_BIND_VERTEX_BUFFER;
+  vbd.CPUAccessFlags = 0;
+  vbd.MiscFlags = 0;
+  D3D10_SUBRESOURCE_DATA vinitData;
+  vinitData.pSysMem = vertices;
+  HR(md3dDevice->CreateBuffer(&vbd, &vinitData, &mVB));
+
+
+  DWORD indices[] = 
+  {
+    0, 1, 2,
+    1, 3, 2,
+    4, 5, 6,
+    5, 7, 6,
+    8, 9, 10,
+    9, 11, 10
+  };
+  
+  D3D10_BUFFER_DESC ibd;
+  ibd.Usage = D3D10_USAGE_IMMUTABLE;
+  ibd.ByteWidth = sizeof(DWORD) * nFaces * 3;
+  ibd.BindFlags = D3D10_BIND_INDEX_BUFFER;
+  ibd.CPUAccessFlags = 0;
+  ibd.MiscFlags = 0;
+  D3D10_SUBRESOURCE_DATA iinitData;
+  iinitData.pSysMem = indices;
+  HR(md3dDevice->CreateBuffer(&ibd, &iinitData, &mIB));
+}
+
+
+void Glass::draw()
+{
+  md3dDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  UINT stride = sizeof(UncoloredVertex);
+  UINT offset = 0;
+  md3dDevice->IASetVertexBuffers(0, 1, &mVB, &stride, &offset);
+  md3dDevice->IASetIndexBuffer(mIB, DXGI_FORMAT_R32_UINT, 0);
+  md3dDevice->DrawIndexed(3 * nFaces, 0, 0);
 }

@@ -1,16 +1,13 @@
 #include "DirectXConstants.h"
+#include "Samplers.fx"
+
 cbuffer perFrame
 {
   float4x4 gLightWVP;
 }
-Texture2D gDiffuseMap2;
-SamplerState gAnisotropicSam1
-{
-    Filter = ANISOTROPIC;
-    AddressU = BORDER;
-    AddressV = BORDER;
-    BorderColor = float4(0.0f, 0.0f, 1.0f, 1.0f);
-};
+Texture2D gColorFilter;
+
+
 
 struct Light
 {
@@ -154,7 +151,8 @@ float3 SearchLight(SurfaceInfo v, Light L, float3 eyePos)
   projTexC.x = +0.5f*projTexC.x + 0.5f;
   projTexC.y = -0.5f*projTexC.y + 0.5f;
   
-  float s = gDiffuseMap2.Sample(gAnisotropicSam1, projTexC.xy); 
+  float s = float4(1, 1, 1, 1);
+  s = gColorFilter.Sample(gAnisotropicSamBorder, projTexC.xy); 
 	float angle = acos(dot(-lightVec, normalize(L.dir)));
   
   if (angle < searchAlpha)

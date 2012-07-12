@@ -1,53 +1,12 @@
-#include "lighthelper.fx"
+#include "Lighthelper.fx"
 #include "DirectXConstants.h"
-  
-struct VS_IN
-{
-	float3 posL    : POSITION;
-	float3 normalL : NORMAL;
-	//float4 diffuse : DIFFUSE;
-	//float4 spec    : SPECULAR;
-};
-
-struct TexturedVS_IN
-{
-	float3 posL    : POSITION;
-	float3 normalL : NORMAL;
-	float2 texC    : TEXCOORD;
-};
-
-
-struct TexturedVS_OUT
-{
-	float4 posH    : SV_POSITION;
-  float3 posW    : POSITION;
-  //float3 posL    : POSITION_LOCAL;
-  float3 normalW : NORMAL;
-	float2 texC    : TEXCOORD;
-};
-
-struct CubesVS_IN
-{
-	float3 posL    : POSITION;
-	float3 normalL : NORMAL;
-  float3 offset  : offset;  
-  float4 diffuseColor  : diffuse;
-	float4 specularColor : specular;
-};
-
-struct StandardVS_OUT
-{
-	float4 posH    : SV_POSITION;
-  float3 posW    : POSITION;
-  float3 posL    : POSITION_LOCAL;
-  float3 normalW : NORMAL;
-  float4 diffuse : DIFFUSE;
-  float4 spec    : SPECULAR;
-};
+#include "Definitions.fx"  
+#include "Samplers.fx"
 
 cbuffer cbRare
 {
   float CUBE_SCALE_INVERTED;
+  float3 globalOffset;
 }
 
 cbuffer cbPerFrame
@@ -65,28 +24,43 @@ cbuffer cbPerObject
 {
 	float4x4 gWorld;
   float4 gClippingPlane;
-
+  float4 gColorDiffuse;
+  float4 gColorSpecular;
 };
 
 
 Texture2D gDiffuseMap;
 
 
-SamplerState gAnisotropicSam
+
+
+StandardVS_OUT vsGlass(UncoloredVS_IN vIn)
 {
-    Filter = ANISOTROPIC;
-    AddressU = WRAP;
-    AddressV = WRAP;
+	StandardVS_OUT vOut;
 
-};
+  vOut.posL = vIn.posL;
+	// Translate to world space space.
 
+  //Make wave effect
+  //vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
+  //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
+  vOut.posW    = mul(float4(vIn.posL, 0.0f), gGlobalRotation) + globalOffset;
+  vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
+  // Transform to homogeneous clip space.
+	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
+  // Output vertex attributes for interpolation across triangle.
+	vOut.diffuse = gColorDiffuse;
+	vOut.spec    = gColorSpecular;
+	
+	return vOut;
+}
 
 TexturedVS_OUT vsTextured(TexturedVS_IN vIn)
 {
 	TexturedVS_OUT vOut;
 	
 	// Transform to world space space.  
-  vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld);
+  vOut.posW    = mul(float4(vIn.posL, 1.0f), gWorld) + globalOffset;
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gWorld);
   
   // Transform to homogeneous clip space.
@@ -99,8 +73,8 @@ TexturedVS_OUT vsTextured(TexturedVS_IN vIn)
 float4 psTextured(TexturedVS_OUT pIn) : SV_Target
 {
   //Interpolating normal can make it not be of unit length so normalize it.
-  float4 diffuse  =       gDiffuseMap.Sample(gAnisotropicSam, pIn.texC);
-  float4 specular = 0.2 * gDiffuseMap.Sample(gAnisotropicSam, pIn.texC);
+  float4 diffuse  =       gDiffuseMap.Sample(gAnisotropicSamWrap, pIn.texC);
+  float4 specular = 0.2 * gDiffuseMap.Sample(gAnisotropicSamWrap, pIn.texC);
   //During linear interpolation length of normal changed
   pIn.normalW = normalize(pIn.normalW);
   //move to psTransparent?
@@ -131,7 +105,7 @@ StandardVS_OUT vsCubes(CubesVS_IN vIn)
   //Make wave effect
   vOut.posW.x += sin(TWO_PI * gWaveProgress) * sin(4 * vOut.posW.y)  * 0.2 * cos(abs(vOut.posW.x / 0.7)); //if makes slower (?)
   //vOut.posW.x += sin(gTime +  3 * vOut.posW.y) / 4;
-  vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation);
+  vOut.posW    = mul(float4(vOut.posW, 0.0f), gGlobalRotation) + globalOffset;
   vOut.normalW = mul(float4(vIn.normalL, 0.0f), gGlobalRotation);
   // Transform to homogeneous clip space.
 	vOut.posH = mul(float4(vOut.posW, 1.0f), gVP);
@@ -215,6 +189,25 @@ float4 psDisappearingLine(StandardVS_OUT pIn) : SV_Target
   //return float4(1., 1., 1., 1.);
 }
 
+float4 psFallingPiece(StandardVS_OUT pIn) : SV_Target
+{
+  clip(dot(float4(pIn.posW - globalOffset, 1.0f), gClippingPlane));
+
+  //Interpolating normal can make it not be of unit length so normalize it.
+  pIn.normalW = normalize(pIn.normalW);
+  
+  if (dot(float4(pIn.normalW, 0), float4(gEyePosW - pIn.posW, 0)) < 0)  pIn.normalW =  - pIn.normalW;
+
+  SurfaceInfo v = {pIn.posW, pIn.normalW, pIn.diffuse, pIn.spec};
+  float3 litCol = float3(0., 0., 0.);
+  
+  for (int i = 0; i < MAX_LIGHTS; ++i)
+    litCol += litColor(v, gLight[i], gEyePosW);
+     
+  return float4(litCol, pIn.diffuse.a);
+  //return float4(1., 1., 1., 1.);
+}
+
 technique10 techCubes
 {
     pass P0
@@ -222,6 +215,16 @@ technique10 techCubes
         SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
         SetGeometryShader( NULL );
         SetPixelShader( CompileShader( ps_4_0, psCubes() ) );
+    }
+}
+
+technique10 techFallingPiece
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_4_0, vsCubes() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, psFallingPiece() ) );
     }
 }
 
@@ -258,3 +261,13 @@ technique10 techTextured
     }
 }
 
+
+technique10 techGlass
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_4_0, vsGlass() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_4_0, psCubes() ) );
+    }
+}
