@@ -1070,6 +1070,9 @@ void Player::enableBonusVisualEffect(Bonus bonus)
   case bnRotatingScreen:
     visualEffects.rotatingField.enable(BONUS_ROTATING_SCREEN_PERIOD);
     break;
+  case bnWave:
+    visualEffects.wave.enable(BONUS_WAVE_PERIOD);
+    break;
   case bnLantern:
     visualEffects.lantern.enable(BONUS_LANTERN_ANIMATION_TIME);
     break;
@@ -1110,6 +1113,9 @@ void Player::disableBonusVisualEffect(Bonus bonus)
     break;
   case bnRotatingScreen:
     visualEffects.rotatingField.disable();
+    break;
+  case bnWave:
+    visualEffects.wave.disable();
     break;
   case bnLantern:
     visualEffects.lantern.disable();
