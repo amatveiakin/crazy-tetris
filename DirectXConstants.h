@@ -6,7 +6,7 @@
 #define MAX_LIGHTS ( 5 )
 
 const float PI       = 3.14159265358979323f;
-const float TWO_PI   = 2.0f * PI;
+const float TWO_PI   = 2.0f * 3.14159265358979323f;
 const float MATH_EPS = 0.0001f;
 
 const float searchAlpha = 3.14159265358979323f / 60;

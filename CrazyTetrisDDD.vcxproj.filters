@@ -83,10 +83,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Definitions.fx" />
-    <None Include="Effects.fx" />
     <None Include="Lighthelper.fx" />
     <None Include="Samplers.fx" />
     <None Include="Shadows.fx" />
     <None Include="States.fx" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Effects.fx" />
   </ItemGroup>
 </Project>
