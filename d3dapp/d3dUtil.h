@@ -126,9 +126,6 @@ D3DX10INLINE T Clamp(const T& x, const T& low, const T& high)
 // Constants
 //*****************************************************************************
 
-const float INFINITY = FLT_MAX;
-
-
 const D3DXCOLOR WHITE(1.0f, 1.0f, 1.0f, 1.0f);
 const D3DXCOLOR BLACK(0.0f, 0.0f, 0.0f, 1.0f);
 const D3DXCOLOR RED(1.0f, 0.0f, 0.0f, 1.0f);
